@@ -1182,13 +1182,8 @@ function copyToken() {
 
 function shareTokenWha() {
   const t = document.getElementById('wizard-token-txt').value;
-  const msg = 'Olá! Segue o token de acesso ao Sistema RH Equilibryum:
-
-' + t + '
-
-Link do sistema: https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/
-
-Cole o token quando o sistema pedir.';
+  const link = 'https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/';
+  const msg = 'Ola! Segue o token de acesso ao Sistema RH Equilibryum: ' + t + ' Link: ' + link + ' Cole o token quando o sistema pedir.';
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
