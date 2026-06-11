@@ -177,33 +177,52 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- SETUP WIZARD -->
 <div id="setup-wizard">
   <div class="wizard-box">
-    <h2>🔧 Configuração do Google Drive</h2>
-    <p>Para salvar todos os dados e documentos no seu Google Drive, você precisa configurar uma vez só. Siga os passos abaixo:</p>
+    <h2>🔧 Configuração Inicial</h2>
+    <p>Esta configuração é feita <strong>uma única vez</strong> pelo administrador. Todos os usuários salvarão dados no mesmo Google Drive.</p>
     <div class="wizard-step">
       <div class="wizard-step-num">1</div>
-      <div class="wizard-step-text">Acesse <a href="https://console.cloud.google.com" target="_blank" style="color:var(--green);font-weight:600">console.cloud.google.com</a> e faça login com sua conta Google.</div>
+      <div class="wizard-step-text">Cole o <strong>Client ID</strong> do Google Cloud abaixo:</div>
     </div>
+    <input type="text" id="client-id-inp" placeholder="Ex.: 123456789-abc.apps.googleusercontent.com">
     <div class="wizard-step">
       <div class="wizard-step-num">2</div>
-      <div class="wizard-step-text">Crie um projeto novo → vá em <strong>APIs & Services → Library</strong> → ative <strong>Google Drive API</strong> e <strong>Google Sheets API</strong>.</div>
+      <div class="wizard-step-text">Clique em <strong>"Conectar ao Google Drive"</strong> e faça login com a <strong>conta da Equilibryum</strong> (a conta que ficará como dona dos dados).</div>
     </div>
     <div class="wizard-step">
       <div class="wizard-step-num">3</div>
-      <div class="wizard-step-text">Vá em <strong>APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID</strong>. Tipo: <strong>Web application</strong>. Em "Authorized JavaScript origins" adicione a URL onde o sistema está hospedado (ou <code>http://localhost</code> para testes). Copie o <strong>Client ID</strong>.</div>
+      <div class="wizard-step-text">Após conectar, copie o <strong>Token de Acesso</strong> que aparecerá e compartilhe com os outros usuários — eles não precisarão fazer login.</div>
     </div>
-    <div class="wizard-step">
-      <div class="wizard-step-num">4</div>
-      <div class="wizard-step-text">Cole o <strong>Client ID</strong> abaixo e clique em Conectar:</div>
-    </div>
-    <input type="text" id="client-id-inp" placeholder="Ex.: 123456789-abc.apps.googleusercontent.com">
-    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px;">
       <button class="btn btn-outline btn-sm" onclick="skipDrive()">Usar sem Drive (dados locais)</button>
       <button class="btn btn-primary" onclick="connectDrive()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-        Conectar ao Google Drive
+        ☁️ Conectar ao Google Drive
       </button>
     </div>
-    <p style="margin-top:12px;font-size:11.5px;color:var(--gray-400);">💡 Após conectar, todos os cadastros e documentos serão salvos automaticamente no seu Google Drive, acessível de qualquer dispositivo.</p>
+    <div id="wizard-token-box" style="display:none;margin-top:16px;padding:14px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);">
+      <div style="font-weight:700;color:var(--green-dark);margin-bottom:8px;">✅ Conectado! Token de acesso compartilhado:</div>
+      <textarea id="wizard-token-txt" rows="3" style="width:100%;font-size:11px;border:1px solid var(--gray-200);border-radius:6px;padding:8px;font-family:monospace;" readonly></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="copyToken()">📋 Copiar Token</button>
+        <button class="btn btn-whatsapp btn-sm" onclick="shareTokenWha()">📲 Enviar pelo WhatsApp</button>
+        <button class="btn btn-outline btn-sm" onclick="closeWizard()">Entrar no Sistema</button>
+      </div>
+      <p style="font-size:11px;color:var(--gray-600);margin-top:8px;">⚠️ Envie este token para os outros usuários. Eles colarão na tela de token de acesso que aparecerá para eles.</p>
+    </div>
+    <p style="margin-top:12px;font-size:11.5px;color:var(--gray-400);">💡 Todos os usuários salvarão dados no mesmo Drive — sem precisar de login individual.</p>
+  </div>
+</div>
+
+<!-- TELA DE TOKEN PARA OUTROS USUÁRIOS -->
+<div id="token-wizard" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2001;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div class="wizard-box">
+    <h2>🔑 Acesso ao Sistema</h2>
+    <p>Cole o <strong>Token de Acesso</strong> fornecido pelo administrador do sistema:</p>
+    <textarea id="token-inp" rows="3" style="width:100%;padding:10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:12px;font-family:monospace;margin-bottom:12px;" placeholder="Cole o token aqui..."></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="skipDrive()">Usar sem Drive</button>
+      <button class="btn btn-primary" onclick="connectWithToken()">✅ Entrar com Token</button>
+    </div>
+    <p style="margin-top:10px;font-size:11.5px;color:var(--gray-400);">Não tem o token? Peça ao administrador do RH.</p>
   </div>
 </div>
 
@@ -1118,36 +1137,71 @@ function toast(msg, type) {
 }
 
 // ============================================================
-// GOOGLE DRIVE AUTH & API (GIS — nova versão 2024)
+// GOOGLE DRIVE AUTH — MODO DRIVE ÚNICO COMPARTILHADO
 // ============================================================
 let tokenClient = null;
+let driveUserEmail = '';
 
+// ADMIN: conectar com login Google e gerar token compartilhado
 function connectDrive() {
   const cid = document.getElementById('client-id-inp').value.trim();
   if (!cid) { alert('Cole o Client ID do Google Console.'); return; }
   CLIENT_ID = cid;
   localStorage.setItem('eq_client_id', cid);
-  document.getElementById('setup-wizard').style.display = 'none';
-  document.getElementById('drive-bar').style.display = 'flex';
-  initGIS();
+  initGIS(true); // true = modo admin (faz login)
 }
 
 function skipDrive() {
   localStorage.setItem('eq_skip_drive', '1');
   document.getElementById('setup-wizard').style.display = 'none';
+  document.getElementById('token-wizard').style.display = 'none';
   document.getElementById('drive-bar').style.display = 'flex';
   updDriveStatus(false);
   init();
 }
 
-function initGIS() {
-  // Inicializa o cliente GAPI para chamadas de API
+// OUTROS USUÁRIOS: entrar com token compartilhado pelo admin
+function connectWithToken() {
+  const token = document.getElementById('token-inp').value.trim();
+  if (!token) { alert('Cole o token de acesso.'); return; }
+  driveToken = token;
+  driveReady = true;
+  localStorage.setItem('eq_drive_token', token);
+  localStorage.setItem('eq_drive_token_time', Date.now().toString());
+  document.getElementById('token-wizard').style.display = 'none';
+  document.getElementById('drive-bar').style.display = 'flex';
+  updDriveStatus(true, 'Drive compartilhado');
+  document.getElementById('user-avatar').textContent = 'U';
+  syncFromDrive().then(() => init());
+}
+
+function copyToken() {
+  const t = document.getElementById('wizard-token-txt').value;
+  navigator.clipboard.writeText(t).then(() => toast('Token copiado! ✅'));
+}
+
+function shareTokenWha() {
+  const t = document.getElementById('wizard-token-txt').value;
+  const msg = 'Olá! Segue o token de acesso ao Sistema RH Equilibryum:
+
+' + t + '
+
+Link do sistema: https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/
+
+Cole o token quando o sistema pedir.';
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function closeWizard() {
+  document.getElementById('setup-wizard').style.display = 'none';
+  document.getElementById('drive-bar').style.display = 'flex';
+  init();
+}
+
+function initGIS(adminMode) {
   gapi.load('client', async () => {
     try {
-      await gapi.client.init({
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-      });
-      // Inicializa o token client GIS
+      await gapi.client.init({});
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
@@ -1160,30 +1214,40 @@ function initGIS() {
           }
           driveToken = tokenResponse.access_token;
           driveReady = true;
+          // Salvar token para uso compartilhado
+          localStorage.setItem('eq_drive_token', driveToken);
+          localStorage.setItem('eq_client_id', CLIENT_ID);
+          localStorage.setItem('eq_drive_token_time', Date.now().toString());
           // Pegar info do usuário
           try {
             const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { 'Authorization': 'Bearer ' + driveToken }
             });
             const user = await resp.json();
-            const email = user.email || '';
-            const nome = user.given_name || user.name || email;
-            document.getElementById('user-avatar').title = email;
-            document.getElementById('user-avatar').textContent = (nome[0] || 'U').toUpperCase();
-            updDriveStatus(true, email);
+            driveUserEmail = user.email || '';
+            const nome = user.given_name || user.name || driveUserEmail;
+            document.getElementById('user-avatar').title = driveUserEmail;
+            document.getElementById('user-avatar').textContent = (nome[0] || 'A').toUpperCase();
+            updDriveStatus(true, driveUserEmail);
           } catch(e) {
             updDriveStatus(true, '');
           }
           await ensureRHFolder();
           await syncFromDrive();
-          init();
+          if (adminMode) {
+            // Mostrar token para compartilhar
+            document.getElementById('wizard-token-txt').value = driveToken;
+            document.getElementById('wizard-token-box').style.display = 'block';
+          } else {
+            document.getElementById('setup-wizard').style.display = 'none';
+            init();
+          }
         }
       });
-      // Solicitar token (abre popup de login)
-      driveSignIn();
+      tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch(e) {
       console.error('GAPI init error:', e);
-      toast('Erro ao inicializar Google API. Usando dados locais.', 'warn');
+      toast('Erro ao inicializar. Usando dados locais.', 'warn');
       updDriveStatus(false);
       init();
     }
@@ -1191,17 +1255,18 @@ function initGIS() {
 }
 
 function driveSignIn() {
-  if (tokenClient) {
-    tokenClient.requestAccessToken({ prompt: 'consent' });
-  } else if (CLIENT_ID) {
-    initGIS();
+  // Reconectar — admin faz novo login
+  const saved = localStorage.getItem('eq_client_id');
+  if (saved) {
+    CLIENT_ID = saved;
+    initGIS(false);
   } else {
     toast('Configure o Client ID primeiro.', 'warn');
   }
 }
 
 async function onDriveSignedIn() {
-  // Mantido por compatibilidade — não usado na nova versão GIS
+  // compatibilidade
 }
 
 function updDriveStatus(connected, email) {
@@ -1228,6 +1293,16 @@ async function driveRequest(path, method, params, body) {
   const opts = { method: method || 'GET', headers: { 'Authorization': 'Bearer ' + driveToken } };
   if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
   const r = await fetch(url.toString(), opts);
+  if (r.status === 401) {
+    // Token expirado — marcar como inválido e tentar reconectar
+    driveReady = false;
+    driveToken = null;
+    localStorage.removeItem('eq_drive_token');
+    updDriveStatus(false);
+    toast('⚠️ Sessão do Drive expirada. Reconectando...', 'warn');
+    silentReconnect();
+    throw new Error('Token expirado — reconectando');
+  }
   if (!r.ok) throw new Error('Drive API error: ' + r.status);
   return r.json();
 }
@@ -1320,7 +1395,7 @@ async function syncFromDrive() {
     const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc };
     if (rd[id]) rd[id]();
   }
-  toast('✅ ' + synced + ' registros sincronizados do Drive ☁️');
+  toast('✅ ' + synced + ' registros carregados do Drive ☁️');
 }
 
 // Sincronização manual — botão no topo
@@ -2848,25 +2923,172 @@ function init() {
   updDash(); rdUni();
   initRelFilters(); rdRel();
   rdBenef();
+  // Auto-refresh token a cada 50 minutos
+  setInterval(() => {
+    if (driveReady && CLIENT_ID) {
+      console.log('Auto-refreshing Drive token...');
+      silentReconnect();
+    }
+  }, 50 * 60 * 1000);
 }
 
 // Auto-detect saved config
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('eq_client_id');
-  const skip  = localStorage.getItem('eq_skip_drive');
-  if (saved) {
-    CLIENT_ID = saved;
-    document.getElementById('client-id-inp').value = saved;
-    document.getElementById('setup-wizard').style.display = 'none';
-    document.getElementById('drive-bar').style.display = 'flex';
-    initGIS();
-  } else if (skip) {
-    document.getElementById('setup-wizard').style.display = 'none';
-    document.getElementById('drive-bar').style.display = 'flex';
+  const savedCID   = localStorage.getItem('eq_client_id');
+  const savedToken = localStorage.getItem('eq_drive_token');
+  const skip       = localStorage.getItem('eq_skip_drive');
+
+  hideAllWizards();
+
+  if (skip) {
     updDriveStatus(false);
     init();
+    return;
   }
+
+  if (savedToken && savedCID) {
+    // Tem token salvo — tentar usar e verificar se ainda é válido
+    CLIENT_ID = savedCID;
+    driveToken = savedToken;
+    document.getElementById('client-id-inp').value = savedCID;
+    document.getElementById('drive-bar').style.display = 'flex';
+    // Testar token fazendo uma chamada simples
+    testAndConnect();
+    return;
+  }
+
+  if (savedCID) {
+    // Tem Client ID mas sem token — reconectar silenciosamente
+    CLIENT_ID = savedCID;
+    document.getElementById('client-id-inp').value = savedCID;
+    document.getElementById('drive-bar').style.display = 'flex';
+    updDriveStatus(false);
+    silentReconnect();
+    return;
+  }
+
+  // Primeira vez — mostrar wizard
+  document.getElementById('setup-wizard').style.display = 'flex';
 });
+
+function hideAllWizards() {
+  ['setup-wizard','token-wizard'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('drive-bar').style.display = 'flex';
+}
+
+// Testa se o token ainda é válido
+async function testAndConnect() {
+  try {
+    const r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+      headers: { 'Authorization': 'Bearer ' + driveToken }
+    });
+    if (r.ok) {
+      // Token válido!
+      const data = await r.json();
+      driveReady = true;
+      const email = data.user ? data.user.emailAddress : '';
+      const nome  = data.user ? data.user.displayName : '';
+      document.getElementById('user-avatar').title = email;
+      document.getElementById('user-avatar').textContent = (nome[0] || 'A').toUpperCase();
+      updDriveStatus(true, email);
+      await ensureRHFolder();
+      await syncFromDrive();
+      init();
+    } else {
+      // Token expirado — reconectar silenciosamente
+      driveToken = null;
+      driveReady = false;
+      silentReconnect();
+    }
+  } catch(e) {
+    driveToken = null;
+    driveReady = false;
+    silentReconnect();
+  }
+}
+
+// Reconecta automaticamente sem mostrar tela — carrega dados locais enquanto reconecta
+function silentReconnect() {
+  // Carrega dados locais primeiro para não ficar vazio
+  init();
+  updDriveStatus(false);
+  // Tenta reconectar em background
+  if (!CLIENT_ID) return;
+  toast('🔄 Reconectando ao Drive...', 'warn');
+  gapi.load('client', async () => {
+    try {
+      await gapi.client.init({});
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: async (tokenResponse) => {
+          if (tokenResponse.error) {
+            toast('Não foi possível reconectar ao Drive. Dados locais em uso.', 'warn');
+            return;
+          }
+          driveToken = tokenResponse.access_token;
+          driveReady = true;
+          localStorage.setItem('eq_drive_token', driveToken);
+          localStorage.setItem('eq_drive_token_time', Date.now().toString());
+          try {
+            const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { 'Authorization': 'Bearer ' + driveToken }
+            });
+            const user = await resp.json();
+            driveUserEmail = user.email || '';
+            const nome = user.given_name || user.name || driveUserEmail;
+            document.getElementById('user-avatar').title = driveUserEmail;
+            document.getElementById('user-avatar').textContent = (nome[0] || 'A').toUpperCase();
+            updDriveStatus(true, driveUserEmail);
+          } catch(e) { updDriveStatus(true, ''); }
+          await ensureRHFolder();
+          await syncFromDrive();
+          toast('✅ Drive reconectado! Dados sincronizados.');
+        }
+      });
+      // Reconectar sem mostrar tela de consentimento
+      tokenClient.requestAccessToken({ prompt: '' });
+    } catch(e) {
+      console.warn('Silent reconnect failed:', e);
+      toast('Usando dados locais. Clique em Reconectar para tentar novamente.', 'warn');
+    }
+  });
+}
+
+function showReconnectChoice() {
+  // Cria modal de reconexão simples
+  const div = document.createElement('div');
+  div.id = 'reconnect-modal';
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2002;display:flex;align-items:center;justify-content:center;padding:20px;';
+  div.innerHTML = `<div class="wizard-box" style="max-width:440px;">
+    <h2>🔄 Sessão expirada</h2>
+    <p style="margin-bottom:16px">O token de acesso expirou. Como você vai continuar?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary" onclick="adminReconnect()">👤 Sou o administrador — fazer novo login</button>
+      <button class="btn btn-outline" onclick="showTokenEntry()">🔑 Tenho o token do administrador</button>
+      <button class="btn btn-outline btn-sm" onclick="skipDrive()">Continuar sem Drive (modo local)</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  document.getElementById('drive-bar').style.display = 'flex';
+  updDriveStatus(false);
+  init();
+}
+
+function adminReconnect() {
+  const modal = document.getElementById('reconnect-modal');
+  if (modal) modal.remove();
+  initGIS(true);
+}
+
+function showTokenEntry() {
+  const modal = document.getElementById('reconnect-modal');
+  if (modal) modal.remove();
+  document.getElementById('token-wizard').style.display = 'flex';
+}
 </script>
 </body>
 </html>
