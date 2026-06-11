@@ -190,7 +190,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     </div>
     <div class="wizard-step">
       <div class="wizard-step-num">3</div>
-      <div class="wizard-step-text">Após conectar, copie o <strong>Token de Acesso</strong> que aparecerá e compartilhe com os outros usuários — eles não precisarão fazer login.</div>
+      <div class="wizard-step-text">Após conectar, o sistema abrirá normalmente e gerará um <strong>Token de Acesso</strong> para compartilhar com outros usuários.</div>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px;">
       <button class="btn btn-outline btn-sm" onclick="skipDrive()">Usar sem Drive (dados locais)</button>
@@ -1196,24 +1196,29 @@ function closeWizard() {
 function initGIS(adminMode) {
   gapi.load('client', async () => {
     try {
-      await gapi.client.init({});
+      await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
+        ux_mode: 'popup',
         callback: async (tokenResponse) => {
-          if (tokenResponse.error) {
+          if (tokenResponse && tokenResponse.error) {
             toast('Erro no login Google: ' + tokenResponse.error, 'warn');
+            updDriveStatus(false);
+            init();
+            return;
+          }
+          if (!tokenResponse || !tokenResponse.access_token) {
+            toast('Login cancelado.', 'warn');
             updDriveStatus(false);
             init();
             return;
           }
           driveToken = tokenResponse.access_token;
           driveReady = true;
-          // Salvar token para uso compartilhado
           localStorage.setItem('eq_drive_token', driveToken);
           localStorage.setItem('eq_client_id', CLIENT_ID);
           localStorage.setItem('eq_drive_token_time', Date.now().toString());
-          // Pegar info do usuário
           try {
             const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { 'Authorization': 'Bearer ' + driveToken }
@@ -1230,16 +1235,21 @@ function initGIS(adminMode) {
           await ensureRHFolder();
           await syncFromDrive();
           if (adminMode) {
-            // Mostrar token para compartilhar
             document.getElementById('wizard-token-txt').value = driveToken;
             document.getElementById('wizard-token-box').style.display = 'block';
           } else {
             document.getElementById('setup-wizard').style.display = 'none';
             init();
           }
+        },
+        error_callback: (err) => {
+          console.error('OAuth error:', err);
+          toast('Erro no login Google. Tente novamente.', 'warn');
+          updDriveStatus(false);
+          init();
         }
       });
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      tokenClient.requestAccessToken({ prompt: 'select_account' });
     } catch(e) {
       console.error('GAPI init error:', e);
       toast('Erro ao inicializar. Usando dados locais.', 'warn');
@@ -3019,9 +3029,10 @@ function silentReconnect() {
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
+        ux_mode: 'popup',
         callback: async (tokenResponse) => {
-          if (tokenResponse.error) {
-            toast('Não foi possível reconectar ao Drive. Dados locais em uso.', 'warn');
+          if (!tokenResponse || tokenResponse.error) {
+            toast('Reconexão falhou. Clique em Reconectar.', 'warn');
             return;
           }
           driveToken = tokenResponse.access_token;
@@ -3041,10 +3052,12 @@ function silentReconnect() {
           } catch(e) { updDriveStatus(true, ''); }
           await ensureRHFolder();
           await syncFromDrive();
-          toast('✅ Drive reconectado! Dados sincronizados.');
+          toast('Drive reconectado! Dados sincronizados. ✅');
+        },
+        error_callback: (err) => {
+          console.warn('Silent reconnect error:', err);
         }
       });
-      // Reconectar sem mostrar tela de consentimento
       tokenClient.requestAccessToken({ prompt: '' });
     } catch(e) {
       console.warn('Silent reconnect failed:', e);
