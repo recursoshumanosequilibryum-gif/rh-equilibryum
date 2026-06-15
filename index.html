@@ -503,6 +503,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <button class="btn btn-outline btn-sm" onclick="openModal('modal-uni-in')">+ Entrada</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('modal-uni-out')">- Saída</button>
         <button class="btn btn-sm" style="background:var(--accent);color:#fff;" onclick="openModal('modal-uni-ajuste')">⚖️ Ajuste</button>
+        <button class="btn btn-sm" style="background:var(--gray-600);color:#fff;" onclick="atribuirIdsLegados()" title="Corrige registros antigos sem ID para permitir exclusão">🔧 Corrigir Legados</button>
       </div>
     </div>
     <div class="tabs">
@@ -2618,7 +2619,7 @@ function rdUniMov() {
     return;
   }
   tb.innerHTML = '';
-  movs.forEach(function(m) {
+  movs.forEach(function(m, idx) {
     const bc = m.tipo === 'Entrada' ? 'badge-green' : m.tipo === 'Saída' ? 'badge-yellow' : 'badge-blue';
     const qtdTxt = m.tipo === 'Ajuste' ? (m.qtd >= 0 ? '+' + m.qtd : String(m.qtd)) : String(m.qtd||0);
     const tr = document.createElement('tr');
@@ -2630,23 +2631,98 @@ function rdUniMov() {
     const td6 = document.createElement('td'); td6.textContent = m.func || '—';
     const td7 = document.createElement('td'); td7.textContent = m.obs || '—'; td7.style.cssText = 'max-width:140px;font-size:12px;color:var(--gray-600)';
     const td8 = document.createElement('td');
+    // Sempre mostra botão excluir — usa id se tiver, senão usa índice
+    const btn = document.createElement('button');
+    btn.className = 'btn-icon danger'; btn.title = 'Excluir';
+    btn.innerHTML = '&#128465;';
     if (m.id) {
-      const btn = document.createElement('button');
-      btn.className = 'btn-icon danger'; btn.innerHTML = '&#128465;';
-      btn.onclick = (function(mid){ return function(){ delUniMov(mid); }; })(m.id);
-      td8.appendChild(btn);
+      btn.onclick = (function(mid){ return function(){ delUniMovById(mid); }; })(m.id);
+    } else {
+      // Legacy record without id — delete by index
+      btn.onclick = (function(i){ return function(){ delUniMovByIndex(i); }; })(idx);
+      btn.title = 'Excluir (registro legado)';
     }
+    td8.appendChild(btn);
     [td1,td2,td3,td4,td5,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
     tb.appendChild(tr);
   });
 }
 
-async function delUniMov(id) {
-  if (!id) return;
+async function atribuirIdsLegados() {
+  var list = DB.g('uni-mov');
+  var semId = list.filter(function(m){ return !m.id; }).length;
+  if (semId === 0) { toast('Nenhum registro legado encontrado. Tudo OK! ✅'); return; }
+  if (!confirm('Encontrado(s) ' + semId + ' registro(s) antigo(s) sem ID. Corrigir agora para permitir exclusão individual?')) return;
+  list = list.map(function(m) { if (!m.id) m.id = uid(); return m; });
+  DB.s('uni-mov', list);
+  if (driveReady) await driveSync('uni-mov');
+  rdUniMov();
+  toast(semId + ' registro(s) corrigido(s)! Agora você pode excluí-los. ✅');
+}
+
+async function delUniMovById(id) {
   if (!confirm('Excluir esta movimentação?')) return;
   DB.s('uni-mov', DB.g('uni-mov').filter(function(m) { return m.id !== id; }));
   if (driveReady) await driveSync('uni-mov');
   rdUniMov();
+  toast('Movimentação excluída!');
+}
+
+async function delUniMovByIndex(idx) {
+  if (!confirm('Excluir esta movimentação?')) return;
+  // Need to re-find the index in the FILTERED list — delete from full list
+  // Since legacy records have no id, we match by index in the current filtered view
+  // Safest: assign ids to all and then delete
+  var list = DB.g('uni-mov');
+  // Assign temp ids to all records without id
+  list = list.map(function(m) { if (!m.id) m.id = uid(); return m; });
+  DB.s('uni-mov', list);
+  // Now get filtered list and find the one at idx
+  var tipoF = (document.getElementById('uni-mov-filter-tipo')||{value:''}).value || '';
+  var itemF = (document.getElementById('uni-mov-filter-item')||{value:''}).value || '';
+  var filtered = list.filter(function(m) {
+    if (tipoF && m.tipo !== tipoF) return false;
+    if (itemF && m.item !== itemF) return false;
+    return true;
+  });
+  if (filtered[idx]) {
+    var targetId = filtered[idx].id;
+    DB.s('uni-mov', list.filter(function(m) { return m.id !== targetId; }));
+    if (driveReady) await driveSync('uni-mov');
+    toast('Movimentação excluída!');
+  }
+  rdUniMov();
+}
+
+async function delUniMov(id) {
+  if (!confirm('Excluir esta movimentação?')) return;
+  var list = DB.g('uni-mov');
+  if (id && id !== 'undefined') {
+    // Has proper id — filter by id
+    list = list.filter(function(m) { return m.id !== id; });
+  } else {
+    // No id — this shouldn't happen after fix, but handle gracefully
+    return;
+  }
+  DB.s('uni-mov', list);
+  if (driveReady) await driveSync('uni-mov');
+  rdUniMov();
+}
+
+// Limpar todos os registros sem ID (legados)
+async function limparMovSemId() {
+  if (!confirm('Isto vai remover TODOS os registros de movimentação sem ID (entradas duplicadas antigas). Continuar?')) return;
+  var list = DB.g('uni-mov');
+  var antes = list.length;
+  // Assign ids to records that don't have one, so they can be managed
+  list = list.map(function(m) {
+    if (!m.id) m.id = uid();
+    return m;
+  });
+  DB.s('uni-mov', list);
+  if (driveReady) await driveSync('uni-mov');
+  rdUniMov();
+  toast('IDs atribuídos a ' + antes + ' registros. Agora você pode excluir individualmente.');
 }
 
 function exportUniCSV() {
