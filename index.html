@@ -2587,12 +2587,12 @@ function uniSetView(v, btn) {
 }
 
 function rdUni() {
-  var itens = DB.g('uni-itens');
-  var est   = DB.go('uni-est');
-  var grid  = document.getElementById('uni-grid');
-  var empty = document.getElementById('uni-empty');
+  var itens    = DB.g('uni-itens');
+  var est      = DB.go('uni-est');
+  var grid     = document.getElementById('uni-grid');
+  var empty    = document.getElementById('uni-empty');
   var statsBar = document.getElementById('uni-stats-bar');
-  var searchQ = (document.getElementById('uni-search')||{value:''}).value.toLowerCase().trim();
+  var searchQ  = ((document.getElementById('uni-search') || {}).value || '').toLowerCase().trim();
   if (!grid) return;
 
   if (!itens.length) {
@@ -2603,7 +2603,7 @@ function rdUni() {
   }
   if (empty) empty.style.display = 'none';
 
-  // Build flat list of all item+tamanho combos
+  // Build flat list
   var allItems = [];
   itens.forEach(function(item) {
     (item.tams || []).forEach(function(t) {
@@ -2620,9 +2620,9 @@ function rdUni() {
   var nZero = allItems.filter(function(x){ return x.status==='zero'; }).length;
   if (statsBar) {
     statsBar.innerHTML =
-      '<span class="uni-stat-pill ok">✅ ' + nOk + ' em estoque</span>' +
-      (nLow  ? '<span class="uni-stat-pill low">⚠️ ' + nLow  + ' estoque baixo</span>' : '') +
-      (nZero ? '<span class="uni-stat-pill zero">❌ ' + nZero + ' sem estoque</span>' : '');
+      '<span class="uni-stat-pill ok">&#10003; ' + nOk + ' em estoque</span>' +
+      (nLow  ? '<span class="uni-stat-pill low">&#9888; ' + nLow  + ' estoque baixo</span>' : '') +
+      (nZero ? '<span class="uni-stat-pill zero">&#10007; ' + nZero + ' sem estoque</span>' : '');
   }
 
   // Filter
@@ -2633,53 +2633,66 @@ function rdUni() {
   });
 
   if (!filtered.length) {
-    grid.innerHTML = '<div class="alert alert-info" style="margin:0">Nenhum item encontrado com estes filtros.</div>';
+    grid.innerHTML = '<div class="alert alert-info" style="margin:0">Nenhum item encontrado.</div>';
     return;
   }
 
-  // Max qtd for progress bar
   var maxQtd = Math.max.apply(null, filtered.map(function(x){ return x.qtd; }).concat([1]));
 
+  // Clear grid
+  grid.innerHTML = '';
+
   if (_uniView === 'card') {
-    grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(150px,1fr))';
-    grid.style.gap = '12px';
-    grid.style.marginBottom = '16px';
-    grid.innerHTML = filtered.map(function(x) {
-      var cls = x.status === 'zero' ? 'zero' : x.status === 'low' ? 'low' : '';
-      var label = x.status === 'zero' ? '❌ Sem estoque' : x.status === 'low' ? '⚠️ Estoque baixo' : '✅ Em estoque';
-      var labelColor = x.status === 'zero' ? 'color:var(--red)' : x.status === 'low' ? 'color:var(--accent)' : 'color:var(--green)';
-      return '<div class="uniform-card ' + cls + '">' +
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px;';
+    filtered.forEach(function(x) {
+      var cls    = x.status === 'zero' ? 'zero' : x.status === 'low' ? 'low' : '';
+      var label  = x.status === 'zero' ? 'Sem estoque' : x.status === 'low' ? 'Estoque baixo' : 'Em estoque';
+      var lcolor = x.status === 'zero' ? 'color:var(--red)' : x.status === 'low' ? 'color:var(--accent)' : 'color:var(--green)';
+      var card = document.createElement('div');
+      card.className = 'uniform-card ' + cls;
+      card.innerHTML =
         '<div class="u-nome">' + x.nome + '</div>' +
         '<div class="u-tam">' + x.tam + '</div>' +
         '<div class="u-qtd">' + x.qtd + '</div>' +
-        '<div class="u-label" style="' + labelColor + '">' + label + '</div>' +
-        '<div class="u-actions">' +
-          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;" onclick="quickEntrada('' + x.nome + '','' + x.tam + '')">+ Entrada</button>' +
-        '</div>' +
-        '</div>';
-    }).join('');
+        '<div class="u-label" style="' + lcolor + '">' + label + '</div>' +
+        '<div class="u-actions"></div>';
+      var btnE = document.createElement('button');
+      btnE.className = 'btn btn-outline btn-sm';
+      btnE.style.cssText = 'font-size:11px;padding:4px 8px;';
+      btnE.textContent = '+ Entrada';
+      (function(nome, tam){ btnE.onclick = function(){ quickEntrada(nome, tam); }; })(x.nome, x.tam);
+      card.querySelector('.u-actions').appendChild(btnE);
+      grid.appendChild(card);
+    });
   } else {
     // LIST VIEW
-    grid.style.display = 'block';
-    grid.style.gridTemplateColumns = '';
-    grid.style.gap = '';
-    grid.innerHTML = '<div class="uni-list-view">' +
-      filtered.map(function(x) {
-        var pct = maxQtd > 0 ? Math.round((x.qtd / maxQtd) * 100) : 0;
-        var barColor = x.status === 'zero' ? 'var(--red)' : x.status === 'low' ? 'var(--accent)' : 'var(--green)';
-        var tagCls = x.status === 'zero' ? 'badge-red' : x.status === 'low' ? 'badge-yellow' : 'badge-green';
-        var tagTxt = x.status === 'zero' ? 'Sem estoque' : x.status === 'low' ? 'Baixo' : 'OK';
-        return '<div class="uni-list-item ' + x.status + '">' +
-          '<div class="uli-nome">' + x.nome + '</div>' +
-          '<div class="uli-tam">' + x.tam + '</div>' +
-          '<div class="uli-bar"><div class="uli-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div>' +
-          '<div class="uli-qtd">' + x.qtd + '</div>' +
-          '<span class="badge ' + tagCls + ' uli-tag">' + tagTxt + '</span>' +
-          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;flex-shrink:0" onclick="quickEntrada('' + x.nome + '','' + x.tam + '')">+ Entrada</button>' +
-          '</div>';
-      }).join('') +
-      '</div>';
+    grid.style.cssText = 'display:block;margin-bottom:16px;';
+    var wrap = document.createElement('div');
+    wrap.className = 'uni-list-view';
+    filtered.forEach(function(x) {
+      var pct      = maxQtd > 0 ? Math.round((x.qtd / maxQtd) * 100) : 0;
+      var barColor = x.status === 'zero' ? 'var(--red)' : x.status === 'low' ? 'var(--accent)' : 'var(--green)';
+      var tagCls   = x.status === 'zero' ? 'badge-red' : x.status === 'low' ? 'badge-yellow' : 'badge-green';
+      var tagTxt   = x.status === 'zero' ? 'Sem estoque' : x.status === 'low' ? 'Baixo' : 'OK';
+      var row = document.createElement('div');
+      row.className = 'uni-list-item ' + x.status;
+      var nome = document.createElement('div'); nome.className='uli-nome'; nome.textContent=x.nome;
+      var tam  = document.createElement('div'); tam.className='uli-tam'; tam.textContent=x.tam;
+      var bar  = document.createElement('div'); bar.className='uli-bar';
+      var fill = document.createElement('div'); fill.className='uli-bar-fill';
+      fill.style.cssText = 'width:' + pct + '%;background:' + barColor;
+      bar.appendChild(fill);
+      var qtdEl = document.createElement('div'); qtdEl.className='uli-qtd'; qtdEl.textContent=x.qtd;
+      var tag = document.createElement('span'); tag.className='badge ' + tagCls + ' uli-tag'; tag.textContent=tagTxt;
+      var btnE = document.createElement('button');
+      btnE.className = 'btn btn-outline btn-sm';
+      btnE.style.cssText = 'font-size:11px;padding:4px 8px;flex-shrink:0;';
+      btnE.textContent = '+ Entrada';
+      (function(nome2, tam2){ btnE.onclick = function(){ quickEntrada(nome2, tam2); }; })(x.nome, x.tam);
+      [nome, tam, bar, qtdEl, tag, btnE].forEach(function(el){ row.appendChild(el); });
+      wrap.appendChild(row);
+    });
+    grid.appendChild(wrap);
   }
 
   // Update item filter in movimentacoes
@@ -2688,13 +2701,18 @@ function rdUni() {
     var cur = fsel.value;
     fsel.innerHTML = '<option value="">Todos</option>';
     itens.forEach(function(item) {
-      var o = document.createElement('option'); o.value = item.nome; o.textContent = item.nome; fsel.appendChild(o);
+      var o = document.createElement('option'); o.value=item.nome; o.textContent=item.nome; fsel.appendChild(o);
     });
     if (cur) fsel.value = cur;
   }
 }
-
 // Quick entrada from estoque card/list
+function quickEntradaBtn(btn) {
+  var itemNome = btn.getAttribute('data-nome');
+  var tam = btn.getAttribute('data-tam');
+  quickEntrada(itemNome, tam);
+}
+
 function quickEntrada(itemNome, tam) {
   openModal('modal-uni-in');
   setTimeout(function() {
@@ -2703,8 +2721,8 @@ function quickEntrada(itemNome, tam) {
     setTimeout(function() {
       var selTam = document.getElementById('uitam');
       if (selTam) selTam.value = tam;
-    }, 100);
-  }, 100);
+    }, 150);
+  }, 150);
 }
 
 async function savUniIn() {
