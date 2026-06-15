@@ -2223,7 +2223,23 @@ function rdUniItens() {
       const cls = q === 0 ? 'badge-red' : q <= 2 ? 'badge-yellow' : 'badge-green';
       return '<span class="badge ' + cls + '" style="font-size:11px;">' + t + ': ' + q + '</span>';
     }).join(' ');
-    return '<tr><td><strong>' + item.nome + '</strong>' + (item.obs ? '<br><small style="color:var(--gray-400)">' + item.obs + '</small>' : '') + '</td><td style="white-space:normal">' + tamBadges + '</td><td><strong style="font-size:16px;color:var(--green-dark)">' + total + '</strong></td><td style="display:flex;gap:6px;"><button class="btn-icon" onclick="editUniItem('' + item.id + '')">✏️</button><button class="btn-icon danger" onclick="delUniItem('' + item.id + '')">&#128465;</button></td></tr>';
+    const obsHtml = item.obs ? '<br><small style="color:var(--gray-400)">' + item.obs + '</small>' : '';
+    const btnEdit = '<button class="btn-icon" onclick="editUniItem(this.dataset.id)">✏️</button>';
+    const btnDel  = '<button class="btn-icon danger" onclick="delUniItem(this.dataset.id)">&#128465;</button>';
+    const row = document.createElement('tr');
+    row.innerHTML = '<td><strong>' + item.nome + '</strong>' + obsHtml + '</td>' +
+      '<td style="white-space:normal">' + tamBadges + '</td>' +
+      '<td><strong style="font-size:16px;color:var(--green-dark)">' + total + '</strong></td>' +
+      '<td style="display:flex;gap:6px;"></td>';
+    const btns = row.querySelector('td:last-child');
+    const be = document.createElement('button');
+    be.className = 'btn-icon'; be.textContent = '✏️'; be.dataset.id = item.id;
+    be.onclick = function() { editUniItem(this.dataset.id); };
+    const bd = document.createElement('button');
+    bd.className = 'btn-icon danger'; bd.innerHTML = '&#128465;'; bd.dataset.id = item.id;
+    bd.onclick = function() { delUniItem(this.dataset.id); };
+    btns.appendChild(be); btns.appendChild(bd);
+    return row.outerHTML;
   }).join('');
 }
 
