@@ -89,11 +89,50 @@ tbody td{padding:10px 14px;font-size:13.5px;}
 #wha-float:hover{background:#128C7E;transform:scale(1.08);}
 .section-page{display:none;} .section-page.active{display:block;}
 .uniform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
-.uniform-card{background:var(--gray-50);border-radius:var(--radius-sm);padding:14px;text-align:center;border:1.5px solid var(--gray-200);}
-.uniform-card .u-nome{font-weight:700;font-size:12.5px;color:var(--green-dark);margin-bottom:2px;}
-.uniform-card .u-qtd{font-size:28px;font-weight:700;color:var(--green);}
-.uniform-card .u-label{font-size:11px;color:var(--gray-400);}
-.uniform-card.low .u-qtd{color:var(--red);}
+/* UNIFORME ESTOQUE — VISUAL DINÂMICO */
+.uni-estoque-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.uni-search{padding:8px 14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13.5px;font-family:inherit;outline:none;transition:.18s;min-width:200px;}
+.uni-search:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(46,125,94,.1);}
+.uni-filter-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.uni-filter-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--gray-200);background:#fff;font-size:12.5px;font-weight:600;cursor:pointer;transition:.18s;color:var(--gray-600);}
+.uni-filter-btn:hover{border-color:var(--green);color:var(--green);}
+.uni-filter-btn.active{background:var(--green);color:#fff;border-color:var(--green);}
+.uni-view-btns{display:flex;gap:4px;margin-left:auto;}
+.uni-view-btn{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);background:#fff;cursor:pointer;font-size:14px;transition:.18s;}
+.uni-view-btn.active{background:var(--green);border-color:var(--green);}
+.uni-stats-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.uni-stat-pill{padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.uni-stat-pill.ok{background:#e8f5ee;color:var(--green-dark);}
+.uni-stat-pill.low{background:#fff8e1;color:#e65100;}
+.uni-stat-pill.zero{background:#ffebee;color:var(--red);}
+/* CARD VIEW */
+.uniform-card{background:#fff;border-radius:var(--radius);padding:18px 16px;text-align:center;border:1.5px solid var(--gray-200);box-shadow:var(--shadow);transition:.22s;cursor:default;position:relative;overflow:hidden;}
+.uniform-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--green);}
+.uniform-card.low::before{background:var(--accent);}
+.uniform-card.zero::before{background:var(--red);}
+.uniform-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.uniform-card .u-nome{font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:2px;}
+.uniform-card .u-tam{font-size:11px;color:var(--gray-400);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+.uniform-card .u-qtd{font-size:36px;font-weight:700;color:var(--green);line-height:1;}
+.uniform-card.low .u-qtd{color:var(--accent);}
+.uniform-card.zero .u-qtd{color:var(--red);}
+.uniform-card .u-label{font-size:11px;margin-top:6px;font-weight:600;}
+.uniform-card .u-actions{display:flex;gap:6px;justify-content:center;margin-top:10px;opacity:0;transition:.18s;}
+.uniform-card:hover .u-actions{opacity:1;}
+/* LIST VIEW */
+.uni-list-view{display:flex;flex-direction:column;gap:0;}
+.uni-list-item{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--gray-100);gap:12px;transition:.15s;}
+.uni-list-item:hover{background:var(--gray-50);}
+.uni-list-item .uli-nome{font-weight:600;font-size:13.5px;flex:1;}
+.uni-list-item .uli-tam{font-size:12px;color:var(--gray-400);width:50px;text-align:center;}
+.uni-list-item .uli-bar{flex:1;background:var(--gray-100);border-radius:20px;height:8px;overflow:hidden;}
+.uni-list-item .uli-bar-fill{height:100%;border-radius:20px;background:var(--green);transition:width .4s;}
+.uni-list-item.low .uli-bar-fill{background:var(--accent);}
+.uni-list-item.zero .uli-bar-fill{background:var(--red);}
+.uni-list-item .uli-qtd{font-size:18px;font-weight:700;width:50px;text-align:right;}
+.uni-list-item.low .uli-qtd{color:var(--accent);}
+.uni-list-item.zero .uli-qtd{color:var(--red);}
+.uni-list-item .uli-tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;width:90px;text-align:center;}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media(max-width:860px){.two-col{grid-template-columns:1fr;}}
 @media(max-width:700px){#sidebar{transform:translateX(-100%);}#sidebar.open{transform:translateX(0);}#main{margin-left:0;}}
@@ -514,7 +553,24 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
     <!-- ESTOQUE -->
     <div id="uni-estoque">
-      <div id="uni-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;"></div>
+      <!-- Barra de busca e filtros -->
+      <div class="uni-estoque-header">
+        <input class="uni-search" type="text" id="uni-search" placeholder="🔍 Buscar item ou tamanho..." oninput="rdUni()">
+        <div class="uni-filter-btns" id="uni-filter-btns">
+          <button class="uni-filter-btn active" data-filter="todos" onclick="uniSetFilter('todos',this)">Todos</button>
+          <button class="uni-filter-btn" data-filter="ok" onclick="uniSetFilter('ok',this)">✅ Em estoque</button>
+          <button class="uni-filter-btn" data-filter="low" onclick="uniSetFilter('low',this)">⚠️ Estoque baixo</button>
+          <button class="uni-filter-btn" data-filter="zero" onclick="uniSetFilter('zero',this)">❌ Sem estoque</button>
+        </div>
+        <div class="uni-view-btns">
+          <button class="uni-view-btn active" id="uni-btn-card" title="Visualização em cards" onclick="uniSetView('card',this)">⊞</button>
+          <button class="uni-view-btn" id="uni-btn-list" title="Visualização em lista" onclick="uniSetView('list',this)">☰</button>
+        </div>
+      </div>
+      <!-- Stats pills -->
+      <div class="uni-stats-bar" id="uni-stats-bar"></div>
+      <!-- Grid/List -->
+      <div id="uni-grid"></div>
       <div id="uni-empty" class="alert alert-info" style="display:none">Nenhum item cadastrado ainda. Clique em <strong>⚙️ Cadastrar Item</strong> para começar.</div>
     </div>
 
@@ -2513,43 +2569,142 @@ function fillUniEstAtual() {
   document.getElementById('uaj-atual').value = est[item + '-' + tam] || 0;
 }
 
+var _uniFilter = 'todos';
+var _uniView   = 'card';
+
+function uniSetFilter(f, btn) {
+  _uniFilter = f;
+  document.querySelectorAll('.uni-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  rdUni();
+}
+
+function uniSetView(v, btn) {
+  _uniView = v;
+  document.querySelectorAll('.uni-view-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  rdUni();
+}
+
 function rdUni() {
-  const itens = DB.g('uni-itens');
-  const est   = DB.go('uni-est');
-  const grid  = document.getElementById('uni-grid');
-  const empty = document.getElementById('uni-empty');
+  var itens = DB.g('uni-itens');
+  var est   = DB.go('uni-est');
+  var grid  = document.getElementById('uni-grid');
+  var empty = document.getElementById('uni-empty');
+  var statsBar = document.getElementById('uni-stats-bar');
+  var searchQ = (document.getElementById('uni-search')||{value:''}).value.toLowerCase().trim();
   if (!grid) return;
+
   if (!itens.length) {
     grid.innerHTML = '';
     if (empty) empty.style.display = 'flex';
+    if (statsBar) statsBar.innerHTML = '';
     return;
   }
   if (empty) empty.style.display = 'none';
-  let cards = '';
+
+  // Build flat list of all item+tamanho combos
+  var allItems = [];
   itens.forEach(function(item) {
     (item.tams || []).forEach(function(t) {
-      const key = item.nome + '-' + t;
-      const qtd = est[key] || 0;
-      const low  = qtd > 0 && qtd <= 2;
-      const zero = qtd === 0;
-      cards += '<div class="uniform-card' + (zero || low ? ' low' : '') + '">' +
-        '<div class="u-nome">' + item.nome + '</div>' +
-        '<div style="font-size:11px;color:var(--gray-400);margin-bottom:4px;">' + t + '</div>' +
-        '<div class="u-qtd" style="' + (zero ? 'color:var(--red)' : '') + '">' + qtd + '</div>' +
-        '<div class="u-label">' + (zero ? '❌ sem estoque' : low ? '⚠️ baixo' : 'em estoque') + '</div></div>';
+      var key = item.nome + '-' + t;
+      var qtd = est[key] || 0;
+      var status = qtd === 0 ? 'zero' : qtd <= 2 ? 'low' : 'ok';
+      allItems.push({ nome: item.nome, tam: t, key: key, qtd: qtd, status: status });
     });
   });
-  grid.innerHTML = cards;
+
+  // Stats
+  var nOk   = allItems.filter(function(x){ return x.status==='ok'; }).length;
+  var nLow  = allItems.filter(function(x){ return x.status==='low'; }).length;
+  var nZero = allItems.filter(function(x){ return x.status==='zero'; }).length;
+  if (statsBar) {
+    statsBar.innerHTML =
+      '<span class="uni-stat-pill ok">✅ ' + nOk + ' em estoque</span>' +
+      (nLow  ? '<span class="uni-stat-pill low">⚠️ ' + nLow  + ' estoque baixo</span>' : '') +
+      (nZero ? '<span class="uni-stat-pill zero">❌ ' + nZero + ' sem estoque</span>' : '');
+  }
+
+  // Filter
+  var filtered = allItems.filter(function(x) {
+    if (_uniFilter !== 'todos' && x.status !== _uniFilter) return false;
+    if (searchQ && !x.nome.toLowerCase().includes(searchQ) && !x.tam.toLowerCase().includes(searchQ)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="alert alert-info" style="margin:0">Nenhum item encontrado com estes filtros.</div>';
+    return;
+  }
+
+  // Max qtd for progress bar
+  var maxQtd = Math.max.apply(null, filtered.map(function(x){ return x.qtd; }).concat([1]));
+
+  if (_uniView === 'card') {
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(150px,1fr))';
+    grid.style.gap = '12px';
+    grid.style.marginBottom = '16px';
+    grid.innerHTML = filtered.map(function(x) {
+      var cls = x.status === 'zero' ? 'zero' : x.status === 'low' ? 'low' : '';
+      var label = x.status === 'zero' ? '❌ Sem estoque' : x.status === 'low' ? '⚠️ Estoque baixo' : '✅ Em estoque';
+      var labelColor = x.status === 'zero' ? 'color:var(--red)' : x.status === 'low' ? 'color:var(--accent)' : 'color:var(--green)';
+      return '<div class="uniform-card ' + cls + '">' +
+        '<div class="u-nome">' + x.nome + '</div>' +
+        '<div class="u-tam">' + x.tam + '</div>' +
+        '<div class="u-qtd">' + x.qtd + '</div>' +
+        '<div class="u-label" style="' + labelColor + '">' + label + '</div>' +
+        '<div class="u-actions">' +
+          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;" onclick="quickEntrada('' + x.nome + '','' + x.tam + '')">+ Entrada</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  } else {
+    // LIST VIEW
+    grid.style.display = 'block';
+    grid.style.gridTemplateColumns = '';
+    grid.style.gap = '';
+    grid.innerHTML = '<div class="uni-list-view">' +
+      filtered.map(function(x) {
+        var pct = maxQtd > 0 ? Math.round((x.qtd / maxQtd) * 100) : 0;
+        var barColor = x.status === 'zero' ? 'var(--red)' : x.status === 'low' ? 'var(--accent)' : 'var(--green)';
+        var tagCls = x.status === 'zero' ? 'badge-red' : x.status === 'low' ? 'badge-yellow' : 'badge-green';
+        var tagTxt = x.status === 'zero' ? 'Sem estoque' : x.status === 'low' ? 'Baixo' : 'OK';
+        return '<div class="uni-list-item ' + x.status + '">' +
+          '<div class="uli-nome">' + x.nome + '</div>' +
+          '<div class="uli-tam">' + x.tam + '</div>' +
+          '<div class="uli-bar"><div class="uli-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div>' +
+          '<div class="uli-qtd">' + x.qtd + '</div>' +
+          '<span class="badge ' + tagCls + ' uli-tag">' + tagTxt + '</span>' +
+          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;flex-shrink:0" onclick="quickEntrada('' + x.nome + '','' + x.tam + '')">+ Entrada</button>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
   // Update item filter in movimentacoes
-  const fsel = document.getElementById('uni-mov-filter-item');
+  var fsel = document.getElementById('uni-mov-filter-item');
   if (fsel) {
-    const cur = fsel.value;
+    var cur = fsel.value;
     fsel.innerHTML = '<option value="">Todos</option>';
     itens.forEach(function(item) {
-      const o = document.createElement('option'); o.value = item.nome; o.textContent = item.nome; fsel.appendChild(o);
+      var o = document.createElement('option'); o.value = item.nome; o.textContent = item.nome; fsel.appendChild(o);
     });
     if (cur) fsel.value = cur;
   }
+}
+
+// Quick entrada from estoque card/list
+function quickEntrada(itemNome, tam) {
+  openModal('modal-uni-in');
+  setTimeout(function() {
+    var selItem = document.getElementById('uin');
+    if (selItem) { selItem.value = itemNome; fillUniTamSel('uitam', itemNome); }
+    setTimeout(function() {
+      var selTam = document.getElementById('uitam');
+      if (selTam) selTam.value = tam;
+    }, 100);
+  }, 100);
 }
 
 async function savUniIn() {
