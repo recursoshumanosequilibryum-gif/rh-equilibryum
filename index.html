@@ -171,6 +171,14 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .benef-badge.outros{background:var(--gray-100);color:var(--gray-600);}
 .benef-row-func{font-size:13px;}
 
+
+/* ORDENAÇÃO */
+.sort-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.sort-bar label{font-size:12px;font-weight:600;color:var(--gray-600);}
+.sort-sel{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:12.5px;font-family:inherit;background:#fff;cursor:pointer;}
+.sort-sel:focus{border-color:var(--green);outline:none;}
+.sort-dir{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:12.5px;font-family:inherit;background:#fff;cursor:pointer;}
+
 </style>
 </head>
 <body>
@@ -336,6 +344,19 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <span class="card-title">&#128101; Funcionários</span>
       <button class="btn btn-primary" onclick="openModal('modal-func')">+ Novo Funcionário</button>
     </div>
+    <div class="sort-bar">
+      <label>Ordenar por:</label>
+      <select class="sort-sel" id="func-sort-campo" onchange="rdFunc()">
+        <option value="nome">Nome (A-Z)</option>
+        <option value="adm">Data de Admissão</option>
+        <option value="cargo">Cargo</option>
+        <option value="status">Status</option>
+      </select>
+      <select class="sort-dir" id="func-sort-dir" onchange="rdFunc()">
+        <option value="asc">↑ Crescente</option>
+        <option value="desc">↓ Decrescente</option>
+      </select>
+    </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Departamento</th><th>Admissão</th><th>Status</th><th>Drive</th><th>Ações</th></tr></thead>
       <tbody id="tb-func"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário cadastrado.</td></tr></tbody>
@@ -401,6 +422,19 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <div class="section-page" id="sec-ferias">
   <div class="card">
     <div class="card-header"><span class="card-title">&#127958; Férias</span><button class="btn btn-primary" onclick="openModal('modal-fer')">+ Programar</button></div>
+    <div class="sort-bar">
+      <label>Ordenar por:</label>
+      <select class="sort-sel" id="fer-sort-campo" onchange="rdFer()">
+        <option value="nome">Funcionário (A-Z)</option>
+        <option value="ini">Data de Início</option>
+        <option value="ret">Data de Retorno</option>
+        <option value="status">Status</option>
+      </select>
+      <select class="sort-dir" id="fer-sort-dir" onchange="rdFer()">
+        <option value="asc">↑ Crescente</option>
+        <option value="desc">↓ Decrescente</option>
+      </select>
+    </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Funcionário</th><th>Per. Aquisitivo</th><th>Início</th><th>Retorno</th><th>Dias</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody id="tb-fer"></tbody>
@@ -428,6 +462,18 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <div class="tab" onclick="exTab('xper',this)">Periódico</div>
       <div class="tab" onclick="exTab('xdem',this)">Demissional</div>
       <div class="tab" onclick="exTab('xret',this)">Retorno</div>
+    </div>
+    <div class="sort-bar">
+      <label>Ordenar por:</label>
+      <select class="sort-sel" id="exm-sort-campo" onchange="rdExm()">
+        <option value="nome">Funcionário (A-Z)</option>
+        <option value="data">Data do Exame</option>
+        <option value="status">Status/Resultado</option>
+      </select>
+      <select class="sort-dir" id="exm-sort-dir" onchange="rdExm()">
+        <option value="asc">↑ Crescente</option>
+        <option value="desc">↓ Decrescente</option>
+      </select>
     </div>
     <div id="xadm"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Status / Resultado</th><th>Obs.</th><th>Ações</th></tr></thead><tbody id="tb-xadm"></tbody></table></div></div>
     <div id="xper" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Status / Resultado</th><th>Obs.</th><th>Ações</th></tr></thead><tbody id="tb-xper"></tbody></table></div></div>
@@ -607,6 +653,21 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <button class="btn btn-outline btn-sm" onclick="printRel()">&#128438; Gerar PDF</button>
         <button class="btn btn-primary btn-sm" onclick="exportRelCSV()">&#128196; Exportar Excel (CSV)</button>
       </div>
+    </div>
+    <div class="sort-bar">
+      <label>Ordenar por:</label>
+      <select class="sort-sel" id="rel-sort-campo" onchange="rdRel()">
+        <option value="nome">Nome (A-Z)</option>
+        <option value="adm">Data de Admissão</option>
+        <option value="cargo">Cargo</option>
+        <option value="status">Status</option>
+        <option value="empresa">Empresa</option>
+        <option value="dep">Departamento</option>
+      </select>
+      <select class="sort-dir" id="rel-sort-dir" onchange="rdRel()">
+        <option value="asc">↑ Crescente</option>
+        <option value="desc">↓ Decrescente</option>
+      </select>
     </div>
     <div class="report-filters">
       <div class="form-group"><label>Empresa</label><select id="rel-emp" onchange="rdRel()"><option value="">Todas</option></select></div>
@@ -1847,9 +1908,50 @@ async function savFunc() {
   }
 }
 
+
+// ============================================================
+// ORDENAÇÃO UTILITÁRIA
+// ============================================================
+function getSortVal(obj, campo, deps, emps, funcs) {
+  switch(campo) {
+    case 'nome':    return (obj.n || obj.nome || '').toLowerCase();
+    case 'adm':     return obj.adm || obj.ini || '';
+    case 'ini':     return obj.ini || '';
+    case 'ret':     return obj.ret || '';
+    case 'cargo':   return (obj.car || '').toLowerCase();
+    case 'status':  return (obj.st || '').toLowerCase();
+    case 'empresa': {
+      var emp = emps ? emps.find(function(e){ return e.id === obj.emp; }) : null;
+      return emp ? emp.razao.toLowerCase() : '';
+    }
+    case 'dep': {
+      var dep = deps ? deps.find(function(d){ return d.id === obj.dep; }) : null;
+      return dep ? dep.nome.toLowerCase() : '';
+    }
+    case 'funcNome': {
+      var f = funcs ? funcs.find(function(x){ return x.id === obj.fid; }) : null;
+      return f ? f.n.toLowerCase() : '';
+    }
+    default: return '';
+  }
+}
+
+function applySort(list, campo, dir, deps, emps, funcs) {
+  return [...list].sort(function(a, b) {
+    var va = getSortVal(a, campo, deps, emps, funcs);
+    var vb = getSortVal(b, campo, deps, emps, funcs);
+    var cmp = va < vb ? -1 : va > vb ? 1 : 0;
+    return dir === 'desc' ? -cmp : cmp;
+  });
+}
+
 function rdFunc() {
-  const list = DB.g('funcionarios');
-  const deps = DB.g('departamentos');
+  var campo = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
+  var dir   = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
+  var rawList = DB.g('funcionarios');
+  var deps = DB.g('departamentos');
+  var emps = DB.g('empresas');
+  var list = applySort(rawList, campo, dir, deps, emps, null);
   const tb = document.getElementById('tb-func');
   if (!list.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário cadastrado.</td></tr>'; return; }
   tb.innerHTML = list.map(f => {
@@ -2006,7 +2108,14 @@ async function savFer() {
   closeModal('modal-fer'); rdFer(); updDash(); toast('Férias salvas' + (driveReady ? ' ☁️' : '!'));
 }
 function rdFer() {
-  const list = DB.g('ferias'); const funcs = DB.g('funcionarios'); const tb = document.getElementById('tb-fer');
+  var campo = (document.getElementById('fer-sort-campo')||{value:'nome'}).value || 'nome';
+  var dir   = (document.getElementById('fer-sort-dir')  ||{value:'asc'}).value  || 'asc';
+  var funcs = DB.g('funcionarios');
+  var rawList = DB.g('ferias');
+  // For name sort, use funcNome
+  var sortCampo = campo === 'nome' ? 'funcNome' : campo;
+  var list = applySort(rawList, sortCampo, dir, null, null, funcs);
+  const tb = document.getElementById('tb-fer');
   if (!list.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhuma férias registrada.</td></tr>'; return; }
   tb.innerHTML = list.map(r => {
     const f = funcs.find(x => x.id === r.fid);
@@ -2072,7 +2181,26 @@ function rdExm() {
   const tipoMap = { Admissional:'Admissional', 'Periódico':'Periodico', Demissional:'Demissional', Retorno:'Retorno' };
   Object.entries({ Admissional:'tb-xadm', 'Periódico':'tb-xper', Demissional:'tb-xdem', Retorno:'tb-xret' }).forEach(function(entry) {
     var tipo = entry[0]; var tbId = entry[1];
-    var list = all.filter(function(e) { return e.tipo === tipo; });
+    var campo = (document.getElementById('exm-sort-campo')||{value:'nome'}).value || 'nome';
+    var dir   = (document.getElementById('exm-sort-dir')  ||{value:'asc'}).value  || 'asc';
+    var rawFiltered = all.filter(function(e) { return e.tipo === tipo; });
+    // Sort exames
+    var list = [...rawFiltered].sort(function(a, b) {
+      var fa = funcs.find(function(x){ return x.id===a.fid; });
+      var fb = funcs.find(function(x){ return x.id===b.fid; });
+      var va, vb;
+      if (campo === 'nome') {
+        va = fa ? fa.n.toLowerCase() : '';
+        vb = fb ? fb.n.toLowerCase() : '';
+      } else if (campo === 'data') {
+        va = a.data || ''; vb = b.data || '';
+      } else {
+        va = (a.res || (a.data ? (dif(hoje, a.data) < 0 ? '0vencido' : '1agendado') : '2sem')) ;
+        vb = (b.res || (b.data ? (dif(hoje, b.data) < 0 ? '0vencido' : '1agendado') : '2sem')) ;
+      }
+      var cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return dir === 'desc' ? -cmp : cmp;
+    });
     var tb = document.getElementById(tbId);
     if (!tb) return;
     tb.innerHTML = '';
@@ -2653,13 +2781,16 @@ function rdRel() {
   var stF  = (document.getElementById('rel-st')  || {}).value || '';
   var diF  = (document.getElementById('rel-di')  || {}).value || '';
   var dfF  = (document.getElementById('rel-df')  || {}).value || '';
-  var list = DB.g('funcionarios');
-  if (empF) list = list.filter(function(f) { return f.emp === empF; });
-  if (depF) list = list.filter(function(f) { return f.dep === depF; });
-  if (stF)  list = list.filter(function(f) { return f.st  === stF;  });
-  if (diF)  list = list.filter(function(f) { return (f.adm||'') >= diF; });
-  if (dfF)  list = list.filter(function(f) { return (f.adm||'') <= dfF; });
+  var rawList = DB.g('funcionarios');
+  if (empF) rawList = rawList.filter(function(f) { return f.emp === empF; });
+  if (depF) rawList = rawList.filter(function(f) { return f.dep === depF; });
+  if (stF)  rawList = rawList.filter(function(f) { return f.st  === stF;  });
+  if (diF)  rawList = rawList.filter(function(f) { return (f.adm||'') >= diF; });
+  if (dfF)  rawList = rawList.filter(function(f) { return (f.adm||'') <= dfF; });
   var deps = DB.g('departamentos'); var emps = DB.g('empresas');
+  var relCampo = (document.getElementById('rel-sort-campo')||{value:'nome'}).value || 'nome';
+  var relDir   = (document.getElementById('rel-sort-dir')  ||{value:'asc'}).value  || 'asc';
+  var list = applySort(rawList, relCampo, relDir, deps, emps, null);
   var tb = document.getElementById('tb-rel');
   if (tb) {
     if (!list.length) {
