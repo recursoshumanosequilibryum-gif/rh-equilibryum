@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- Equilibryum RH v3.2 - 20260615_1520 -->
+<!-- Equilibryum RH v3.3 - 20260615_1520 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equilibryum – Sistema de RH</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -411,17 +411,28 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- EXAMES -->
 <div class="section-page" id="sec-exames">
   <div class="card">
-    <div class="card-header"><span class="card-title">&#129657; Exames Médicos</span><button class="btn btn-primary" onclick="openModal('modal-exm')">+ Novo Exame</button></div>
+    <div class="card-header">
+      <span class="card-title">&#129657; Exames Médicos <span id="exm-alert-badge" class="badge badge-red" style="display:none;margin-left:8px;font-size:11px;"></span></span>
+      <button class="btn btn-primary" onclick="openModal('modal-exm')">+ Novo Exame</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:12px;">
+      <span>&#127987; Legenda:</span>
+      <span class="badge badge-red">⚠️ Vencido</span>
+      <span class="badge badge-yellow">⏰ Vence em breve (≤7d)</span>
+      <span class="badge badge-blue">📅 Agendado</span>
+      <span class="badge badge-green">Apto</span>
+      <span class="badge badge-gray">Apto c/ restrição / Inapto</span>
+    </div>
     <div class="tabs">
       <div class="tab active" onclick="exTab('xadm',this)">Admissional</div>
       <div class="tab" onclick="exTab('xper',this)">Periódico</div>
       <div class="tab" onclick="exTab('xdem',this)">Demissional</div>
       <div class="tab" onclick="exTab('xret',this)">Retorno</div>
     </div>
-    <div id="xadm"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Resultado</th><th>Ações</th></tr></thead><tbody id="tb-xadm"></tbody></table></div></div>
-    <div id="xper" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Resultado</th><th>Ações</th></tr></thead><tbody id="tb-xper"></tbody></table></div></div>
-    <div id="xdem" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Resultado</th><th>Ações</th></tr></thead><tbody id="tb-xdem"></tbody></table></div></div>
-    <div id="xret" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Resultado</th><th>Ações</th></tr></thead><tbody id="tb-xret"></tbody></table></div></div>
+    <div id="xadm"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Status / Resultado</th><th>Obs.</th><th>Ações</th></tr></thead><tbody id="tb-xadm"></tbody></table></div></div>
+    <div id="xper" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Status / Resultado</th><th>Obs.</th><th>Ações</th></tr></thead><tbody id="tb-xper"></tbody></table></div></div>
+    <div id="xdem" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Status / Resultado</th><th>Obs.</th><th>Ações</th></tr></thead><tbody id="tb-xdem"></tbody></table></div></div>
+    <div id="xret" style="display:none"><div class="table-wrap"><table><thead><tr><th>Funcionário</th><th>Data</th><th>Clínica</th><th>Status / Resultado</th><th>Obs.</th><th>Ações</th></tr></thead><tbody id="tb-xret"></tbody></table></div></div>
   </div>
 </div>
 
@@ -592,9 +603,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <div class="section-page" id="sec-relatorios">
   <div class="card">
     <div class="card-header"><span class="card-title">&#128202; Relatório de Funcionários</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" onclick="printRel()">&#128438; Imprimir</button>
-        <button class="btn btn-primary btn-sm" onclick="exportRelCSV()">&#128196; Exportar CSV</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="printRel()">&#128438; Gerar PDF</button>
+        <button class="btn btn-primary btn-sm" onclick="exportRelCSV()">&#128196; Exportar Excel (CSV)</button>
       </div>
     </div>
     <div class="report-filters">
@@ -2056,16 +2067,87 @@ async function savExm() {
 }
 function rdExm() {
   const all = DB.g('exames'); const funcs = DB.g('funcionarios');
-  const map = { Admissional:'tb-xadm', Periódico:'tb-xper', Demissional:'tb-xdem', Retorno:'tb-xret' };
-  Object.entries(map).forEach(([tipo, tbId]) => {
-    const list = all.filter(e => e.tipo === tipo); const tb = document.getElementById(tbId); if (!tb) return;
-    if (!list.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhum registro.</td></tr>'; return; }
-    tb.innerHTML = list.map(e => {
-      const f = funcs.find(x => x.id === e.fid);
-      const bc = { Apto:'badge-green', 'Apto com restrição':'badge-yellow', Inapto:'badge-red', '':'badge-gray' }[e.res||''] || 'badge-gray';
-      return `<tr><td>${f?f.n:'—'}</td><td>${fd(e.data)}</td><td>${e.cl||'—'}</td><td><span class="badge ${bc}">${e.res||'Pendente'}</span></td><td><button class="btn-icon danger" onclick="delExm('${e.id}')">&#128465;</button></td></tr>`;
-    }).join('');
+  const hoje = td();
+  const map = { Admissional:'tb-xadm', Periodico:'tb-xper', Demissional:'tb-xdem', Retorno:'tb-xret' };
+  const tipoMap = { Admissional:'Admissional', 'Periódico':'Periodico', Demissional:'Demissional', Retorno:'Retorno' };
+  Object.entries({ Admissional:'tb-xadm', 'Periódico':'tb-xper', Demissional:'tb-xdem', Retorno:'tb-xret' }).forEach(function(entry) {
+    var tipo = entry[0]; var tbId = entry[1];
+    var list = all.filter(function(e) { return e.tipo === tipo; });
+    var tb = document.getElementById(tbId);
+    if (!tb) return;
+    tb.innerHTML = '';
+    if (!list.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 6; td.style.cssText = 'text-align:center;padding:24px;color:var(--gray-400)';
+      td.textContent = 'Nenhum exame cadastrado.'; tr.appendChild(td); tb.appendChild(tr); return;
+    }
+    list.forEach(function(e) {
+      var f = funcs.find(function(x) { return x.id === e.fid; });
+      // Calcular status de vencimento
+      var statusHtml = '';
+      var rowStyle = '';
+      if (e.data) {
+        var diff = dif(hoje, e.data);
+        if (!e.res || e.res === '') {
+          // Exame pendente — verificar se está vencido ou próximo
+          if (diff < 0) {
+            statusHtml = '<span class="badge badge-red">⚠️ Vencido há ' + Math.abs(diff) + 'd</span>';
+            rowStyle = 'background:#fff5f5;';
+          } else if (diff <= 7) {
+            statusHtml = '<span class="badge badge-yellow">⏰ Vence em ' + diff + 'd</span>';
+            rowStyle = 'background:#fffde7;';
+          } else {
+            statusHtml = '<span class="badge badge-blue">📅 Agendado</span>';
+          }
+        } else {
+          var bc = { Apto:'badge-green', 'Apto com restrição':'badge-yellow', Inapto:'badge-red' }[e.res] || 'badge-gray';
+          statusHtml = '<span class="badge ' + bc + '">' + e.res + '</span>';
+        }
+      } else {
+        statusHtml = '<span class="badge badge-gray">Sem data</span>';
+      }
+      var tr = document.createElement('tr');
+      if (rowStyle) tr.style.cssText = rowStyle;
+      var td1 = document.createElement('td'); td1.innerHTML = '<strong>' + (f ? f.n : '—') + '</strong>';
+      var td2 = document.createElement('td'); td2.textContent = e.data ? fd(e.data) : '—';
+      var td3 = document.createElement('td'); td3.textContent = e.cl || '—';
+      var td4 = document.createElement('td'); td4.innerHTML = statusHtml;
+      var td5 = document.createElement('td'); td5.textContent = e.obs || '—';
+      td5.style.cssText = 'max-width:140px;font-size:12px;color:var(--gray-600)';
+      var td6 = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.className = 'btn-icon danger'; btn.innerHTML = '&#128465;';
+      (function(eid) { btn.onclick = function() { delExm(eid); }; })(e.id);
+      td6.appendChild(btn);
+      [td1,td2,td3,td4,td5,td6].forEach(function(td) { tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
   });
+  // Atualizar alertas de exames no dashboard
+  updExmAlerts();
+}
+
+function updExmAlerts() {
+  var all = DB.g('exames'); var funcs = DB.g('funcionarios'); var hoje = td();
+  var vencidos = 0; var proximos = 0;
+  all.forEach(function(e) {
+    if (e.res) return;
+    if (!e.data) return;
+    var diff = dif(hoje, e.data);
+    if (diff < 0) vencidos++;
+    else if (diff <= 30) proximos++;
+  });
+  // Update dashboard stat
+  var el = document.getElementById('s-ex');
+  if (el) el.textContent = vencidos + proximos;
+  // Show badge on exames menu if needed
+  var badge = document.getElementById('exm-alert-badge');
+  if (badge) {
+    badge.textContent = vencidos > 0 ? vencidos + ' vencido(s)' : proximos + ' próximo(s)';
+    badge.style.display = (vencidos + proximos) > 0 ? 'inline-block' : 'none';
+    badge.className = 'badge ' + (vencidos > 0 ? 'badge-red' : 'badge-yellow');
+  }
 }
 async function delExm(id) {
   if (!confirm('Excluir?')) return;
@@ -2541,7 +2623,8 @@ function updDash() {
   let exp = 0; funcs.forEach(f => { if (f.adm && f.st !== 'Desligado' && dif(f.adm, hoje) <= 90) exp++; });
   document.getElementById('s-exp').textContent = exp;
   document.getElementById('s-fer').textContent = DB.g('ferias').filter(r => r.st === 'Em andamento').length;
-  document.getElementById('s-ex').textContent = DB.g('exames').filter(e => !e.res).length;
+  document.getElementById('s-ex').textContent = DB.g('exames').filter(function(e){ return !e.res; }).length;
+  if(typeof updExmAlerts === 'function') updExmAlerts();
   const alerts = [];
   funcs.forEach(f => {
     if (!f.adm || f.st === 'Desligado') return;
@@ -2565,38 +2648,61 @@ function updDash() {
 // RELATÓRIO DE FUNCIONÁRIOS
 // ============================================================
 function rdRel() {
-  const empF = document.getElementById('rel-emp').value;
-  const depF = document.getElementById('rel-dep').value;
-  const stF  = document.getElementById('rel-st').value;
-  const diF  = document.getElementById('rel-di').value;
-  const dfF  = document.getElementById('rel-df').value;
-  let list = DB.g('funcionarios');
-  if (empF) list = list.filter(f => f.emp === empF);
-  if (depF) list = list.filter(f => f.dep === depF);
-  if (stF)  list = list.filter(f => f.st === stF);
-  if (diF)  list = list.filter(f => f.adm >= diF);
-  if (dfF)  list = list.filter(f => f.adm <= dfF);
-  const deps = DB.g('departamentos'); const emps = DB.g('empresas');
-  const tb = document.getElementById('tb-rel');
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário encontrado com estes filtros.</td></tr>'; }
-  else {
-    tb.innerHTML = list.map((f,i) => {
-      const dep = deps.find(d => d.id === f.dep); const emp = emps.find(e => e.id === f.emp);
-      const bc = { Ativo:'badge-green', Afastado:'badge-yellow', Férias:'badge-blue', Desligado:'badge-red' }[f.st] || 'badge-gray';
-      return `<tr><td>${i+1}</td><td><strong>${f.n}</strong></td><td>${f.cpf}</td><td>${f.car||'—'}</td><td>${dep?dep.nome:'—'}</td><td>${emp?emp.razao:'—'}</td><td>${fd(f.adm)}</td><td>${f.tip||'CLT'}</td><td><span class="badge ${bc}">${f.st||'Ativo'}</span></td></tr>`;
-    }).join('');
+  var empF = (document.getElementById('rel-emp') || {}).value || '';
+  var depF = (document.getElementById('rel-dep') || {}).value || '';
+  var stF  = (document.getElementById('rel-st')  || {}).value || '';
+  var diF  = (document.getElementById('rel-di')  || {}).value || '';
+  var dfF  = (document.getElementById('rel-df')  || {}).value || '';
+  var list = DB.g('funcionarios');
+  if (empF) list = list.filter(function(f) { return f.emp === empF; });
+  if (depF) list = list.filter(function(f) { return f.dep === depF; });
+  if (stF)  list = list.filter(function(f) { return f.st  === stF;  });
+  if (diF)  list = list.filter(function(f) { return (f.adm||'') >= diF; });
+  if (dfF)  list = list.filter(function(f) { return (f.adm||'') <= dfF; });
+  var deps = DB.g('departamentos'); var emps = DB.g('empresas');
+  var tb = document.getElementById('tb-rel');
+  if (tb) {
+    if (!list.length) {
+      tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário encontrado.</td></tr>';
+    } else {
+      tb.innerHTML = '';
+      list.forEach(function(f, i) {
+        var dep = deps.find(function(d) { return d.id === f.dep; });
+        var emp = emps.find(function(e) { return e.id === f.emp; });
+        var bc = { Ativo:'badge-green', Afastado:'badge-yellow', 'Férias':'badge-blue', Desligado:'badge-red' }[f.st] || 'badge-gray';
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + (i+1) + '</td>' +
+          '<td><strong>' + f.n + '</strong></td>' +
+          '<td>' + (f.cpf||'—') + '</td>' +
+          '<td>' + (f.car||'—') + '</td>' +
+          '<td>' + (dep ? dep.nome : '—') + '</td>' +
+          '<td>' + (emp ? emp.razao : '—') + '</td>' +
+          '<td>' + fd(f.adm) + '</td>' +
+          '<td>' + (f.tip||'CLT') + '</td>' +
+          '<td><span class="badge ' + bc + '">' + (f.st||'Ativo') + '</span></td>';
+        tb.appendChild(tr);
+      });
+    }
   }
   // Resumo
-  const total = list.length;
-  const ativo = list.filter(f=>f.st==='Ativo').length;
-  const deslig = list.filter(f=>f.st==='Desligado').length;
-  document.getElementById('rel-resumo').innerHTML = [
-    ['Total filtrado', total, 'var(--green-dark)'],
-    ['Ativos', ativo, 'var(--green)'],
-    ['Desligados', deslig, 'var(--red)'],
-    ['Afastados', list.filter(f=>f.st==='Afastado').length, 'var(--accent)'],
-  ].map(([l,n,c]) => `<div style="padding:10px 18px;background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);font-size:13px;border-top:3px solid ${c}"><div style="font-size:22px;font-weight:700;color:${c}">${n}</div><div style="color:var(--gray-600)">${l}</div></div>`).join('');
-  document.getElementById('rel-total').textContent = `Exibindo ${list.length} funcionário(s)`;
+  var resumo = document.getElementById('rel-resumo');
+  if (resumo) {
+    var ativo  = list.filter(function(f) { return f.st==='Ativo'; }).length;
+    var deslig = list.filter(function(f) { return f.st==='Desligado'; }).length;
+    var afas   = list.filter(function(f) { return f.st==='Afastado'; }).length;
+    resumo.innerHTML = [
+      ['Total', list.length, 'var(--green-dark)'],
+      ['Ativos', ativo, 'var(--green)'],
+      ['Desligados', deslig, 'var(--red)'],
+      ['Afastados', afas, 'var(--accent)']
+    ].map(function(r) {
+      return '<div style="padding:10px 18px;background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);font-size:13px;border-top:3px solid ' + r[2] + '">' +
+        '<div style="font-size:22px;font-weight:700;color:' + r[2] + '">' + r[1] + '</div>' +
+        '<div style="color:var(--gray-600)">' + r[0] + '</div></div>';
+    }).join('');
+  }
+  var tot = document.getElementById('rel-total');
+  if (tot) tot.textContent = 'Exibindo ' + list.length + ' funcionário(s)';
 }
 function clearRelFil() {
   ['rel-emp','rel-dep','rel-st'].forEach(id => { const e=document.getElementById(id); if(e) e.selectedIndex=0; });
@@ -2606,442 +2712,70 @@ function clearRelFil() {
 function initRelFilters() {
   fillSel('rel-emp','empresas','razao'); fillSel('rel-dep','departamentos','nome');
 }
-function printRel() { window.print(); }
-function exportRelCSV() {
-  const rows = [['Nome','CPF','Cargo','Departamento','Empresa','Admissão','Tipo','Status']];
-  const deps = DB.g('departamentos'); const emps = DB.g('empresas');
-  DB.g('funcionarios').forEach(f => {
-    const dep = deps.find(d=>d.id===f.dep); const emp = emps.find(e=>e.id===f.emp);
-    rows.push([f.n,f.cpf,f.car||'',dep?dep.nome:'',emp?emp.razao:'',f.adm||'',f.tip||'CLT',f.st||'Ativo']);
-  });
-  const csv = rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'relatorio_funcionarios_' + td() + '.csv'; a.click();
-}
-
-// ============================================================
-// ANIVERSARIANTES
-// ============================================================
-function rdBday() {
-  const filter = (document.getElementById('bday-filter') || {value:'mes'}).value;
-  const hoje = new Date(); const hm = hoje.getMonth()+1; const hd = hoje.getDate();
-  const funcs = DB.g('funcionarios').filter(f => f.nas && f.st !== 'Desligado');
-  let lista = funcs.map(f => {
-    const [y,m,d] = f.nas.split('-').map(Number);
-    return { ...f, bm: m, bd: d };
-  });
-  if (filter === 'mes') lista = lista.filter(f => f.bm === hm);
-  else if (filter === 'semana') {
-    const ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
-    const fim = new Date(ini); fim.setDate(ini.getDate()+6);
-    lista = lista.filter(f => {
-      const dt = new Date(hoje.getFullYear(), f.bm-1, f.bd);
-      return dt >= ini && dt <= fim;
-    });
-  }
-  lista.sort((a,b) => a.bm !== b.bm ? a.bm-b.bm : a.bd-b.bd);
-  const el = document.getElementById('bday-list');
-  if (!lista.length) { el.innerHTML = '<div class="alert alert-info">&#127874; Nenhum aniversariante encontrado neste período.</div>'; return; }
-  el.innerHTML = lista.map(f => {
-    const isHoje = f.bm === hm && f.bd === hd;
-    const isSemana = (() => {
-      const ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
-      const fim = new Date(ini); fim.setDate(ini.getDate()+6);
-      const dt = new Date(hoje.getFullYear(), f.bm-1, f.bd);
-      return dt >= ini && dt <= fim && !isHoje;
-    })();
-    const mes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][f.bm-1];
-    const tag = isHoje ? '<span class="bday-tag hoje">&#127874; Hoje!</span>' :
-                isSemana ? '<span class="bday-tag semana">Esta semana</span>' :
-                '<span class="bday-tag mes">'+mes+'</span>';
-    const idade = hoje.getFullYear() - parseInt(f.nas.split('-')[0]);
-    return `<div class="bday-card">
-      <div class="bday-avatar${isHoje ? ' today' : ''}">${f.n[0].toUpperCase()}</div>
-      <div class="bday-info">
-        <div class="name">${f.n}</div>
-        <div class="detail">${f.car||'—'} · ${f.bd.toString().padStart(2,'0')}/${mes} · ${idade} anos</div>
-      </div>
-      ${tag}
-      ${f.tel ? `<button class="btn btn-whatsapp btn-sm" onclick="wha('${f.tel}','Parabéns pelo seu aniversário! &#127874; Toda a equipe Equilibryum deseja a você muito saúde e felicidades!')">&#127881; Parabenizar</button>` : ''}
-    </div>`;
+function printRel() {
+  var empF = (document.getElementById('rel-emp') || {}).value || '';
+  var depF = (document.getElementById('rel-dep') || {}).value || '';
+  var stF  = (document.getElementById('rel-st')  || {}).value || '';
+  var diF  = (document.getElementById('rel-di')  || {}).value || '';
+  var dfF  = (document.getElementById('rel-df')  || {}).value || '';
+  var list = DB.g('funcionarios');
+  if (empF) list = list.filter(function(f) { return f.emp === empF; });
+  if (depF) list = list.filter(function(f) { return f.dep === depF; });
+  if (stF)  list = list.filter(function(f) { return f.st  === stF;  });
+  if (diF)  list = list.filter(function(f) { return (f.adm||'') >= diF; });
+  if (dfF)  list = list.filter(function(f) { return (f.adm||'') <= dfF; });
+  var deps = DB.g('departamentos'); var emps = DB.g('empresas');
+  var empNome = empF ? (emps.find(function(e){return e.id===empF;})||{razao:''}).razao : 'Todas';
+  var depNome = depF ? (deps.find(function(d){return d.id===depF;})||{nome:''}).nome  : 'Todos';
+  var rows = list.map(function(f, i) {
+    var dep = deps.find(function(d) { return d.id === f.dep; });
+    var emp = emps.find(function(e) { return e.id === f.emp; });
+    var cor = { Ativo:'#e8f5ee', Afastado:'#fff8e1', 'Férias':'#e3f2fd', Desligado:'#ffebee' }[f.st] || '#fff';
+    return '<tr style="background:' + cor + '">' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (i+1) + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px;font-weight:600">' + (f.n||'') + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (f.cpf||'') + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (f.car||'') + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (dep?dep.nome:'') + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (emp?emp.razao:'') + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + fd(f.adm) + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (f.tip||'CLT') + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;font-size:11px">' + (f.st||'Ativo') + '</td>' +
+      '</tr>';
   }).join('');
-}
-
-// ============================================================
-// TREINAMENTOS
-// ============================================================
-let treinFiles = [], editingTreinId = null;
-function handleTreinFile(inp) {
-  treinFiles = Array.from(inp.files);
-  const el = document.getElementById('tr-file-list');
-  el.innerHTML = treinFiles.map(f => `<div class="doc-item"><span>&#128206; ${f.name}</span></div>`).join('');
-}
-function treinTab(id, btn) {
-  ['tr-agenda','tr-conc','tr-todos'].forEach(t => document.getElementById(t).style.display='none');
-  document.getElementById(id).style.display = 'block';
-  btn.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-}
-async function savTrein() {
-  const titulo = document.getElementById('tr-titulo').value.trim();
-  if (!titulo) { alert('Título obrigatório.'); return; }
-  const parts = Array.from(document.getElementById('tr-parts').selectedOptions).map(o => o.value);
-  const list = DB.g('treinamentos');
-  let files = [];
-  if (driveReady && treinFiles.length > 0) {
-    for (const file of treinFiles) {
-      try {
-        const up = await uploadFileToDrive(file, 'Treinamentos');
-        files.push({ name: file.name, id: up.id, url: up.webViewLink });
-        toast('📎 ' + file.name + ' enviado!');
-      } catch(e) { files.push({ name: file.name }); }
-    }
-  } else {
-    files = treinFiles.map(f => ({ name: f.name }));
-  }
-  treinFiles = [];
-  if (editingTreinId) {
-    const idx = list.findIndex(x => x.id === editingTreinId);
-    if (idx !== -1) list[idx] = { ...list[idx], titulo, desc: v('tr-desc'), data: v('tr-data'), hora: v('tr-hora'), local: v('tr-local'), inst: v('tr-inst'), ch: v('tr-ch'), st: v('tr-st'), parts };
-    editingTreinId = null;
-  } else {
-    list.push({ id: uid(), titulo, desc: v('tr-desc'), data: v('tr-data'), hora: v('tr-hora'), local: v('tr-local'), inst: v('tr-inst'), ch: v('tr-ch'), st: v('tr-st'), parts, files });
-  }
-  DB.s('treinamentos', list);
-  if (driveReady) await driveSync('treinamentos');
-  closeModal('modal-trein'); rdTrein(); toast('Treinamento salvo' + (driveReady?' ☁️':'!'));
-}
-function rdTrein() {
-  const all = DB.g('treinamentos');
-  const funcs = DB.g('funcionarios');
-  const agend = all.filter(t => t.st === 'Agendado' || t.st === 'Em andamento');
-  const conc  = all.filter(t => t.st === 'Concluído');
-  const renderList = (arr, elId) => {
-    const el = document.getElementById(elId);
-    if (!arr.length) { el.innerHTML = '<p style="color:var(--gray-400);padding:20px 0">Nenhum treinamento.</p>'; return; }
-    el.innerHTML = arr.map(t => {
-      const bcSt = { Agendado:'badge-blue', 'Em andamento':'badge-green', Concluído:'badge-gray', Cancelado:'badge-red' }[t.st]||'badge-gray';
-      const partsNames = (t.parts||[]).map(id => { const f=funcs.find(x=>x.id===id); return f?f.n:'?'; }).join(', ');
-      const filesHtml = (t.files||[]).map(f => f.url ? `<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm">&#128206; ${f.name}</a>` : `<span class="btn btn-outline btn-sm">&#128206; ${f.name}</span>`).join('');
-      return `<div class="trein-card">
-        <div class="tc-header">
-          <div>
-            <div class="tc-title">${t.titulo}</div>
-            <div class="tc-meta">&#128197; ${t.data?fd(t.data):'—'} ${t.hora||''} &nbsp;|&nbsp; &#128205; ${t.local||'—'} &nbsp;|&nbsp; &#9201; ${t.ch||'?'}h &nbsp;|&nbsp; &#128100; ${t.inst||'—'}</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <span class="badge ${bcSt}">${t.st}</span>
-            <button class="btn-icon" onclick="editTrein('${t.id}')">&#9999;&#65039;</button>
-            <button class="btn-icon danger" onclick="delTrein('${t.id}')">&#128465;</button>
-          </div>
-        </div>
-        ${t.desc ? `<p style="font-size:13px;color:var(--gray-600);margin-bottom:8px">${t.desc}</p>` : ''}
-        ${partsNames ? `<p style="font-size:12px;color:var(--gray-600)"><strong>Participantes:</strong> ${partsNames}</p>` : ''}
-        ${filesHtml ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${filesHtml}</div>` : ''}
-      </div>`;
-    }).join('');
-  };
-  renderList(agend, 'trein-agenda-list');
-  renderList(conc,  'trein-conc-list');
-  renderList(all,   'trein-todos-list');
-}
-function editTrein(id) {
-  const t = DB.g('treinamentos').find(x=>x.id===id); if(!t) return;
-  editingTreinId = id;
-  fillFuncSel('tr-parts', true);
-  document.getElementById('tr-titulo').value = t.titulo||'';
-  document.getElementById('tr-desc').value   = t.desc||'';
-  document.getElementById('tr-data').value   = t.data||'';
-  document.getElementById('tr-hora').value   = t.hora||'';
-  document.getElementById('tr-local').value  = t.local||'';
-  document.getElementById('tr-inst').value   = t.inst||'';
-  document.getElementById('tr-ch').value     = t.ch||4;
-  document.getElementById('tr-st').value     = t.st||'Agendado';
-  Array.from(document.getElementById('tr-parts').options).forEach(o => { o.selected = (t.parts||[]).includes(o.value); });
-  document.getElementById('trein-modal-title').textContent = '✏️ Editar Treinamento';
-  document.getElementById('modal-trein').classList.add('open');
-}
-async function delTrein(id) {
-  if(!confirm('Excluir treinamento?')) return;
-  DB.s('treinamentos', DB.g('treinamentos').filter(t=>t.id!==id));
-  if(driveReady) await driveSync('treinamentos');
-  rdTrein();
-}
-
-// ============================================================
-// CAMPANHAS
-// ============================================================
-let campFiles = [], editingCampId = null;
-function handleCampFile(inp) {
-  campFiles = Array.from(inp.files);
-  const el = document.getElementById('ca-file-list');
-  el.innerHTML = campFiles.map(f=>`<div class="doc-item"><span>&#128206; ${f.name}</span></div>`).join('');
-}
-async function savCamp() {
-  const titulo = document.getElementById('ca-titulo').value.trim();
-  if(!titulo){alert('Título obrigatório.');return;}
-  const list = DB.g('campanhas');
-  let files = [];
-  if (driveReady && campFiles.length > 0) {
-    for (const file of campFiles) {
-      try { const up = await uploadFileToDrive(file,'Campanhas'); files.push({name:file.name,id:up.id,url:up.webViewLink}); } catch(e) { files.push({name:file.name}); }
-    }
-  } else { files = campFiles.map(f=>({name:f.name})); }
-  campFiles = [];
-  if (editingCampId) {
-    const idx = list.findIndex(x=>x.id===editingCampId);
-    if(idx!==-1) list[idx]={...list[idx],titulo,desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor')};
-    editingCampId=null;
-  } else {
-    list.push({id:uid(),titulo,desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor'),files});
-  }
-  DB.s('campanhas',list);
-  if(driveReady) await driveSync('campanhas');
-  closeModal('modal-camp'); rdCamp(); toast('Campanha salva'+(driveReady?' ☁️':'!'));
-}
-function rdCamp() {
-  const list = DB.g('campanhas');
-  const el = document.getElementById('camp-list');
-  if(!list.length){el.innerHTML='<div class="alert alert-info">&#128200; Nenhuma campanha cadastrada.</div>';return;}
-  el.innerHTML = list.map(c => {
-    const filesHtml = (c.files||[]).map(f=>f.url?`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm">&#128206; ${f.name}</a>`:`<span class="btn btn-outline btn-sm">&#128206; ${f.name}</span>`).join('');
-    return `<div class="camp-card ${c.cor||'green'}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-        <div>
-          <div class="cc-title">${c.titulo}</div>
-          <div class="cc-meta">&#128197; ${c.ini?fd(c.ini):'—'} até ${c.fim?fd(c.fim):'—'} &nbsp;|&nbsp; &#128100; ${c.resp||'—'}</div>
-          ${c.desc?`<p style="font-size:13px;color:var(--gray-600);margin-top:6px">${c.desc}</p>`:''}
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-icon" onclick="editCamp('${c.id}')">&#9999;&#65039;</button>
-          <button class="btn-icon danger" onclick="delCamp('${c.id}')">&#128465;</button>
-        </div>
-      </div>
-      ${filesHtml?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${filesHtml}</div>`:''}
-    </div>`;
-  }).join('');
-}
-function editCamp(id) {
-  const c=DB.g('campanhas').find(x=>x.id===id); if(!c) return;
-  editingCampId=id;
-  document.getElementById('ca-titulo').value=c.titulo||'';
-  document.getElementById('ca-desc').value=c.desc||'';
-  document.getElementById('ca-ini').value=c.ini||'';
-  document.getElementById('ca-fim').value=c.fim||'';
-  document.getElementById('ca-resp').value=c.resp||'';
-  document.getElementById('ca-cor').value=c.cor||'green';
-  document.getElementById('camp-modal-title').textContent='✏️ Editar Campanha';
-  document.getElementById('modal-camp').classList.add('open');
-}
-async function delCamp(id){if(!confirm('Excluir?'))return;DB.s('campanhas',DB.g('campanhas').filter(c=>c.id!==id));if(driveReady)await driveSync('campanhas');rdCamp();}
-
-// ============================================================
-// POLÍTICAS
-// ============================================================
-let polFiles=[], editingPolId=null;
-function handlePolFile(inp){
-  polFiles=Array.from(inp.files);
-  const el=document.getElementById('po-file-list');
-  el.innerHTML=polFiles.map(f=>`<div class="doc-item"><span>&#128206; ${f.name}</span></div>`).join('');
-}
-async function savPol(){
-  const titulo=document.getElementById('po-titulo').value.trim();
-  if(!titulo){alert('Título obrigatório.');return;}
-  const list=DB.g('politicas');
-  let files=[];
-  if(driveReady&&polFiles.length>0){
-    for(const file of polFiles){
-      try{const up=await uploadFileToDrive(file,'Politicas e Normas');files.push({name:file.name,id:up.id,url:up.webViewLink});}catch(e){files.push({name:file.name});}
-    }
-  } else {files=polFiles.map(f=>({name:f.name}));}
-  polFiles=[];
-  if(editingPolId){
-    const idx=list.findIndex(x=>x.id===editingPolId);
-    if(idx!==-1)list[idx]={...list[idx],titulo,cat:v('po-cat'),ver:v('po-ver'),data:v('po-data'),desc:v('po-desc')};
-    editingPolId=null;
-  } else {
-    list.push({id:uid(),titulo,cat:v('po-cat'),ver:v('po-ver'),data:v('po-data'),desc:v('po-desc'),files});
-  }
-  DB.s('politicas',list);
-  if(driveReady)await driveSync('politicas');
-  closeModal('modal-pol');rdPol();toast('Política salva'+(driveReady?' ☁️':'!'));
-}
-function rdPol(){
-  const list=DB.g('politicas');
-  const el=document.getElementById('pol-list');
-  if(!list.length){el.innerHTML='<div class="alert alert-info">&#128737; Nenhuma política cadastrada.</div>';return;}
-  const catIcons={'Política Interna':'&#128196;','Norma Regulamentadora':'&#9888;&#65039;','Procedimento':'&#128221;','Manual':'&#128218;','Comunicado':'&#128226;','Outro':'&#128203;'};
-  el.innerHTML=list.map(p=>{
-    const filesHtml=(p.files||[]).map(f=>f.url?`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm">&#128206; ${f.name}</a>`:`<span class="btn btn-outline btn-sm">&#128206; ${f.name}</span>`).join('');
-    return `<div class="pol-card">
-      <div class="pol-icon">${catIcons[p.cat]||'&#128203;'}</div>
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div class="pol-title">${p.titulo}</div>
-            <div class="pol-desc">${p.cat||''} &nbsp;|&nbsp; Versão: ${p.ver||'—'} &nbsp;|&nbsp; Publicado: ${p.data?fd(p.data):'—'}</div>
-            ${p.desc?`<p style="font-size:13px;color:var(--gray-600);margin-top:6px">${p.desc}</p>`:''}
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn-icon" onclick="editPol('${p.id}')">&#9999;&#65039;</button>
-            <button class="btn-icon danger" onclick="delPol('${p.id}')">&#128465;</button>
-          </div>
-        </div>
-        ${filesHtml?`<div class="pol-docs">${filesHtml}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-function editPol(id){
-  const p=DB.g('politicas').find(x=>x.id===id);if(!p)return;
-  editingPolId=id;
-  document.getElementById('po-titulo').value=p.titulo||'';
-  document.getElementById('po-cat').value=p.cat||'Política Interna';
-  document.getElementById('po-ver').value=p.ver||'v1.0';
-  document.getElementById('po-data').value=p.data||'';
-  document.getElementById('po-desc').value=p.desc||'';
-  document.getElementById('pol-modal-title').textContent='✏️ Editar Política';
-  document.getElementById('modal-pol').classList.add('open');
-}
-async function delPol(id){if(!confirm('Excluir?'))return;DB.s('politicas',DB.g('politicas').filter(p=>p.id!==id));if(driveReady)await driveSync('politicas');rdPol();}
-
-// ============================================================
-// GERAR FORMULÁRIO DE EXPERIÊNCIA (DOCX via python-docx via API)
-// ============================================================
-async function gerarFormExp() {
-  const fid = v('fexp-func');
-  if (!fid) { alert('Selecione um funcionário.'); return; }
-  const f = DB.g('funcionarios').find(x => x.id === fid);
-  if (!f) return;
-  const dias = v('fexp-dias');
-  const dataGer = v('fexp-data') || td();
-  const btn = document.getElementById('btn-gen-exp');
-  btn.innerHTML = '<span class="spinner" style="border-top-color:#fff;"></span> Gerando...';
-  btn.disabled = true;
-
-  const deps = DB.g('departamentos'); const emps = DB.g('empresas');
-  const dep = deps.find(d => d.id === f.dep);
-  const emp = emps.find(e => e.id === f.emp);
-  const venc = add(f.adm || dataGer, parseInt(dias));
-
-  // Build DOCX via python-docx using a server-side script approach
-  // Since we can't exec python from browser, we generate as HTML and open print dialog
-  // AND also call the Anthropic API to generate the doc via our backend function
-  
-  // Create printable HTML form
-  const dataGerada = new Date(dataGer+'T12:00:00').toLocaleDateString('pt-BR');
-  const dataAdm    = f.adm ? new Date(f.adm+'T12:00:00').toLocaleDateString('pt-BR') : '—';
-  const dataVenc   = new Date(venc+'T12:00:00').toLocaleDateString('pt-BR');
-
-  const formHTML = `
-  <html><head><meta charset="UTF-8">
-  <style>
-    body{font-family:Arial,sans-serif;font-size:11pt;margin:2cm;}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #006666;padding-bottom:10px;margin-bottom:16px;}
-    .header-meta{font-size:9pt;color:#006666;line-height:1.8;}
-    .header-meta strong{font-weight:700;}
-    h1{color:#1f5c44;font-size:14pt;text-align:center;margin:0 0 4px;}
-    h2{color:#1f5c44;font-size:12pt;text-align:center;margin:0 0 18px;}
-    .info-table{width:100%;border-collapse:collapse;margin-bottom:18px;}
-    .info-table td{padding:7px 10px;border:1px solid #ccc;font-size:10.5pt;}
-    .info-table td:first-child{background:#e8f5ee;font-weight:700;width:38%;}
-    .avl-table{width:100%;border-collapse:collapse;margin-bottom:18px;}
-    .avl-table th{background:#006666;color:#fff;padding:8px;font-size:10pt;text-align:left;}
-    .avl-table td{padding:8px;border:1px solid #ccc;font-size:10pt;}
-    .avl-table tr:nth-child(even) td{background:#f5f5f5;}
-    .nota-cell{width:80px;text-align:center;}
-    .obs-cell{width:200px;}
-    .assinaturas{display:flex;justify-content:space-between;margin-top:40px;}
-    .assin-box{width:45%;text-align:center;border-top:1px solid #333;padding-top:6px;font-size:10pt;}
-    .link-box{background:#e8f5ee;border:1px solid #2e7d5e;border-radius:6px;padding:12px;text-align:center;margin-bottom:18px;}
-    .link-box a{color:#1f5c44;font-weight:700;font-size:11pt;}
-    .parecer{border:1px solid #ccc;border-radius:4px;padding:10px;min-height:80px;margin-bottom:18px;}
-    .footer{text-align:center;font-size:8pt;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:8px;}
-    @media print{body{margin:1.5cm;}}
-  </style>
-  </head><body>
-  <div class="header">
-    <div class="header-meta">
-      Código: <strong>13-FORM</strong> &nbsp;&nbsp; Criação: <strong>20/07/2017</strong> &nbsp;&nbsp; Revisão: <strong>04/03/2026</strong> &nbsp;&nbsp; Status: <strong>APROVADO</strong><br>
-      Setor: <strong>RH</strong> &nbsp;&nbsp; Autor: <strong>IVANILDA JESUS</strong> &nbsp;&nbsp; Revisor: <strong>MÔNICA SANTOS</strong> &nbsp;&nbsp; Versão: <strong>01</strong>
-    </div>
-    <img src="data:image/png;base64,LOGO_HERE" style="height:48px;">
-  </div>
-  <h1>EQUILIBRYUM – Especialidades Médicas &amp; Terapêuticas</h1>
-  <h2>Avaliação de Período de Experiência – ${dias} dias</h2>
-  <table class="info-table">
-    <tr><td>Funcionário</td><td><strong>${f.n}</strong></td></tr>
-    <tr><td>CPF</td><td>${f.cpf}</td></tr>
-    <tr><td>RG</td><td>${f.rg||'—'}</td></tr>
-    <tr><td>Cargo / Função</td><td>${f.car||'—'}</td></tr>
-    <tr><td>Departamento</td><td>${dep?dep.nome:'—'}</td></tr>
-    <tr><td>Empresa</td><td>${emp?emp.razao:'—'}</td></tr>
-    <tr><td>Data de Admissão</td><td>${dataAdm}</td></tr>
-    <tr><td>Vencimento dos ${dias} dias</td><td><strong>${dataVenc}</strong></td></tr>
-    <tr><td>Gestor Responsável</td><td>${f.ges||'—'}</td></tr>
-    <tr><td>Data de Geração</td><td>${dataGerada}</td></tr>
-  </table>
-  <div class="link-box">
-    <div style="margin-bottom:6px;font-weight:700;color:#1f5c44;">🔗 LINK PARA AVALIAÇÃO DE EXPERIÊNCIA (ONLINE)</div>
-    <a href="https://forms.gle/o6G1tzd1PGctSxwQ9" target="_blank">https://forms.gle/o6G1tzd1PGctSxwQ9</a>
-    <div style="margin-top:6px;font-size:9pt;color:#555;">Use este link para preencher a avaliação digitalmente</div>
-  </div>
-  <table class="avl-table">
-    <thead><tr><th>Critério de Avaliação</th><th class="nota-cell">Nota (1–5)</th><th class="obs-cell">Observações</th></tr></thead>
-    <tbody>
-      <tr><td>Pontualidade e assiduidade</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-      <tr><td>Comprometimento com as atividades</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-      <tr><td>Qualidade e produtividade no trabalho</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-      <tr><td>Relacionamento interpessoal</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-      <tr><td>Iniciativa e proatividade</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-      <tr><td>Conhecimento técnico / adaptação</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-      <tr><td>Postura profissional</td><td class="nota-cell"></td><td class="obs-cell"></td></tr>
-    </tbody>
-  </table>
-  <div style="margin-bottom:6px;font-weight:700;color:#1f5c44;font-size:11pt;">Parecer Final do Gestor:</div>
-  <div class="parecer"></div>
-  <div style="margin-bottom:6px;font-weight:700;color:#1f5c44;font-size:11pt;">Decisão:</div>
-  <div style="display:flex;gap:30px;margin-bottom:18px;font-size:11pt;">
-    <label><input type="checkbox"> Aprovado – Efetivação do contrato</label>
-    <label><input type="checkbox"> Aprovado com ressalvas</label>
-    <label><input type="checkbox"> Reprovado – Desligamento</label>
-  </div>
-  <div class="assinaturas">
-    <div class="assin-box">Gestor Responsável<br><small>${f.ges||'___________________________'}</small></div>
-    <div class="assin-box">Funcionário Avaliado<br><small>${f.n}</small></div>
-    <div class="assin-box">RH – Equilibryum</div>
-  </div>
-  <div class="footer">Gerado em ${dataGerada} pelo Sistema RH Equilibryum &nbsp;|&nbsp; Código: 13-FORM &nbsp;|&nbsp; Versão 01</div>
-  </body></html>`;
-
-  const logoTag = formHTML.includes('LOGO_HERE');
-  const finalHTML = formHTML.replace('LOGO_HERE', 'QR_LOGO_PLACEHOLDER');
-
-  // Open in new tab for printing/saving as PDF
-  const win = window.open('', '_blank', 'width=900,height=700');
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    '<title>Relatório de Funcionários – Equilibryum</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:20px;color:#1e3329;}' +
+    'h1{color:#1f5c44;font-size:16pt;margin-bottom:4px;}' +
+    '.subtitle{font-size:10pt;color:#4e6b5e;margin-bottom:16px;}' +
+    'table{width:100%;border-collapse:collapse;}' +
+    'th{background:#1f5c44;color:#fff;padding:8px;font-size:11px;text-align:left;border:1px solid #1f5c44;}' +
+    'tr:nth-child(even){background:#f7faf8;}' +
+    '.footer{margin-top:20px;font-size:9px;color:#999;text-align:center;}' +
+    '@media print{@page{margin:1.5cm;size:A4 landscape;}}' +
+    '</style></head><body>' +
+    '<h1>EQUILIBRYUM – Relatório de Funcionários</h1>' +
+    '<div class="subtitle">' +
+    'Empresa: <strong>' + empNome + '</strong> &nbsp;|&nbsp; ' +
+    'Departamento: <strong>' + depNome + '</strong> &nbsp;|&nbsp; ' +
+    'Status: <strong>' + (stF||'Todos') + '</strong> &nbsp;|&nbsp; ' +
+    'Total: <strong>' + list.length + ' funcionário(s)</strong> &nbsp;|&nbsp; ' +
+    'Gerado em: <strong>' + new Date().toLocaleDateString("pt-BR") + '</strong>' +
+    '</div>' +
+    '<table><thead><tr>' +
+    '<th>#</th><th>Nome</th><th>CPF</th><th>Cargo</th><th>Departamento</th>' +
+    '<th>Empresa</th><th>Admissão</th><th>Tipo</th><th>Status</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="footer">Sistema RH Equilibryum – Documento gerado em ' +
+    new Date().toLocaleString("pt-BR") + '</div>' +
+    '</body></html>';
+  var win = window.open('', '_blank', 'width=1000,height=700');
   if (win) {
-    win.document.write(finalHTML.replace('QR_LOGO_PLACEHOLDER', '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'));
+    win.document.write(html);
     win.document.close();
-    setTimeout(() => { win.focus(); win.print(); }, 600);
+    setTimeout(function() { win.focus(); win.print(); }, 500);
   }
-
-  // If Drive is connected, save HTML version to employee folder
-  if (driveReady) {
-    try {
-      const blob = new Blob([finalHTML.replace('QR_LOGO_PLACEHOLDER','')], { type: 'text/html;charset=utf-8' });
-      const file = new File([blob], `Avaliacao_Experiencia_${dias}d_${f.n.replace(/\s+/g,'_')}.html`, { type: 'text/html' });
-      await uploadFileToDrive(file, f.n);
-      toast('&#128196; Formulário salvo no Drive na pasta de ' + f.n + ' ☁️');
-    } catch(e) { console.warn('Drive save error:', e); }
-  }
-
-  closeModal('modal-form-exp');
-  btn.innerHTML = '&#128196; Gerar DOCX';
-  btn.disabled = false;
-  toast('&#128203; Formulário de experiência gerado!');
 }
-
 
 // ============================================================
 // BENEFÍCIOS
@@ -3064,358 +2798,406 @@ const BENEF_CSS_CLASS = {
   'Bônus':'bonus','Triênio':'trienio','Outros':'outros'
 };
 
-function fmtMoney(v) {
-  const n = parseFloat(v) || 0;
+function fmtMoney(val) {
+  var n = parseFloat(val) || 0;
   return 'R$ ' + n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 }
 
 function benefTab(id, btn) {
-  ['bt-func','bt-compras','bt-rel'].forEach(t => document.getElementById(t).style.display='none');
-  document.getElementById(id).style.display = 'block';
-  btn.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  ['bt-func','bt-compras','bt-rel'].forEach(function(t) {
+    var el = document.getElementById(t); if(el) el.style.display='none';
+  });
+  document.getElementById(id).style.display='block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   btn.classList.add('active');
-  if (id==='bt-func')     rdBenefFunc();
-  if (id==='bt-compras')  rdBenefCompras();
-  if (id==='bt-rel')      rdBenefRel();
+  if(id==='bt-func')    rdBenefFunc();
+  if(id==='bt-compras') rdBenefCompras();
+  if(id==='bt-rel')     rdBenefRel();
 }
 
 function benefTipoChange(sel) {
-  document.getElementById('batr-outros-group').style.display = sel.value==='Outros' ? 'flex' : 'none';
+  document.getElementById('batr-outros-group').style.display = sel.value==='Outros'?'flex':'none';
 }
 function benefCompTipoChange(sel) {
-  document.getElementById('bcomp-outros-grp').style.display = sel.value==='Outros' ? 'flex' : 'none';
+  document.getElementById('bcomp-outros-grp').style.display = sel.value==='Outros'?'flex':'none';
 }
 function calcBenefTotal() {
-  const qtd  = parseFloat(document.getElementById('bcomp-qtd').value) || 0;
-  const unit = parseFloat(document.getElementById('bcomp-vunit').value) || 0;
-  document.getElementById('bcomp-vtotal').value = (qtd * unit).toFixed(2);
+  var qtd  = parseFloat(document.getElementById('bcomp-qtd').value)||0;
+  var unit = parseFloat(document.getElementById('bcomp-vunit').value)||0;
+  document.getElementById('bcomp-vtotal').value = (qtd*unit).toFixed(2);
 }
 
-let benefFile = null, editingBenefAtrId = null, editingBenefCompId = null;
+var benefFile=null, editingBenefAtrId=null, editingBenefCompId=null;
 function handleBenefFile(inp) {
-  benefFile = inp.files[0] || null;
-  const el = document.getElementById('bcomp-file-list');
-  el.innerHTML = benefFile ? `<div class="doc-item"><span>&#128206; ${benefFile.name}</span></div>` : '';
+  benefFile = inp.files[0]||null;
+  var el = document.getElementById('bcomp-file-list');
+  el.innerHTML = benefFile ? '<div class="doc-item"><span>&#128206; '+benefFile.name+'</span></div>' : '';
 }
 
-// ── Atribuição ──────────────────────────────────────────────
 async function savBenefAtr() {
-  const fid  = v('batr-func');
-  const tipo = v('batr-tipo');
-  if (!fid || !tipo) { alert('Funcionário e Tipo são obrigatórios.'); return; }
-  const tipoFinal = tipo === 'Outros' ? (v('batr-outros-desc') || 'Outros') : tipo;
-  const list = DB.g('benef-atrib');
-  const rec = {
-    id: uid(), fid, tipo: tipoFinal, tipoBase: tipo,
-    valor: v('batr-valor'), ini: v('batr-ini'), fim: v('batr-fim'),
-    st: v('batr-st'), obs: v('batr-obs')
-  };
-  if (editingBenefAtrId) {
-    const idx = list.findIndex(x => x.id === editingBenefAtrId);
-    if (idx !== -1) list[idx] = { ...list[idx], ...rec, id: editingBenefAtrId };
-    editingBenefAtrId = null;
-    document.getElementById('benef-atr-title').textContent = 'Atribuir Benefício ao Funcionário';
-  } else {
-    list.push(rec);
-  }
-  DB.s('benef-atrib', list);
-  if (driveReady) await driveSync('benef-atrib');
-  closeModal('modal-benef-atr');
-  rdBenefFunc(); rdBenef();
-  toast('Benefício salvo' + (driveReady?' ☁️':'!'));
+  var fid=v('batr-func'), tipo=v('batr-tipo');
+  if(!fid||!tipo){alert('Funcionário e Tipo são obrigatórios.');return;}
+  var tipoFinal = tipo==='Outros'?(v('batr-outros-desc')||'Outros'):tipo;
+  var list=DB.g('benef-atrib');
+  var rec={id:uid(),fid,tipo:tipoFinal,tipoBase:tipo,valor:v('batr-valor'),ini:v('batr-ini'),fim:v('batr-fim'),st:v('batr-st'),obs:v('batr-obs')};
+  if(editingBenefAtrId){
+    var idx=list.findIndex(function(x){return x.id===editingBenefAtrId;});
+    if(idx!==-1)list[idx]={...list[idx],...rec,id:editingBenefAtrId};
+    editingBenefAtrId=null;
+    document.getElementById('benef-atr-title').textContent='Atribuir Benefício ao Funcionário';
+  } else {list.push(rec);}
+  DB.s('benef-atrib',list);
+  if(driveReady) await driveSync('benef-atrib');
+  closeModal('modal-benef-atr');rdBenefFunc();rdBenef();
+  toast('Benefício salvo'+(driveReady?' ☁️':'!'));
 }
 
 function rdBenefFunc() {
-  const filterFid = (document.getElementById('benef-func-filter')||{}).value || '';
-  let list = DB.g('benef-atrib');
-  if (filterFid) list = list.filter(x => x.fid === filterFid);
-  const funcs = DB.g('funcionarios');
-  const tb = document.getElementById('tb-benef-func');
-  if (!list.length) {
-    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhum benefício atribuído.</td></tr>';
-    return;
-  }
-  // Sort by func name then tipo
-  list = [...list].sort((a,b) => {
-    const fa = funcs.find(x=>x.id===a.fid); const fb = funcs.find(x=>x.id===b.fid);
-    return (fa?fa.n:'').localeCompare(fb?fb.n:'') || a.tipo.localeCompare(b.tipo);
+  var filterFid=(document.getElementById('benef-func-filter')||{}).value||'';
+  var list=DB.g('benef-atrib');
+  if(filterFid) list=list.filter(function(x){return x.fid===filterFid;});
+  var funcs=DB.g('funcionarios');
+  var tb=document.getElementById('tb-benef-func');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhum benefício atribuído.</td></tr>';return;}
+  list=[...list].sort(function(a,b){
+    var fa=funcs.find(function(x){return x.id===a.fid;}),fb=funcs.find(function(x){return x.id===b.fid;});
+    return (fa?fa.n:'').localeCompare(fb?fb.n:'');
   });
-  tb.innerHTML = list.map(r => {
-    const f = funcs.find(x => x.id === r.fid);
-    const cls = BENEF_CSS_CLASS[r.tipoBase||r.tipo] || 'outros';
-    const icon = BENEF_ICONS[r.tipoBase||r.tipo] || '📌';
-    const stBc = r.st==='Ativo'?'badge-green':r.st==='Suspenso'?'badge-yellow':'badge-red';
-    return `<tr class="benef-row-func">
-      <td><strong>${f?f.n:'—'}</strong><br><small style="color:var(--gray-400)">${f?f.car||'':''}</small></td>
-      <td><span class="benef-badge ${cls}">${icon} ${r.tipo}</span></td>
-      <td><strong>${r.valor?fmtMoney(r.valor):'—'}</strong></td>
-      <td>${r.ini?fd(r.ini):'—'}</td>
-      <td><span class="badge ${stBc}">${r.st||'Ativo'}</span></td>
-      <td style="max-width:160px;font-size:12px;color:var(--gray-600)">${r.obs||'—'}</td>
-      <td style="display:flex;gap:6px;">
-        <button class="btn-icon" onclick="editBenefAtr('${r.id}')">&#9999;&#65039;</button>
-        <button class="btn-icon danger" onclick="delBenefAtr('${r.id}')">&#128465;</button>
-      </td>
-    </tr>`;
-  }).join('');
+  tb.innerHTML='';
+  list.forEach(function(r){
+    var f=funcs.find(function(x){return x.id===r.fid;});
+    var cls=BENEF_CSS_CLASS[r.tipoBase||r.tipo]||'outros';
+    var icon=BENEF_ICONS[r.tipoBase||r.tipo]||'📌';
+    var stBc=r.st==='Ativo'?'badge-green':r.st==='Suspenso'?'badge-yellow':'badge-red';
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td><strong>'+(f?f.n:'—')+'</strong><br><small style="color:var(--gray-400)">'+(f?f.car||'':'')+'</small></td>'+
+      '<td><span class="benef-badge '+cls+'">'+icon+' '+r.tipo+'</span></td>'+
+      '<td><strong>'+(r.valor?fmtMoney(r.valor):'—')+'</strong></td>'+
+      '<td>'+(r.ini?fd(r.ini):'—')+'</td>'+
+      '<td><span class="badge '+stBc+'">'+(r.st||'Ativo')+'</span></td>'+
+      '<td style="max-width:160px;font-size:12px;color:var(--gray-600)">'+(r.obs||'—')+'</td>'+
+      '<td style="display:flex;gap:6px;"></td>';
+    var btns=tr.querySelector('td:last-child');
+    var be=document.createElement('button');be.className='btn-icon';be.innerHTML='&#9999;&#65039;';
+    (function(rid){be.onclick=function(){editBenefAtr(rid);};})(r.id);
+    var bd=document.createElement('button');bd.className='btn-icon danger';bd.innerHTML='&#128465;';
+    (function(rid){bd.onclick=function(){delBenefAtr(rid);};})(r.id);
+    btns.appendChild(be);btns.appendChild(bd);
+    tb.appendChild(tr);
+  });
 }
 
-function editBenefAtr(id) {
-  const r = DB.g('benef-atrib').find(x=>x.id===id); if(!r) return;
-  editingBenefAtrId = id;
+function editBenefAtr(id){
+  var r=DB.g('benef-atrib').find(function(x){return x.id===id;});if(!r)return;
+  editingBenefAtrId=id;
   fillFuncSel('batr-func');
-  document.getElementById('batr-func').value  = r.fid||'';
-  document.getElementById('batr-tipo').value  = r.tipoBase||r.tipo||'';
-  document.getElementById('batr-valor').value = r.valor||'';
-  document.getElementById('batr-ini').value   = r.ini||'';
-  document.getElementById('batr-fim').value   = r.fim||'';
-  document.getElementById('batr-st').value    = r.st||'Ativo';
-  document.getElementById('batr-obs').value   = r.obs||'';
-  document.getElementById('batr-outros-group').style.display = (r.tipoBase==='Outros')?'flex':'none';
-  document.getElementById('batr-outros-desc').value = (r.tipoBase==='Outros') ? r.tipo : '';
-  document.getElementById('benef-atr-title').textContent = '✏️ Editar Benefício';
+  document.getElementById('batr-func').value=r.fid||'';
+  document.getElementById('batr-tipo').value=r.tipoBase||r.tipo||'';
+  document.getElementById('batr-valor').value=r.valor||'';
+  document.getElementById('batr-ini').value=r.ini||'';
+  document.getElementById('batr-fim').value=r.fim||'';
+  document.getElementById('batr-st').value=r.st||'Ativo';
+  document.getElementById('batr-obs').value=r.obs||'';
+  document.getElementById('batr-outros-group').style.display=(r.tipoBase==='Outros')?'flex':'none';
+  document.getElementById('batr-outros-desc').value=(r.tipoBase==='Outros')?r.tipo:'';
+  document.getElementById('benef-atr-title').textContent='✏️ Editar Benefício';
   document.getElementById('modal-benef-atr').classList.add('open');
 }
-async function delBenefAtr(id) {
-  if(!confirm('Remover benefício?')) return;
-  DB.s('benef-atrib', DB.g('benef-atrib').filter(x=>x.id!==id));
+async function delBenefAtr(id){
+  if(!confirm('Remover benefício?'))return;
+  DB.s('benef-atrib',DB.g('benef-atrib').filter(function(x){return x.id!==id;}));
   if(driveReady) await driveSync('benef-atrib');
-  rdBenefFunc(); rdBenef();
+  rdBenefFunc();rdBenef();
 }
 
-// ── Compras ─────────────────────────────────────────────────
-async function savBenefComp() {
-  const tipo = v('bcomp-tipo'); if(!tipo){alert('Tipo obrigatório.');return;}
-  const tipoFinal = tipo==='Outros'?(v('bcomp-outros')||'Outros'):tipo;
-  const parts = Array.from(document.getElementById('bcomp-funcs').selectedOptions).map(o=>o.value);
-  let file = null;
-  if(driveReady && benefFile) {
-    try{ const up=await uploadFileToDrive(benefFile,'Beneficios'); file={name:benefFile.name,id:up.id,url:up.webViewLink}; } catch(e){file={name:benefFile?benefFile.name:''};}
+async function savBenefComp(){
+  var tipo=v('bcomp-tipo');if(!tipo){alert('Tipo obrigatório.');return;}
+  var tipoFinal=tipo==='Outros'?(v('bcomp-outros')||'Outros'):tipo;
+  var parts=Array.from(document.getElementById('bcomp-funcs').selectedOptions).map(function(o){return o.value;});
+  var file=null;
+  if(driveReady&&benefFile){
+    try{var up=await uploadFileToDrive(benefFile,'Beneficios');file={name:benefFile.name,id:up.id,url:up.webViewLink};}
+    catch(e){file={name:benefFile?benefFile.name:''};}
   } else if(benefFile){file={name:benefFile.name};}
-  benefFile=null; document.getElementById('bcomp-file-list').innerHTML='';
-  const list = DB.g('benef-compras');
-  const rec = {
-    id:uid(), tipo:tipoFinal, tipoBase:tipo,
-    data:v('bcomp-data'), comp:v('bcomp-comp'),
-    forn:v('bcomp-forn'), qtd:v('bcomp-qtd'),
-    vunit:v('bcomp-vunit'), vtotal:v('bcomp-vtotal'),
-    funcs:parts, obs:v('bcomp-obs'), file
-  };
+  benefFile=null;document.getElementById('bcomp-file-list').innerHTML='';
+  var list=DB.g('benef-compras');
+  var rec={id:uid(),tipo:tipoFinal,tipoBase:tipo,data:v('bcomp-data'),comp:v('bcomp-comp'),forn:v('bcomp-forn'),qtd:v('bcomp-qtd'),vunit:v('bcomp-vunit'),vtotal:v('bcomp-vtotal'),funcs:parts,obs:v('bcomp-obs'),file};
   if(editingBenefCompId){
-    const idx=list.findIndex(x=>x.id===editingBenefCompId);
+    var idx=list.findIndex(function(x){return x.id===editingBenefCompId;});
     if(idx!==-1)list[idx]={...list[idx],...rec,id:editingBenefCompId};
     editingBenefCompId=null;
     document.getElementById('benef-comp-title').textContent='Nova Compra / Recarga de Benefício';
-  } else { list.push(rec); }
+  } else {list.push(rec);}
   DB.s('benef-compras',list);
   if(driveReady) await driveSync('benef-compras');
-  closeModal('modal-benef-comp'); rdBenefCompras(); rdBenef();
+  closeModal('modal-benef-comp');rdBenefCompras();rdBenef();
   toast('Compra salva'+(driveReady?' ☁️':'!'));
 }
 
-function rdBenefCompras() {
-  const filter = (document.getElementById('benef-comp-filter')||{}).value||'';
-  let list = DB.g('benef-compras');
-  if(filter) list = list.filter(x=>x.tipo===filter||x.tipoBase===filter);
-  list = [...list].sort((a,b)=>(b.data||'').localeCompare(a.data||''));
-  const funcs = DB.g('funcionarios');
-  const tb = document.getElementById('tb-benef-comp');
+function rdBenefCompras(){
+  var filter=(document.getElementById('benef-comp-filter')||{value:''}).value||'';
+  var list=DB.g('benef-compras');
+  if(filter) list=list.filter(function(x){return x.tipo===filter||x.tipoBase===filter;});
+  list=[...list].sort(function(a,b){return (b.data||'').localeCompare(a.data||'');});
+  var funcs=DB.g('funcionarios');
+  var tb=document.getElementById('tb-benef-comp');
   if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhuma compra registrada.</td></tr>';return;}
-  tb.innerHTML = list.map(c=>{
-    const cls = BENEF_CSS_CLASS[c.tipoBase||c.tipo]||'outros';
-    const icon = BENEF_ICONS[c.tipoBase||c.tipo]||'📌';
-    const fLink = c.file&&c.file.url?`<a href="${c.file.url}" target="_blank" class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px">&#128206; NF</a>`:(c.file?'📎':'—');
-    return `<tr>
-      <td>${c.data?fd(c.data):'—'}</td>
-      <td><span class="benef-badge ${cls}">${icon} ${c.tipo}</span></td>
-      <td>${c.forn||'—'}</td>
-      <td>${c.qtd||1}</td>
-      <td>${c.vunit?fmtMoney(c.vunit):'—'}</td>
-      <td><strong>${c.vtotal?fmtMoney(c.vtotal):'—'}</strong></td>
-      <td>${c.comp||'—'}</td>
-      <td style="display:flex;gap:5px;align-items:center;">
-        ${fLink}
-        <button class="btn-icon" onclick="editBenefComp('${c.id}')">&#9999;&#65039;</button>
-        <button class="btn-icon danger" onclick="delBenefComp('${c.id}')">&#128465;</button>
-      </td>
-    </tr>`;
-  }).join('');
-  // Resumo por tipo
-  const totais = {};
-  list.forEach(c=>{ const t=c.tipo||'?'; totais[t]=(totais[t]||0)+(parseFloat(c.vtotal)||0); });
-  const el = document.getElementById('benef-comp-resumo');
-  el.innerHTML = Object.entries(totais).map(([t,val])=>{
-    const cls=BENEF_CSS_CLASS[t]||'outros';
-    return `<div style="padding:10px 16px;background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);font-size:13px;border-left:3px solid var(--green)">
-      <div style="font-size:18px;font-weight:700;color:var(--green-dark)">${fmtMoney(val)}</div>
-      <div style="color:var(--gray-600)">${t}</div>
-    </div>`;
+  tb.innerHTML='';
+  list.forEach(function(c){
+    var cls=BENEF_CSS_CLASS[c.tipoBase||c.tipo]||'outros';
+    var icon=BENEF_ICONS[c.tipoBase||c.tipo]||'📌';
+    var fLink=c.file&&c.file.url?'<a href="'+c.file.url+'" target="_blank" class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px">&#128206; NF</a>':(c.file?'📎':'—');
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+(c.data?fd(c.data):'—')+'</td>'+
+      '<td><span class="benef-badge '+cls+'">'+icon+' '+c.tipo+'</span></td>'+
+      '<td>'+(c.forn||'—')+'</td><td>'+(c.qtd||1)+'</td>'+
+      '<td>'+(c.vunit?fmtMoney(c.vunit):'—')+'</td>'+
+      '<td><strong>'+(c.vtotal?fmtMoney(c.vtotal):'—')+'</strong></td>'+
+      '<td>'+(c.comp||'—')+'</td>'+
+      '<td style="display:flex;gap:5px;align-items:center;">'+fLink+'</td>';
+    var btns=tr.querySelector('td:last-child');
+    var be=document.createElement('button');be.className='btn-icon';be.innerHTML='&#9999;&#65039;';
+    (function(cid){be.onclick=function(){editBenefComp(cid);};})(c.id);
+    var bd=document.createElement('button');bd.className='btn-icon danger';bd.innerHTML='&#128465;';
+    (function(cid){bd.onclick=function(){delBenefComp(cid);};})(c.id);
+    btns.appendChild(be);btns.appendChild(bd);
+    tb.appendChild(tr);
+  });
+  var el=document.getElementById('benef-comp-resumo');
+  var totais={};
+  list.forEach(function(c){var t=c.tipo||'?';totais[t]=(totais[t]||0)+(parseFloat(c.vtotal)||0);});
+  el.innerHTML=Object.entries(totais).map(function(entry){
+    return '<div style="padding:10px 16px;background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);font-size:13px;border-left:3px solid var(--green)"><div style="font-size:18px;font-weight:700;color:var(--green-dark)">'+fmtMoney(entry[1])+'</div><div style="color:var(--gray-600)">'+entry[0]+'</div></div>';
   }).join('');
 }
 
 function editBenefComp(id){
-  const c=DB.g('benef-compras').find(x=>x.id===id); if(!c) return;
+  var c=DB.g('benef-compras').find(function(x){return x.id===id;});if(!c)return;
   editingBenefCompId=id;
   fillFuncSel('bcomp-funcs',true);
-  document.getElementById('bcomp-tipo').value  = c.tipoBase||c.tipo||'';
-  document.getElementById('bcomp-data').value  = c.data||'';
-  document.getElementById('bcomp-comp').value  = c.comp||'';
-  document.getElementById('bcomp-forn').value  = c.forn||'';
-  document.getElementById('bcomp-qtd').value   = c.qtd||1;
-  document.getElementById('bcomp-vunit').value = c.vunit||'';
-  document.getElementById('bcomp-vtotal').value= c.vtotal||'';
-  document.getElementById('bcomp-obs').value   = c.obs||'';
+  document.getElementById('bcomp-tipo').value=c.tipoBase||c.tipo||'';
+  document.getElementById('bcomp-data').value=c.data||'';
+  document.getElementById('bcomp-comp').value=c.comp||'';
+  document.getElementById('bcomp-forn').value=c.forn||'';
+  document.getElementById('bcomp-qtd').value=c.qtd||1;
+  document.getElementById('bcomp-vunit').value=c.vunit||'';
+  document.getElementById('bcomp-vtotal').value=c.vtotal||'';
+  document.getElementById('bcomp-obs').value=c.obs||'';
   document.getElementById('bcomp-outros-grp').style.display=(c.tipoBase==='Outros')?'flex':'none';
   document.getElementById('bcomp-outros').value=(c.tipoBase==='Outros')?c.tipo:'';
-  Array.from(document.getElementById('bcomp-funcs').options).forEach(o=>{o.selected=(c.funcs||[]).includes(o.value);});
+  Array.from(document.getElementById('bcomp-funcs').options).forEach(function(o){o.selected=(c.funcs||[]).includes(o.value);});
   document.getElementById('benef-comp-title').textContent='✏️ Editar Compra';
   document.getElementById('modal-benef-comp').classList.add('open');
 }
 async function delBenefComp(id){
-  if(!confirm('Excluir compra?')) return;
-  DB.s('benef-compras',DB.g('benef-compras').filter(x=>x.id!==id));
+  if(!confirm('Excluir compra?'))return;
+  DB.s('benef-compras',DB.g('benef-compras').filter(function(x){return x.id!==id;}));
   if(driveReady) await driveSync('benef-compras');
-  rdBenefCompras(); rdBenef();
+  rdBenefCompras();rdBenef();
 }
 
-// ── Relatório Geral ──────────────────────────────────────────
 function fillBenefRelMeses(){
-  const sel=document.getElementById('benef-rel-mes'); if(!sel) return;
-  const comps=[...new Set(DB.g('benef-compras').map(c=>c.comp).filter(Boolean))].sort().reverse();
+  var sel=document.getElementById('benef-rel-mes');if(!sel)return;
+  var comps=[...new Set(DB.g('benef-compras').map(function(c){return c.comp;}).filter(Boolean))].sort().reverse();
   sel.innerHTML='<option value="">Todos os meses</option>';
-  comps.forEach(c=>{const o=document.createElement('option');o.value=c;const [y,m]=c.split('-');o.textContent=m+'/'+y;sel.appendChild(o);});
+  comps.forEach(function(c){var o=document.createElement('option');o.value=c;var p=c.split('-');o.textContent=p[1]+'/'+p[0];sel.appendChild(o);});
 }
+
 function rdBenefRel(){
-  const compFilter=(document.getElementById('benef-rel-mes')||{}).value||'';
-  const funcs=DB.g('funcionarios').filter(f=>f.st==='Ativo');
-  const atribs=DB.g('benef-atrib').filter(a=>a.st==='Ativo');
-  const COLS=['VR – Vale Refeição','VA – Vale Alimentação','Combustível','Assistência Médica','Assistência Odontológica','Assiduidade','Bônus','Triênio','Outros'];
-  const totRow={};COLS.forEach(c=>totRow[c]=0);let grandTotal=0;
-  const tb=document.getElementById('tb-benef-rel');
+  var funcs=DB.g('funcionarios').filter(function(f){return f.st==='Ativo';});
+  var atribs=DB.g('benef-atrib').filter(function(a){return a.st==='Ativo';});
+  var COLS=['VR – Vale Refeição','VA – Vale Alimentação','Combustível','Assistência Médica','Assistência Odontológica','Assiduidade','Bônus','Triênio','Outros'];
+  var totRow={};COLS.forEach(function(c){totRow[c]=0;});var grandTotal=0;
+  var tb=document.getElementById('tb-benef-rel');
   if(!funcs.length){tb.innerHTML='<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhum funcionário ativo.</td></tr>';return;}
-  const rows=funcs.map(f=>{
-    const fBenefs=atribs.filter(a=>a.fid===f.id);
-    const vals={};COLS.forEach(c=>vals[c]=0);
-    fBenefs.forEach(a=>{
-      const base=a.tipoBase||a.tipo;
-      const col=COLS.includes(base)?base:'Outros';
-      vals[col]+=(parseFloat(a.valor)||0);
-    });
-    const total=Object.values(vals).reduce((s,v)=>s+v,0);
-    grandTotal+=total;
-    COLS.forEach(c=>totRow[c]+=vals[c]);
-    const cells=COLS.map(c=>`<td style="text-align:right">${vals[c]>0?fmtMoney(vals[c]):'—'}</td>`).join('');
-    return `<tr><td><strong>${f.n}</strong></td>${cells}<td style="text-align:right;font-weight:700;color:var(--green-dark)">${total>0?fmtMoney(total):'—'}</td></tr>`;
-  }).join('');
-  tb.innerHTML=rows;
-  const totCells=COLS.map(c=>`<td style="text-align:right">${totRow[c]>0?fmtMoney(totRow[c]):'—'}</td>`).join('');
-  document.getElementById('tf-benef-rel').innerHTML=`<tr><td><strong>TOTAL</strong></td>${totCells}<td style="text-align:right;color:var(--green-dark)">${fmtMoney(grandTotal)}</td></tr>`;
-  // Cards por tipo
-  const cards=document.getElementById('benef-rel-cards');
-  const compras=DB.g('benef-compras');
-  const totCompras={};COLS.forEach(c=>totCompras[c]=0);
-  compras.filter(c=>!compFilter||c.comp===compFilter).forEach(c=>{
-    const base=c.tipoBase||c.tipo;const col=COLS.includes(base)?base:'Outros';
-    totCompras[col]+=(parseFloat(c.vtotal)||0);
+  tb.innerHTML='';
+  funcs.forEach(function(f){
+    var fBenefs=atribs.filter(function(a){return a.fid===f.id;});
+    var vals={};COLS.forEach(function(c){vals[c]=0;});
+    fBenefs.forEach(function(a){var base=a.tipoBase||a.tipo;var col=COLS.includes(base)?base:'Outros';vals[col]+=(parseFloat(a.valor)||0);});
+    var total=Object.values(vals).reduce(function(s,val){return s+val;},0);
+    grandTotal+=total;COLS.forEach(function(c){totRow[c]+=vals[c];});
+    var tr=document.createElement('tr');
+    var cells='<td><strong>'+f.n+'</strong></td>';
+    COLS.forEach(function(c){cells+='<td style="text-align:right">'+(vals[c]>0?fmtMoney(vals[c]):'—')+'</td>';});
+    cells+='<td style="text-align:right;font-weight:700;color:var(--green-dark)">'+(total>0?fmtMoney(total):'—')+'</td>';
+    tr.innerHTML=cells;tb.appendChild(tr);
   });
-  cards.innerHTML=COLS.filter(c=>totCompras[c]>0||totRow[c]>0).map(c=>`
-    <div style="background:#fff;border-radius:var(--radius-sm);padding:16px;box-shadow:var(--shadow);border-top:3px solid var(--green)">
-      <div style="font-size:22px">${BENEF_ICONS[c]||'📌'}</div>
-      <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin:4px 0">${c}</div>
-      <div style="font-size:11px;color:var(--gray-600)">Atribuído: <strong>${fmtMoney(totRow[c])}</strong>/mês</div>
-      <div style="font-size:11px;color:var(--gray-600)">Comprado: <strong>${fmtMoney(totCompras[c])}</strong></div>
-    </div>`).join('');
+  var tf=document.getElementById('tf-benef-rel');
+  var totCells='<td><strong>TOTAL</strong></td>';
+  COLS.forEach(function(c){totCells+='<td style="text-align:right">'+(totRow[c]>0?fmtMoney(totRow[c]):'—')+'</td>';});
+  totCells+='<td style="text-align:right;color:var(--green-dark)">'+fmtMoney(grandTotal)+'</td>';
+  tf.innerHTML='<tr>'+totCells+'</tr>';
+  var compFilter=(document.getElementById('benef-rel-mes')||{value:''}).value||'';
+  var compras=DB.g('benef-compras');
+  var totCompras={};COLS.forEach(function(c){totCompras[c]=0;});
+  compras.filter(function(c){return !compFilter||c.comp===compFilter;}).forEach(function(c){
+    var base=c.tipoBase||c.tipo;var col=COLS.includes(base)?base:'Outros';totCompras[col]+=(parseFloat(c.vtotal)||0);
+  });
+  var cards=document.getElementById('benef-rel-cards');
+  cards.innerHTML=COLS.filter(function(c){return totCompras[c]>0||totRow[c]>0;}).map(function(c){
+    return '<div style="background:#fff;border-radius:var(--radius-sm);padding:16px;box-shadow:var(--shadow);border-top:3px solid var(--green)">'+
+      '<div style="font-size:22px">'+(BENEF_ICONS[c]||'📌')+'</div>'+
+      '<div style="font-weight:700;font-size:13px;color:var(--green-dark);margin:4px 0">'+c+'</div>'+
+      '<div style="font-size:11px;color:var(--gray-600)">Atribuído: <strong>'+fmtMoney(totRow[c])+'</strong>/mês</div>'+
+      '<div style="font-size:11px;color:var(--gray-600)">Comprado: <strong>'+fmtMoney(totCompras[c])+'</strong></div></div>';
+  }).join('');
 }
+
+function exportRelCSV() {
+  var empF=(document.getElementById('rel-emp')||{}).value||'';
+  var depF=(document.getElementById('rel-dep')||{}).value||'';
+  var stF=(document.getElementById('rel-st')||{}).value||'';
+  var diF=(document.getElementById('rel-di')||{}).value||'';
+  var dfF=(document.getElementById('rel-df')||{}).value||'';
+  var list=DB.g('funcionarios');
+  if(empF) list=list.filter(function(f){return f.emp===empF;});
+  if(depF) list=list.filter(function(f){return f.dep===depF;});
+  if(stF)  list=list.filter(function(f){return f.st===stF;});
+  if(diF)  list=list.filter(function(f){return (f.adm||'')>=diF;});
+  if(dfF)  list=list.filter(function(f){return (f.adm||'')<=dfF;});
+  var deps=DB.g('departamentos');var emps=DB.g('empresas');
+  var sep=';';
+  var headers=['Nº','Nome','CPF','RG','Nascimento','Sexo','Estado Civil','Telefone','Email','Endereço','Cargo','Departamento','Empresa','Admissão','Tipo Contrato','Salário','Gestor','Status'];
+  var rows=[headers.join(sep)];
+  list.forEach(function(f,i){
+    var dep=deps.find(function(d){return d.id===f.dep;});
+    var emp=emps.find(function(e){return e.id===f.emp;});
+    var row=[i+1,f.n||'',f.cpf||'',f.rg||'',f.nas||'',f.sex||'',f.ec||'',f.tel||'',f.email||'',f.end||'',f.car||'',dep?dep.nome:'',emp?emp.razao:'',f.adm||'',f.tip||'CLT',f.sal||'',f.ges||'',f.st||'Ativo'];
+    rows.push(row.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(sep));
+  });
+  var csv='\uFEFF'+rows.join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='relatorio_funcionarios_'+td()+'.csv';a.click();
+}
+
 
 function exportBenefCSV(){
-  const funcs=DB.g('funcionarios');
-  const atribs=DB.g('benef-atrib');
-  const rows=[['Funcionário','CPF','Cargo','Tipo Benefício','Valor Mensal','Início','Status','Obs.']];
-  atribs.forEach(a=>{
-    const f=funcs.find(x=>x.id===a.fid);
-    rows.push([f?f.n:'?',f?f.cpf:'',f?f.car||'':'',a.tipo,a.valor||'',a.ini||'',a.st||'Ativo',a.obs||'']);
-  });
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  var funcs=DB.g('funcionarios');var atribs=DB.g('benef-atrib');
+  var rows=[['Funcionário','CPF','Cargo','Tipo Benefício','Valor Mensal','Início','Status','Obs.']];
+  atribs.forEach(function(a){var f=funcs.find(function(x){return x.id===a.fid;});rows.push([f?f.n:'?',f?f.cpf:'',f?f.car||'':'',a.tipo,a.valor||'',a.ini||'',a.st||'Ativo',a.obs||'']);});
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='beneficios_'+td()+'.csv';a.click();
 }
 
-// Dashboard update para incluir benefícios
 function rdBenef(){
-  // Preencher o filtro de funcionários da aba "Por Funcionário"
-  const sel=document.getElementById('benef-func-filter');
+  var sel=document.getElementById('benef-func-filter');
   if(sel){
-    const cur=sel.value;
-    sel.innerHTML='<option value="">Todos os funcionários</option>';
-    DB.g('funcionarios').forEach(f=>{const o=document.createElement('option');o.value=f.id;o.textContent=f.n;sel.appendChild(o);});
-    if(cur) sel.value=cur;
+    var cur=sel.value;sel.innerHTML='<option value="">Todos os funcionários</option>';
+    DB.g('funcionarios').forEach(function(f){var o=document.createElement('option');o.value=f.id;o.textContent=f.n;sel.appendChild(o);});
+    if(cur)sel.value=cur;
   }
   fillBenefRelMeses();
 }
 
 // ============================================================
-// INIT
+// TREINAMENTOS
 // ============================================================
-function init() {
-  updDash(); rdUni();
-  initRelFilters(); rdRel();
-  rdBenef();
-  // Auto-refresh token a cada 50 minutos
-  setInterval(() => {
-    if (driveReady && CLIENT_ID) {
-      console.log('Auto-refreshing Drive token...');
-      silentReconnect();
-    }
-  }, 50 * 60 * 1000);
+var treinFiles=[], editingTreinId=null;
+function handleTreinFile(inp){treinFiles=Array.from(inp.files);var el=document.getElementById('tr-file-list');el.innerHTML=treinFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
+function treinTab(id,btn){['tr-agenda','tr-conc','tr-todos'].forEach(function(t){document.getElementById(t).style.display='none';});document.getElementById(id).style.display='block';btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');}
+async function savTrein(){
+  var titulo=document.getElementById('tr-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
+  var parts=Array.from(document.getElementById('tr-parts').selectedOptions).map(function(o){return o.value;});
+  var list=DB.g('treinamentos');var files=[];
+  if(driveReady&&treinFiles.length>0){for(var file of treinFiles){try{var up=await uploadFileToDrive(file,'Treinamentos');files.push({name:file.name,id:up.id,url:up.webViewLink});toast('📎 '+file.name+' enviado!');}catch(e){files.push({name:file.name});}}}
+  else{files=treinFiles.map(function(f){return {name:f.name};});}
+  treinFiles=[];
+  if(editingTreinId){var idx=list.findIndex(function(x){return x.id===editingTreinId;});if(idx!==-1)list[idx]={...list[idx],titulo,desc:v('tr-desc'),data:v('tr-data'),hora:v('tr-hora'),local:v('tr-local'),inst:v('tr-inst'),ch:v('tr-ch'),st:v('tr-st'),parts};editingTreinId=null;}
+  else{list.push({id:uid(),titulo,desc:v('tr-desc'),data:v('tr-data'),hora:v('tr-hora'),local:v('tr-local'),inst:v('tr-inst'),ch:v('tr-ch'),st:v('tr-st'),parts,files});}
+  DB.s('treinamentos',list);if(driveReady) await driveSync('treinamentos');
+  closeModal('modal-trein');rdTrein();toast('Treinamento salvo'+(driveReady?' ☁️':'!'));
 }
-
-// Auto-detect saved config
-window.addEventListener('load', () => {
-  const savedCID   = localStorage.getItem('eq_client_id');
-  const savedToken = localStorage.getItem('eq_drive_token');
-  const skip       = localStorage.getItem('eq_skip_drive');
-
-  hideAllWizards();
-
-  if (skip) {
-    updDriveStatus(false);
-    init();
-    return;
+function rdTrein(){
+  var all=DB.g('treinamentos');var funcs=DB.g('funcionarios');
+  var agend=all.filter(function(t){return t.st==='Agendado'||t.st==='Em andamento';});
+  var conc=all.filter(function(t){return t.st==='Concluído';});
+  function renderList(arr,elId){
+    var el=document.getElementById(elId);
+    if(!arr.length){el.innerHTML='<p style="color:var(--gray-400);padding:20px 0">Nenhum treinamento.</p>';return;}
+    el.innerHTML=arr.map(function(t){
+      var bcSt={Agendado:'badge-blue','Em andamento':'badge-green',Concluído:'badge-gray',Cancelado:'badge-red'}[t.st]||'badge-gray';
+      var partsNames=(t.parts||[]).map(function(id){var f=funcs.find(function(x){return x.id===id;});return f?f.n:'?';}).join(', ');
+      var filesHtml=(t.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
+      return '<div class="trein-card"><div class="tc-header"><div><div class="tc-title">'+t.titulo+'</div>'+
+        '<div class="tc-meta">&#128197; '+(t.data?fd(t.data):'—')+' '+(t.hora||'')+' | &#128205; '+(t.local||'—')+' | &#9201; '+(t.ch||'?')+'h | &#128100; '+(t.inst||'—')+'</div></div>'+
+        '<div style="display:flex;gap:6px;align-items:center;"><span class="badge '+bcSt+'">'+t.st+'</span>'+
+        '<button class="btn-icon" onclick="editTrein(\''+t.id+'\')">&#9999;&#65039;</button>'+
+        '<button class="btn-icon danger" onclick="delTrein(\''+t.id+'\')">&#128465;</button></div></div>'+
+        (t.desc?'<p style="font-size:13px;color:var(--gray-600);margin-bottom:8px">'+t.desc+'</p>':'')+
+        (partsNames?'<p style="font-size:12px;color:var(--gray-600)"><strong>Participantes:</strong> '+partsNames+'</p>':'')+
+        (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+filesHtml+'</div>':'')+
+        '</div>';
+    }).join('');
   }
-
-  if (savedToken && savedCID) {
-    // Tem token salvo — tentar usar e verificar se ainda é válido
-    CLIENT_ID = savedCID;
-    driveToken = savedToken;
-    document.getElementById('client-id-inp').value = savedCID;
-    document.getElementById('drive-bar').style.display = 'flex';
-    // Testar token fazendo uma chamada simples
-    testAndConnect();
-    return;
-  }
-
-  if (savedCID) {
-    // Tem Client ID mas sem token — reconectar silenciosamente
-    CLIENT_ID = savedCID;
-    document.getElementById('client-id-inp').value = savedCID;
-    document.getElementById('drive-bar').style.display = 'flex';
-    updDriveStatus(false);
-    silentReconnect();
-    return;
-  }
-
-  // Primeira vez — mostrar wizard
-  document.getElementById('setup-wizard').style.display = 'flex';
-});
-
-function hideAllWizards() {
-  ['setup-wizard','token-wizard'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  document.getElementById('drive-bar').style.display = 'flex';
+  renderList(agend,'trein-agenda-list');renderList(conc,'trein-conc-list');renderList(all,'trein-todos-list');
 }
+function editTrein(id){var t=DB.g('treinamentos').find(function(x){return x.id===id;});if(!t)return;editingTreinId=id;fillFuncSel('tr-parts',true);document.getElementById('tr-titulo').value=t.titulo||'';document.getElementById('tr-desc').value=t.desc||'';document.getElementById('tr-data').value=t.data||'';document.getElementById('tr-hora').value=t.hora||'';document.getElementById('tr-local').value=t.local||'';document.getElementById('tr-inst').value=t.inst||'';document.getElementById('tr-ch').value=t.ch||4;document.getElementById('tr-st').value=t.st||'Agendado';Array.from(document.getElementById('tr-parts').options).forEach(function(o){o.selected=(t.parts||[]).includes(o.value);});document.getElementById('trein-modal-title').textContent='✏️ Editar Treinamento';document.getElementById('modal-trein').classList.add('open');}
+async function delTrein(id){if(!confirm('Excluir treinamento?'))return;DB.s('treinamentos',DB.g('treinamentos').filter(function(t){return t.id!==id;}));if(driveReady) await driveSync('treinamentos');rdTrein();}
+
+// ============================================================
+// CAMPANHAS
+// ============================================================
+var campFiles=[], editingCampId=null;
+function handleCampFile(inp){campFiles=Array.from(inp.files);var el=document.getElementById('ca-file-list');el.innerHTML=campFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
+async function savCamp(){
+  var titulo=document.getElementById('ca-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
+  var list=DB.g('campanhas');var files=[];
+  if(driveReady&&campFiles.length>0){for(var file of campFiles){try{var up=await uploadFileToDrive(file,'Campanhas');files.push({name:file.name,id:up.id,url:up.webViewLink});}catch(e){files.push({name:file.name});}}}
+  else{files=campFiles.map(function(f){return {name:f.name};});}
+  campFiles=[];
+  if(editingCampId){var idx=list.findIndex(function(x){return x.id===editingCampId;});if(idx!==-1)list[idx]={...list[idx],titulo,desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor')};editingCampId=null;}
+  else{list.push({id:uid(),titulo,desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor'),files});}
+  DB.s('campanhas',list);if(driveReady) await driveSync('campanhas');
+  closeModal('modal-camp');rdCamp();toast('Campanha salva'+(driveReady?' ☁️':'!'));
+}
+function rdCamp(){
+  var list=DB.g('campanhas');var el=document.getElementById('camp-list');
+  if(!list.length){el.innerHTML='<div class="alert alert-info">&#128200; Nenhuma campanha cadastrada.</div>';return;}
+  el.innerHTML=list.map(function(c){
+    var filesHtml=(c.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
+    return '<div class="camp-card '+(c.cor||'green')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="cc-title">'+c.titulo+'</div><div class="cc-meta">&#128197; '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+' | &#128100; '+(c.resp||'—')+'</div>'+(c.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+c.desc+'</p>':'')+'</div>'+
+      '<div style="display:flex;gap:6px;"><button class="btn-icon" onclick="editCamp(\''+c.id+'\')">&#9999;&#65039;</button><button class="btn-icon danger" onclick="delCamp(\''+c.id+'\')">&#128465;</button></div></div>'+
+      (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+filesHtml+'</div>':'')+
+      '</div>';
+  }).join('');
+}
+function editCamp(id){var c=DB.g('campanhas').find(function(x){return x.id===id;});if(!c)return;editingCampId=id;document.getElementById('ca-titulo').value=c.titulo||'';document.getElementById('ca-desc').value=c.desc||'';document.getElementById('ca-ini').value=c.ini||'';document.getElementById('ca-fim').value=c.fim||'';document.getElementById('ca-resp').value=c.resp||'';document.getElementById('ca-cor').value=c.cor||'green';document.getElementById('camp-modal-title').textContent='✏️ Editar Campanha';document.getElementById('modal-camp').classList.add('open');}
+async function delCamp(id){if(!confirm('Excluir?'))return;DB.s('campanhas',DB.g('campanhas').filter(function(c){return c.id!==id;}));if(driveReady) await driveSync('campanhas');rdCamp();}
+
+// ============================================================
+// POLÍTICAS
+// ============================================================
+var polFiles=[], editingPolId=null;
+function handlePolFile(inp){polFiles=Array.from(inp.files);var el=document.getElementById('po-file-list');el.innerHTML=polFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
+async function savPol(){
+  var titulo=document.getElementById('po-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
+  var list=DB.g('politicas');var files=[];
+  if(driveReady&&polFiles.length>0){for(var file of polFiles){try{var up=await uploadFileToDrive(file,'Politicas e Normas');files.push({name:file.name,id:up.id,url:up.webViewLink});}catch(e){files.push({name:file.name});}}}
+  else{files=polFiles.map(function(f){return {name:f.name};});}
+  polFiles=[];
+  if(editingPolId){var idx=list.findIndex(function(x){return x.id===editingPolId;});if(idx!==-1)list[idx]={...list[idx],titulo,cat:v('po-cat'),ver:v('po-ver'),data:v('po-data'),desc:v('po-desc')};editingPolId=null;}
+  else{list.push({id:uid(),titulo,cat:v('po-cat'),ver:v('po-ver'),data:v('po-data'),desc:v('po-desc'),files});}
+  DB.s('politicas',list);if(driveReady) await driveSync('politicas');
+  closeModal('modal-pol');rdPol();toast('Política salva'+(driveReady?' ☁️':'!'));
+}
+function rdPol(){
+  var list=DB.g('politicas');var el=document.getElementById('pol-list');
+  if(!list.length){el.innerHTML='<div class="alert alert-info">&#128737; Nenhuma política cadastrada.</div>';return;}
+  var catIcons={'Política Interna':'&#128196;','Norma Regulamentadora':'&#9888;&#65039;','Procedimento':'&#128221;','Manual':'&#128218;','Comunicado':'&#128226;','Outro':'&#128203;'};
+  el.innerHTML=list.map(function(p){
+    var filesHtml=(p.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
+    return '<div class="pol-card"><div class="pol-icon">'+(catIcons[p.cat]||'&#128203;')+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="pol-title">'+p.titulo+'</div><div class="pol-desc">'+(p.cat||'')+' | Versão: '+(p.ver||'—')+' | Publicado: '+(p.data?fd(p.data):'—')+'</div>'+(p.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+p.desc+'</p>':'')+'</div>'+
+      '<div style="display:flex;gap:6px;"><button class="btn-icon" onclick="editPol(\''+p.id+'\')">&#9999;&#65039;</button><button class="btn-icon danger" onclick="delPol(\''+p.id+'\')">&#128465;</button></div></div>'+
+      (filesHtml?'<div class="pol-docs">'+filesHtml+'</div>':'')+
+      '</div></div>';
+  }).join('');
+}
+function editPol(id){var p=DB.g('politicas').find(function(x){return x.id===id;});if(!p)return;editingPolId=id;document.getElementById('po-titulo').value=p.titulo||'';document.getElementById('po-cat').value=p.cat||'Política Interna';document.getElementById('po-ver').value=p.ver||'v1.0';document.getElementById('po-data').value=p.data||'';document.getElementById('po-desc').value=p.desc||'';document.getElementById('pol-modal-title').textContent='✏️ Editar Política';document.getElementById('modal-pol').classList.add('open');}
+async function delPol(id){if(!confirm('Excluir?'))return;DB.s('politicas',DB.g('politicas').filter(function(p){return p.id!==id;}));if(driveReady) await driveSync('politicas');rdPol();}
 
 // Testa se o token ainda é válido
 async function testAndConnect() {
@@ -3424,7 +3206,6 @@ async function testAndConnect() {
       headers: { 'Authorization': 'Bearer ' + driveToken }
     });
     if (r.ok) {
-      // Token válido!
       const data = await r.json();
       driveReady = true;
       const email = data.user ? data.user.emailAddress : '';
@@ -3436,26 +3217,20 @@ async function testAndConnect() {
       await syncFromDrive();
       init();
     } else {
-      // Token expirado — reconectar silenciosamente
-      driveToken = null;
-      driveReady = false;
+      driveToken = null; driveReady = false;
       silentReconnect();
     }
   } catch(e) {
-    driveToken = null;
-    driveReady = false;
+    driveToken = null; driveReady = false;
     silentReconnect();
   }
 }
 
-// Reconecta automaticamente sem mostrar tela — carrega dados locais enquanto reconecta
 function silentReconnect() {
-  // Carrega dados locais primeiro para não ficar vazio
   init();
   updDriveStatus(false);
-  // Tenta reconectar em background
   if (!CLIENT_ID) return;
-  toast('🔄 Reconectando ao Drive...', 'warn');
+  toast('Reconectando ao Drive...', 'warn');
   gapi.load('client', async () => {
     try {
       await gapi.client.init({});
@@ -3485,51 +3260,105 @@ function silentReconnect() {
           } catch(e) { updDriveStatus(true, ''); }
           await ensureRHFolder();
           await syncFromDrive();
-          toast('Drive reconectado! Dados sincronizados. ✅');
+          toast('Drive reconectado! ✅');
         },
-        error_callback: (err) => {
-          console.warn('Silent reconnect error:', err);
-        }
+        error_callback: (err) => { console.warn('Silent reconnect error:', err); }
       });
       tokenClient.requestAccessToken({ prompt: '' });
     } catch(e) {
       console.warn('Silent reconnect failed:', e);
-      toast('Usando dados locais. Clique em Reconectar para tentar novamente.', 'warn');
     }
   });
 }
 
-function showReconnectChoice() {
-  // Cria modal de reconexão simples
-  const div = document.createElement('div');
-  div.id = 'reconnect-modal';
-  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2002;display:flex;align-items:center;justify-content:center;padding:20px;';
-  div.innerHTML = `<div class="wizard-box" style="max-width:440px;">
-    <h2>🔄 Sessão expirada</h2>
-    <p style="margin-bottom:16px">O token de acesso expirou. Como você vai continuar?</p>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button class="btn btn-primary" onclick="adminReconnect()">👤 Sou o administrador — fazer novo login</button>
-      <button class="btn btn-outline" onclick="showTokenEntry()">🔑 Tenho o token do administrador</button>
-      <button class="btn btn-outline btn-sm" onclick="skipDrive()">Continuar sem Drive (modo local)</button>
-    </div>
-  </div>`;
-  document.body.appendChild(div);
-  document.getElementById('drive-bar').style.display = 'flex';
-  updDriveStatus(false);
-  init();
+// ANIVERSARIANTES
+function rdBday() {
+  const filter = (document.getElementById('bday-filter') || {value:'mes'}).value;
+  const hoje = new Date(); const hm = hoje.getMonth()+1; const hd = hoje.getDate();
+  const funcs = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
+  let lista = funcs.map(function(f){
+    const parts = f.nas.split('-').map(Number);
+    return Object.assign({}, f, {bm: parts[1], bd: parts[2]});
+  });
+  if (filter === 'mes') lista = lista.filter(function(f){ return f.bm === hm; });
+  else if (filter === 'semana') {
+    const ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
+    const fim = new Date(ini); fim.setDate(ini.getDate()+6);
+    lista = lista.filter(function(f){
+      const dt = new Date(hoje.getFullYear(), f.bm-1, f.bd);
+      return dt >= ini && dt <= fim;
+    });
+  }
+  lista.sort(function(a,b){ return a.bm !== b.bm ? a.bm-b.bm : a.bd-b.bd; });
+  const el = document.getElementById('bday-list');
+  if (!lista.length) { el.innerHTML = '<div class="alert alert-info">&#127874; Nenhum aniversariante neste período.</div>'; return; }
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  el.innerHTML = lista.map(function(f) {
+    const isHoje = f.bm === hm && f.bd === hd;
+    const ini2 = new Date(hoje); ini2.setDate(hd - hoje.getDay());
+    const fim2 = new Date(ini2); fim2.setDate(ini2.getDate()+6);
+    const dt2 = new Date(hoje.getFullYear(), f.bm-1, f.bd);
+    const isSemana = dt2 >= ini2 && dt2 <= fim2 && !isHoje;
+    const mes = meses[f.bm-1];
+    const tag = isHoje ? '<span class="bday-tag hoje">&#127874; Hoje!</span>' :
+                isSemana ? '<span class="bday-tag semana">Esta semana</span>' :
+                '<span class="bday-tag mes">'+mes+'</span>';
+    const idade = hoje.getFullYear() - parseInt(f.nas.split('-')[0]);
+    const whaBtn = f.tel ? '<button class="btn btn-whatsapp btn-sm" onclick="wha(\''+f.tel+'\',\'Parabéns pelo seu aniversário! &#127874; Toda a equipe Equilibryum deseja a você muito saúde e felicidades!\')">&#127881; Parabenizar</button>' : '';
+    return '<div class="bday-card">' +
+      '<div class="bday-avatar'+(isHoje?' today':'')+'">'+f.n[0].toUpperCase()+'</div>' +
+      '<div class="bday-info"><div class="name">'+f.n+'</div>' +
+      '<div class="detail">'+(f.car||'—')+' · '+String(f.bd).padStart(2,'0')+'/'+mes+' · '+idade+' anos</div></div>' +
+      tag + whaBtn + '</div>';
+  }).join('');
 }
 
-function adminReconnect() {
-  const modal = document.getElementById('reconnect-modal');
-  if (modal) modal.remove();
-  initGIS(true);
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  updDash(); rdUni();
+  initRelFilters(); rdRel();
+  rdBenef();
+  setInterval(function() {
+    if(driveReady && CLIENT_ID) silentReconnect();
+  }, 50 * 60 * 1000);
 }
 
-function showTokenEntry() {
-  const modal = document.getElementById('reconnect-modal');
-  if (modal) modal.remove();
-  document.getElementById('token-wizard').style.display = 'flex';
-}
+window.addEventListener('load', () => {
+  const savedCID   = localStorage.getItem('eq_client_id');
+  const savedToken = localStorage.getItem('eq_drive_token');
+  const skip       = localStorage.getItem('eq_skip_drive');
+
+  hideAllWizards();
+
+  if (skip) {
+    updDriveStatus(false);
+    init();
+    return;
+  }
+
+  if (savedToken && savedCID) {
+    CLIENT_ID = savedCID;
+    driveToken = savedToken;
+    document.getElementById('client-id-inp').value = savedCID;
+    document.getElementById('drive-bar').style.display = 'flex';
+    testAndConnect();
+    return;
+  }
+
+  if (savedCID) {
+    CLIENT_ID = savedCID;
+    document.getElementById('client-id-inp').value = savedCID;
+    document.getElementById('drive-bar').style.display = 'flex';
+    updDriveStatus(false);
+    silentReconnect();
+    return;
+  }
+
+  document.getElementById('setup-wizard').style.display = 'flex';
+});
 </script>
 </body>
 </html>
