@@ -440,18 +440,59 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="card">
     <div class="card-header">
       <span class="card-title">&#128089; Estoque de Uniformes</span>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="openModal('modal-uni-item')">⚙️ Cadastrar Item</button>
         <button class="btn btn-outline btn-sm" onclick="openModal('modal-uni-in')">+ Entrada</button>
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-uni-out')">Saída</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-uni-out')">- Saída</button>
+        <button class="btn btn-sm" style="background:var(--accent);color:#fff;" onclick="openModal('modal-uni-ajuste')">⚖️ Ajuste</button>
       </div>
     </div>
-    <div class="uniform-grid" id="uni-grid"></div>
-    <div style="padding:16px;background:var(--gray-50);border-radius:var(--radius-sm);">
-      <div class="card-title" style="margin-bottom:12px;">Movimentações</div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Tipo</th><th>Item</th><th>Tam.</th><th>Qtd</th><th>Funcionário</th><th>Data</th></tr></thead>
-        <tbody id="tb-uni-mov"></tbody>
-      </table></div>
+    <div class="tabs">
+      <div class="tab active" onclick="uniTab('uni-estoque',this)">📦 Estoque</div>
+      <div class="tab" onclick="uniTab('uni-mov-tab',this)">📋 Movimentações</div>
+      <div class="tab" onclick="uniTab('uni-itens-tab',this)">⚙️ Itens Cadastrados</div>
+    </div>
+
+    <!-- ESTOQUE -->
+    <div id="uni-estoque">
+      <div id="uni-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;"></div>
+      <div id="uni-empty" class="alert alert-info" style="display:none">Nenhum item cadastrado ainda. Clique em <strong>⚙️ Cadastrar Item</strong> para começar.</div>
+    </div>
+
+    <!-- MOVIMENTAÇÕES -->
+    <div id="uni-mov-tab" style="display:none">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end;">
+        <div class="form-group"><label>Tipo</label>
+          <select id="uni-mov-filter-tipo" onchange="rdUniMov()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+            <option value="">Todos</option>
+            <option>Entrada</option>
+            <option>Saída</option>
+            <option>Ajuste</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Item</label>
+          <select id="uni-mov-filter-item" onchange="rdUniMov()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="exportUniCSV()">&#128196; Exportar CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Tamanho</th><th>Qtd</th><th>Funcionário</th><th>Obs.</th><th>Ações</th></tr></thead>
+          <tbody id="tb-uni-mov"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ITENS CADASTRADOS -->
+    <div id="uni-itens-tab" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>Tamanhos</th><th>Estoque Total</th><th>Ações</th></tr></thead>
+          <tbody id="tb-uni-itens"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -806,29 +847,110 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- Uniforme: Cadastrar Item -->
+<div class="modal-bg" id="modal-uni-item">
+  <div class="modal"><div class="modal-header"><span class="modal-title" id="uni-item-title">⚙️ Cadastrar Item de Uniforme</span><button class="modal-close" onclick="closeModal('modal-uni-item')">&#215;</button></div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Nome do Item *</label>
+        <input id="ui-nome" type="text" placeholder="Ex.: Camisa Polo, Calça Social, Jaleco...">
+      </div>
+      <div class="form-group form-full"><label>Tamanhos disponíveis</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;" id="ui-tam-checks">
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="PP"> PP</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="P"> P</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="M" checked> M</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="G" checked> G</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="GG"> GG</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="XGG"> XGG</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="ÚNICO"> Tamanho Único</label>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <input id="ui-tam-custom" type="text" placeholder="Outro tamanho (ex.: 38, 40...)" style="flex:1;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="addCustomTam()">+ Adicionar</button>
+        </div>
+        <div id="ui-tam-extra" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+      </div>
+      <div class="form-group form-full"><label>Observações</label>
+        <textarea id="ui-obs" rows="2" placeholder="Cor, material, fornecedor padrão..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-uni-item')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savUniItem()">&#128190; Salvar Item</button>
+    </div>
+  </div>
+</div>
+
 <!-- Uniforme Entrada -->
 <div class="modal-bg" id="modal-uni-in">
-  <div class="modal"><div class="modal-header"><span class="modal-title">Entrada de Uniforme</span><button class="modal-close" onclick="closeModal('modal-uni-in')">&#215;</button></div>
+  <div class="modal"><div class="modal-header"><span class="modal-title">📥 Entrada de Uniforme</span><button class="modal-close" onclick="closeModal('modal-uni-in')">&#215;</button></div>
     <div class="form-grid">
-      <div class="form-group"><label>Item</label><select id="uin"><option>Camisa</option><option>Calça</option><option>Jaleco</option><option>Avental</option><option>Boné</option><option>Outro</option></select></div>
-      <div class="form-group"><label>Tamanho</label><select id="uitam"><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XGG</option></select></div>
-      <div class="form-group"><label>Quantidade</label><input id="uiqtd" type="number" value="1" min="1"></div>
+      <div class="form-group"><label>Item *</label>
+        <select id="uin" onchange="fillUniTamSel('uitam',this.value)"><option value="">Selecione</option></select>
+      </div>
+      <div class="form-group"><label>Tamanho *</label>
+        <select id="uitam"><option value="">Selecione o item primeiro</option></select>
+      </div>
+      <div class="form-group"><label>Quantidade *</label><input id="uiqtd" type="number" value="1" min="1"></div>
       <div class="form-group"><label>Fornecedor</label><input id="uiforn" type="text" placeholder="Fornecedor"></div>
+      <div class="form-group"><label>Data</label><input id="ui-data" type="date"></div>
+      <div class="form-group form-full"><label>Observações</label><textarea id="ui-obs-in" rows="2" placeholder="NF, observações..."></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-uni-in')">Cancelar</button><button class="btn btn-primary" onclick="savUniIn()">&#128190; Confirmar Entrada</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-uni-in')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savUniIn()">&#128190; Confirmar Entrada</button>
+    </div>
   </div>
 </div>
 
 <!-- Uniforme Saída -->
 <div class="modal-bg" id="modal-uni-out">
-  <div class="modal"><div class="modal-header"><span class="modal-title">Saída de Uniforme</span><button class="modal-close" onclick="closeModal('modal-uni-out')">&#215;</button></div>
+  <div class="modal"><div class="modal-header"><span class="modal-title">📤 Saída de Uniforme</span><button class="modal-close" onclick="closeModal('modal-uni-out')">&#215;</button></div>
     <div class="form-grid">
       <div class="form-group form-full"><label>Funcionário *</label><select id="uof"><option value="">Selecione</option></select></div>
-      <div class="form-group"><label>Item</label><select id="uon"><option>Camisa</option><option>Calça</option><option>Jaleco</option><option>Avental</option><option>Boné</option><option>Outro</option></select></div>
-      <div class="form-group"><label>Tamanho</label><select id="uotam"><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XGG</option></select></div>
-      <div class="form-group"><label>Quantidade</label><input id="uoqtd" type="number" value="1" min="1"></div>
+      <div class="form-group"><label>Item *</label>
+        <select id="uon" onchange="fillUniTamSel('uotam',this.value)"><option value="">Selecione</option></select>
+      </div>
+      <div class="form-group"><label>Tamanho *</label>
+        <select id="uotam"><option value="">Selecione o item primeiro</option></select>
+      </div>
+      <div class="form-group"><label>Quantidade *</label><input id="uoqtd" type="number" value="1" min="1"></div>
+      <div class="form-group"><label>Data</label><input id="uo-data" type="date"></div>
+      <div class="form-group form-full"><label>Observações</label><textarea id="uo-obs" rows="2" placeholder="Observações..."></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-uni-out')">Cancelar</button><button class="btn btn-danger" onclick="savUniOut()">Registrar Saída</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-uni-out')">Cancelar</button>
+      <button class="btn btn-danger" onclick="savUniOut()">Registrar Saída</button>
+    </div>
+  </div>
+</div>
+
+<!-- Uniforme Ajuste -->
+<div class="modal-bg" id="modal-uni-ajuste">
+  <div class="modal"><div class="modal-header"><span class="modal-title">⚖️ Ajuste de Estoque</span><button class="modal-close" onclick="closeModal('modal-uni-ajuste')">&#215;</button></div>
+    <div class="alert alert-warning">Use ajuste para corrigir divergências de inventário. O estoque será atualizado para o valor informado.</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Item *</label>
+        <select id="uaj-item" onchange="fillUniTamSel('uaj-tam',this.value); fillUniEstAtual()"><option value="">Selecione</option></select>
+      </div>
+      <div class="form-group"><label>Tamanho *</label>
+        <select id="uaj-tam" onchange="fillUniEstAtual()"><option value="">Selecione</option></select>
+      </div>
+      <div class="form-group"><label>Estoque Atual</label>
+        <input id="uaj-atual" type="number" readonly style="background:var(--gray-100);">
+      </div>
+      <div class="form-group"><label>Novo Estoque *</label>
+        <input id="uaj-novo" type="number" min="0" placeholder="Quantidade correta">
+      </div>
+      <div class="form-group"><label>Data</label><input id="uaj-data" type="date"></div>
+      <div class="form-group form-full"><label>Motivo do Ajuste *</label>
+        <textarea id="uaj-obs" rows="2" placeholder="Ex.: Inventário físico, perda, erro de lançamento..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-uni-ajuste')">Cancelar</button>
+      <button class="btn btn-sm" style="background:var(--accent);color:#fff;" onclick="savUniAjuste()">⚖️ Confirmar Ajuste</button>
+    </div>
   </div>
 </div>
 
@@ -1375,7 +1497,7 @@ async function loadDriveJSON(filename) {
 }
 
 async function syncFromDrive() {
-  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
+  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
   let synced = 0;
   for (const k of keys) {
     try {
@@ -1453,7 +1575,10 @@ function openModal(id) {
   if (id === 'modal-fer') fillFuncSel('ferf');
   if (id === 'modal-exm') fillFuncSel('exf');
   if (id === 'modal-epi') { fillFuncSel('epif'); initSig(); }
-  if (id === 'modal-uni-out') fillFuncSel('uof');
+  if (id === 'modal-uni-out') { fillFuncSel('uof'); fillUniItemSel('uon'); }
+  if (id === 'modal-uni-in') { fillUniItemSel('uin'); document.getElementById('ui-data').value = td(); }
+  if (id === 'modal-uni-ajuste') { fillUniItemSel('uaj-item'); document.getElementById('uaj-data').value = td(); }
+  if (id === 'modal-uni-item') { if(!editingUniItemId){ document.getElementById('ui-nome').value=''; document.getElementById('ui-obs').value=''; document.querySelectorAll('#ui-tam-checks input').forEach(c=>c.checked=false); document.getElementById('ui-tam-extra').innerHTML=''; customTams=[]; } }
   if (id === 'modal-wha') fillFuncSel('whaf');
   if (id === 'modal-trein') { fillFuncSel('tr-parts',true); }
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
@@ -1990,34 +2115,279 @@ async function delEPI(id) {
 // ============================================================
 // UNIFORME
 // ============================================================
-const UNI_ITEMS = ['Camisa-PP','Camisa-P','Camisa-M','Camisa-G','Camisa-GG','Camisa-XGG','Calça-PP','Calça-P','Calça-M','Calça-G','Calça-GG','Calça-XGG','Jaleco-P','Jaleco-M','Jaleco-G','Jaleco-GG','Avental-U','Boné-U'];
-function rdUni() {
-  const est = DB.go('uni-est'); const grid = document.getElementById('uni-grid');
-  grid.innerHTML = UNI_ITEMS.map(k => {
-    const qtd = est[k] || 0; const low = qtd <= 2;
-    return `<div class="uniform-card${low?' low':''}"><div class="u-nome">${k.replace('-', ' ')}</div><div class="u-qtd">${qtd}</div><div class="u-label">${low && qtd > 0 ? '⚠️ estoque baixo' : qtd === 0 ? '❌ sem estoque' : 'em estoque'}</div></div>`;
-  }).join('');
-  const movs = DB.g('uni-mov'); const tb = document.getElementById('tb-uni-mov');
-  if (!movs.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Sem movimentações.</td></tr>'; return; }
-  tb.innerHTML = movs.slice(0, 60).map(m => `<tr><td><span class="badge ${m.tipo==='Entrada'?'badge-green':'badge-yellow'}">${m.tipo}</span></td><td>${m.item}</td><td>${m.tam}</td><td>${m.qtd}</td><td>${m.func||'—'}</td><td>${fd(m.data)}</td></tr>`).join('');
+// ============================================================
+// UNIFORME — MÓDULO COMPLETO
+// ============================================================
+let editingUniItemId = null;
+let customTams = [];
+
+function uniTab(id, btn) {
+  ['uni-estoque','uni-mov-tab','uni-itens-tab'].forEach(t => {
+    const el = document.getElementById(t); if(el) el.style.display = 'none';
+  });
+  document.getElementById(id).style.display = 'block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (id === 'uni-mov-tab') rdUniMov();
+  if (id === 'uni-itens-tab') rdUniItens();
 }
+
+function addCustomTam() {
+  const inp = document.getElementById('ui-tam-custom');
+  const val = (inp.value || '').trim().toUpperCase();
+  if (!val) return;
+  customTams.push(val);
+  const el = document.getElementById('ui-tam-extra');
+  const lbl = document.createElement('label');
+  lbl.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--green-pale);padding:3px 8px;border-radius:20px;';
+  lbl.innerHTML = '<input type="checkbox" value="' + val + '" checked> ' + val;
+  el.appendChild(lbl);
+  inp.value = '';
+}
+
+function getSelectedTams() {
+  const checks = document.querySelectorAll('#ui-tam-checks input[type=checkbox]:checked');
+  const extra  = document.querySelectorAll('#ui-tam-extra input[type=checkbox]:checked');
+  return [...checks, ...extra].map(c => c.value);
+}
+
+async function savUniItem() {
+  const nome = document.getElementById('ui-nome').value.trim();
+  if (!nome) { alert('Nome do item obrigatório.'); return; }
+  const tams = getSelectedTams();
+  if (!tams.length) { alert('Selecione pelo menos um tamanho.'); return; }
+  const list = DB.g('uni-itens');
+  if (editingUniItemId) {
+    const idx = list.findIndex(x => x.id === editingUniItemId);
+    if (idx !== -1) list[idx] = { ...list[idx], nome, tams, obs: v('ui-obs') };
+    editingUniItemId = null;
+    document.getElementById('uni-item-title').textContent = '⚙️ Cadastrar Item de Uniforme';
+  } else {
+    if (list.find(x => x.nome.toLowerCase() === nome.toLowerCase())) {
+      alert('Já existe um item com este nome.'); return;
+    }
+    list.push({ id: uid(), nome, tams, obs: v('ui-obs') });
+  }
+  DB.s('uni-itens', list);
+  if (driveReady) await driveSync('uni-itens');
+  customTams = [];
+  document.getElementById('ui-tam-extra').innerHTML = '';
+  closeModal('modal-uni-item');
+  rdUni(); rdUniItens();
+  toast('Item salvo' + (driveReady ? ' ☁️' : '!'));
+}
+
+function editUniItem(id) {
+  const item = DB.g('uni-itens').find(x => x.id === id); if (!item) return;
+  editingUniItemId = id;
+  document.getElementById('ui-nome').value = item.nome;
+  document.getElementById('ui-obs').value  = item.obs || '';
+  document.querySelectorAll('#ui-tam-checks input[type=checkbox]').forEach(c => {
+    c.checked = (item.tams || []).includes(c.value);
+  });
+  document.getElementById('ui-tam-extra').innerHTML = '';
+  customTams = [];
+  const standardTams = ['PP','P','M','G','GG','XGG','ÚNICO'];
+  (item.tams || []).filter(t => !standardTams.includes(t)).forEach(t => {
+    customTams.push(t);
+    const el = document.getElementById('ui-tam-extra');
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--green-pale);padding:3px 8px;border-radius:20px;';
+    lbl.innerHTML = '<input type="checkbox" value="' + t + '" checked> ' + t;
+    el.appendChild(lbl);
+  });
+  document.getElementById('uni-item-title').textContent = '✏️ Editar Item';
+  document.getElementById('modal-uni-item').classList.add('open');
+}
+
+async function delUniItem(id) {
+  if (!confirm('Excluir este item? O histórico de movimentações será mantido.')) return;
+  DB.s('uni-itens', DB.g('uni-itens').filter(x => x.id !== id));
+  if (driveReady) await driveSync('uni-itens');
+  rdUni(); rdUniItens();
+}
+
+function rdUniItens() {
+  const list = DB.g('uni-itens');
+  const est  = DB.go('uni-est');
+  const tb   = document.getElementById('tb-uni-itens');
+  if (!tb) return;
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhum item cadastrado. Clique em ⚙️ Cadastrar Item.</td></tr>';
+    return;
+  }
+  tb.innerHTML = list.map(function(item) {
+    const total = (item.tams || []).reduce(function(s, t) { return s + (est[item.nome + '-' + t] || 0); }, 0);
+    const tamBadges = (item.tams || []).map(function(t) {
+      const q = est[item.nome + '-' + t] || 0;
+      const cls = q === 0 ? 'badge-red' : q <= 2 ? 'badge-yellow' : 'badge-green';
+      return '<span class="badge ' + cls + '" style="font-size:11px;">' + t + ': ' + q + '</span>';
+    }).join(' ');
+    return '<tr><td><strong>' + item.nome + '</strong>' + (item.obs ? '<br><small style="color:var(--gray-400)">' + item.obs + '</small>' : '') + '</td><td style="white-space:normal">' + tamBadges + '</td><td><strong style="font-size:16px;color:var(--green-dark)">' + total + '</strong></td><td style="display:flex;gap:6px;"><button class="btn-icon" onclick="editUniItem('' + item.id + '')">✏️</button><button class="btn-icon danger" onclick="delUniItem('' + item.id + '')">&#128465;</button></td></tr>';
+  }).join('');
+}
+
+function fillUniItemSel(selId) {
+  const sel = document.getElementById(selId); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Selecione</option>';
+  DB.g('uni-itens').forEach(function(item) {
+    const o = document.createElement('option');
+    o.value = item.nome; o.textContent = item.nome; sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+function fillUniTamSel(selId, itemNome) {
+  const sel = document.getElementById(selId); if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione</option>';
+  if (!itemNome) return;
+  const item = DB.g('uni-itens').find(function(x) { return x.nome === itemNome; });
+  if (!item) return;
+  (item.tams || []).forEach(function(t) {
+    const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
+  });
+}
+
+function fillUniEstAtual() {
+  const item = v('uaj-item'); const tam = v('uaj-tam');
+  if (!item || !tam) return;
+  const est = DB.go('uni-est');
+  document.getElementById('uaj-atual').value = est[item + '-' + tam] || 0;
+}
+
+function rdUni() {
+  const itens = DB.g('uni-itens');
+  const est   = DB.go('uni-est');
+  const grid  = document.getElementById('uni-grid');
+  const empty = document.getElementById('uni-empty');
+  if (!grid) return;
+  if (!itens.length) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'flex';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  let cards = '';
+  itens.forEach(function(item) {
+    (item.tams || []).forEach(function(t) {
+      const key = item.nome + '-' + t;
+      const qtd = est[key] || 0;
+      const low  = qtd > 0 && qtd <= 2;
+      const zero = qtd === 0;
+      cards += '<div class="uniform-card' + (zero || low ? ' low' : '') + '">' +
+        '<div class="u-nome">' + item.nome + '</div>' +
+        '<div style="font-size:11px;color:var(--gray-400);margin-bottom:4px;">' + t + '</div>' +
+        '<div class="u-qtd" style="' + (zero ? 'color:var(--red)' : '') + '">' + qtd + '</div>' +
+        '<div class="u-label">' + (zero ? '❌ sem estoque' : low ? '⚠️ baixo' : 'em estoque') + '</div></div>';
+    });
+  });
+  grid.innerHTML = cards;
+  // Update item filter in movimentacoes
+  const fsel = document.getElementById('uni-mov-filter-item');
+  if (fsel) {
+    const cur = fsel.value;
+    fsel.innerHTML = '<option value="">Todos</option>';
+    itens.forEach(function(item) {
+      const o = document.createElement('option'); o.value = item.nome; o.textContent = item.nome; fsel.appendChild(o);
+    });
+    if (cur) fsel.value = cur;
+  }
+}
+
 async function savUniIn() {
   const item = v('uin'), tam = v('uitam'), qtd = parseInt(v('uiqtd')) || 1;
-  const est = DB.go('uni-est'); est[item + '-' + tam] = (est[item + '-' + tam] || 0) + qtd;
+  if (!item || !tam) { alert('Selecione item e tamanho.'); return; }
+  const est = DB.go('uni-est');
+  est[item + '-' + tam] = (est[item + '-' + tam] || 0) + qtd;
   DB.so('uni-est', est);
-  const movs = DB.g('uni-mov'); movs.unshift({ tipo: 'Entrada', item, tam, qtd, func: '—', data: td() }); DB.s('uni-mov', movs);
+  const movs = DB.g('uni-mov');
+  movs.unshift({ id: uid(), tipo: 'Entrada', item: item, tam: tam, qtd: qtd, func: '—', data: v('ui-data') || td(), obs: v('ui-obs-in') });
+  DB.s('uni-mov', movs);
   if (driveReady) { await driveSyncObj('uni-est'); await driveSync('uni-mov'); }
-  closeModal('modal-uni-in'); rdUni(); toast('Estoque atualizado' + (driveReady ? ' ☁️' : '!'));
+  closeModal('modal-uni-in');
+  rdUni();
+  toast('Entrada registrada' + (driveReady ? ' ☁️' : '!'));
 }
+
 async function savUniOut() {
   const fid = v('uof'), item = v('uon'), tam = v('uotam'), qtd = parseInt(v('uoqtd')) || 1;
-  const est = DB.go('uni-est'); const k = item + '-' + tam;
-  if ((est[k] || 0) < qtd) { alert('Estoque insuficiente!'); return; }
-  est[k] -= qtd; DB.so('uni-est', est);
-  const f = DB.g('funcionarios').find(x => x.id === fid);
-  const movs = DB.g('uni-mov'); movs.unshift({ tipo: 'Saída', item, tam, qtd, func: f ? f.n : '—', data: td() }); DB.s('uni-mov', movs);
+  if (!item || !tam) { alert('Selecione item e tamanho.'); return; }
+  const est = DB.go('uni-est');
+  const key = item + '-' + tam;
+  if ((est[key] || 0) < qtd) { alert('Estoque insuficiente! Disponível: ' + (est[key] || 0)); return; }
+  est[key] -= qtd;
+  DB.so('uni-est', est);
+  const f = DB.g('funcionarios').find(function(x) { return x.id === fid; });
+  const movs = DB.g('uni-mov');
+  movs.unshift({ id: uid(), tipo: 'Saída', item: item, tam: tam, qtd: qtd, func: f ? f.n : '—', data: v('uo-data') || td(), obs: v('uo-obs') });
+  DB.s('uni-mov', movs);
   if (driveReady) { await driveSyncObj('uni-est'); await driveSync('uni-mov'); }
-  closeModal('modal-uni-out'); rdUni(); toast('Saída registrada' + (driveReady ? ' ☁️' : '!'));
+  closeModal('modal-uni-out');
+  rdUni();
+  toast('Saída registrada' + (driveReady ? ' ☁️' : '!'));
+}
+
+async function savUniAjuste() {
+  const item   = v('uaj-item'), tam = v('uaj-tam');
+  const novo   = parseInt(v('uaj-novo'));
+  const motivo = v('uaj-obs');
+  if (!item || !tam) { alert('Selecione item e tamanho.'); return; }
+  if (isNaN(novo) || novo < 0) { alert('Informe o novo estoque.'); return; }
+  if (!motivo.trim()) { alert('Informe o motivo do ajuste.'); return; }
+  const est = DB.go('uni-est');
+  const key  = item + '-' + tam;
+  const anterior = est[key] || 0;
+  est[key] = novo;
+  DB.so('uni-est', est);
+  const movs = DB.g('uni-mov');
+  movs.unshift({ id: uid(), tipo: 'Ajuste', item: item, tam: tam, qtd: novo - anterior, func: '—', data: v('uaj-data') || td(), obs: motivo + ' (anterior: ' + anterior + ' novo: ' + novo + ')' });
+  DB.s('uni-mov', movs);
+  if (driveReady) { await driveSyncObj('uni-est'); await driveSync('uni-mov'); }
+  closeModal('modal-uni-ajuste');
+  rdUni();
+  toast('Ajuste realizado' + (driveReady ? ' ☁️' : '!'));
+}
+
+function rdUniMov() {
+  const tipoF = (document.getElementById('uni-mov-filter-tipo') || {value:''}).value || '';
+  const itemF = (document.getElementById('uni-mov-filter-item') || {value:''}).value || '';
+  let movs = DB.g('uni-mov');
+  if (tipoF) movs = movs.filter(function(m) { return m.tipo === tipoF; });
+  if (itemF) movs = movs.filter(function(m) { return m.item === itemF; });
+  const tb = document.getElementById('tb-uni-mov');
+  if (!tb) return;
+  if (!movs.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhuma movimentação encontrada.</td></tr>';
+    return;
+  }
+  tb.innerHTML = movs.map(function(m) {
+    const bc = m.tipo === 'Entrada' ? 'badge-green' : m.tipo === 'Saída' ? 'badge-yellow' : 'badge-blue';
+    const qtdTxt = m.tipo === 'Ajuste' ? (m.qtd >= 0 ? '+' + m.qtd : String(m.qtd)) : m.qtd;
+    return '<tr><td>' + fd(m.data) + '</td><td><span class="badge ' + bc + '">' + m.tipo + '</span></td><td>' + (m.item || '—') + '</td><td>' + (m.tam || '—') + '</td><td><strong>' + qtdTxt + '</strong></td><td>' + (m.func || '—') + '</td><td style="max-width:140px;font-size:12px;color:var(--gray-600)">' + (m.obs || '—') + '</td><td><button class="btn-icon danger" onclick="delUniMov('' + (m.id || '') + '')">&#128465;</button></td></tr>';
+  }).join('');
+}
+
+async function delUniMov(id) {
+  if (!id) return;
+  if (!confirm('Excluir esta movimentação?')) return;
+  DB.s('uni-mov', DB.g('uni-mov').filter(function(m) { return m.id !== id; }));
+  if (driveReady) await driveSync('uni-mov');
+  rdUniMov();
+}
+
+function exportUniCSV() {
+  const movs = DB.g('uni-mov');
+  const rows = [['Data','Tipo','Item','Tamanho','Quantidade','Funcionário','Observações']];
+  movs.forEach(function(m) {
+    rows.push([m.data||'', m.tipo||'', m.item||'', m.tam||'', m.qtd||'', m.func||'', m.obs||'']);
+  });
+  const csv = rows.map(function(r) {
+    return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
+  }).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'uniforme_' + td() + '.csv'; a.click();
 }
 
 // ============================================================
