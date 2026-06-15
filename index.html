@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<!-- Equilibryum RH v3.1 - 20260615_1520 -->
+<!-- Equilibryum RH v3.2 - 20260615_1520 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equilibryum – Sistema de RH</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -2213,35 +2213,64 @@ function rdUniItens() {
   const est  = DB.go('uni-est');
   const tb   = document.getElementById('tb-uni-itens');
   if (!tb) return;
+  tb.innerHTML = '';
   if (!list.length) {
-    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhum item cadastrado. Clique em ⚙️ Cadastrar Item.</td></tr>';
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.style.cssText = 'text-align:center;padding:28px;color:var(--gray-400)';
+    td.textContent = 'Nenhum item cadastrado. Clique em ⚙️ Cadastrar Item.';
+    tr.appendChild(td);
+    tb.appendChild(tr);
     return;
   }
-  tb.innerHTML = list.map(function(item) {
-    const total = (item.tams || []).reduce(function(s, t) { return s + (est[item.nome + '-' + t] || 0); }, 0);
-    const tamBadges = (item.tams || []).map(function(t) {
+  list.forEach(function(item) {
+    const total = (item.tams || []).reduce(function(s, t) {
+      return s + (est[item.nome + '-' + t] || 0);
+    }, 0);
+    // Build row with DOM elements to preserve event listeners
+    const tr = document.createElement('tr');
+    // Col 1: nome + obs
+    const td1 = document.createElement('td');
+    td1.innerHTML = '<strong>' + item.nome + '</strong>' +
+      (item.obs ? '<br><small style="color:var(--gray-400)">' + item.obs + '</small>' : '');
+    // Col 2: tamanhos com estoque
+    const td2 = document.createElement('td');
+    td2.style.whiteSpace = 'normal';
+    (item.tams || []).forEach(function(t) {
       const q = est[item.nome + '-' + t] || 0;
       const cls = q === 0 ? 'badge-red' : q <= 2 ? 'badge-yellow' : 'badge-green';
-      return '<span class="badge ' + cls + '" style="font-size:11px;">' + t + ': ' + q + '</span>';
-    }).join(' ');
-    const obsHtml = item.obs ? '<br><small style="color:var(--gray-400)">' + item.obs + '</small>' : '';
-    const btnEdit = '<button class="btn-icon" onclick="editUniItem(this.dataset.id)">✏️</button>';
-    const btnDel  = '<button class="btn-icon danger" onclick="delUniItem(this.dataset.id)">&#128465;</button>';
-    const row = document.createElement('tr');
-    row.innerHTML = '<td><strong>' + item.nome + '</strong>' + obsHtml + '</td>' +
-      '<td style="white-space:normal">' + tamBadges + '</td>' +
-      '<td><strong style="font-size:16px;color:var(--green-dark)">' + total + '</strong></td>' +
-      '<td style="display:flex;gap:6px;"></td>';
-    const btns = row.querySelector('td:last-child');
-    const be = document.createElement('button');
-    be.className = 'btn-icon'; be.textContent = '✏️'; be.dataset.id = item.id;
-    be.onclick = function() { editUniItem(this.dataset.id); };
-    const bd = document.createElement('button');
-    bd.className = 'btn-icon danger'; bd.innerHTML = '&#128465;'; bd.dataset.id = item.id;
-    bd.onclick = function() { delUniItem(this.dataset.id); };
-    btns.appendChild(be); btns.appendChild(bd);
-    return row.outerHTML;
-  }).join('');
+      const span = document.createElement('span');
+      span.className = 'badge ' + cls;
+      span.style.fontSize = '11px';
+      span.style.marginRight = '3px';
+      span.textContent = t + ': ' + q;
+      td2.appendChild(span);
+    });
+    // Col 3: total
+    const td3 = document.createElement('td');
+    td3.innerHTML = '<strong style="font-size:16px;color:var(--green-dark)">' + total + '</strong>';
+    // Col 4: botões — usando closure para capturar item.id corretamente
+    const td4 = document.createElement('td');
+    td4.style.cssText = 'display:flex;gap:6px;';
+    const btnE = document.createElement('button');
+    btnE.className = 'btn-icon';
+    btnE.title = 'Editar';
+    btnE.textContent = '✏️';
+    (function(id) { btnE.onclick = function() { editUniItem(id); }; })(item.id);
+    const btnD = document.createElement('button');
+    btnD.className = 'btn-icon danger';
+    btnD.title = 'Excluir';
+    btnD.innerHTML = '&#128465;';
+    (function(id) { btnD.onclick = function() { delUniItem(id); }; })(item.id);
+    td4.appendChild(btnE);
+    td4.appendChild(btnD);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tb.appendChild(tr);
+  });
 }
 
 function fillUniItemSel(selId) {
