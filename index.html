@@ -4844,7 +4844,7 @@ function renderAcompCamp() {
 }
 
 // ── Imprimir Relatório com Fotos ─────────────────────────────
-function imprimirRelCampanhas() {
+async function imprimirRelCampanhas() {
   var anoF = (document.getElementById('camp-ano-filter')||{value:''}).value||'';
   var all  = DB.g('campanhas');
   if(anoF) all = all.filter(function(c){
@@ -4854,65 +4854,110 @@ function imprimirRelCampanhas() {
   if(!all.length){alert('Nenhuma campanha'+(anoF?' em '+anoF:'')+' para imprimir.');return;}
   all = [...all].sort(function(a,b){return (a.ini||'').localeCompare(b.ini||'');});
 
-  var corMap = {green:'#2e7d5e',blue:'#1565c0',yellow:'#f57f17',red:'#d32f2f'};
-  var rows = all.map(function(c){
-    var cor = corMap[c.cor||'green']||'#2e7d5e';
-    var nFotos = c.photos ? c.photos.length : 0;
-    // Fotos (max 6 por campanha para não pesar demais no PDF)
-    var fotosHtml = '';
-    if (c.photos && c.photos.length) {
-      fotosHtml = '<div style="margin-top:10px;"><div style="font-size:9pt;font-weight:700;color:#555;margin-bottom:6px;">📷 FOTOS DO EVENTO ('+c.photos.length+'):</div>';
-      fotosHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-      c.photos.slice(0,9).forEach(function(p){
-        var src = p.url || p.dataURL || '';
-        if(src) fotosHtml += '<img src="'+src+'" style="width:120px;height:90px;object-fit:cover;border-radius:4px;border:1px solid #ddd;">';
+  toast('Preparando relatório com fotos... aguarde.');
+
+  // Helper: convert any image source to base64 dataURL
+  async function toBase64(src) {
+    if (!src) return '';
+    // Already a dataURL
+    if (src.startsWith('data:')) return src;
+    // Drive URL or external — fetch and convert
+    try {
+      var headers = {};
+      if (driveReady && driveToken && src.includes('googleapis.com')) {
+        headers['Authorization'] = 'Bearer ' + driveToken;
+      }
+      var r = await fetch(src, { headers: headers });
+      var blob = await r.blob();
+      return await new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e){ resolve(e.target.result); };
+        reader.onerror = function(){ resolve(''); };
+        reader.readAsDataURL(blob);
       });
-      if(c.photos.length>9) fotosHtml += '<div style="width:120px;height:90px;background:#f5f5f5;border-radius:4px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11pt;color:#777;">+' + (c.photos.length-9) + '</div>';
+    } catch(e) {
+      return '';
+    }
+  }
+
+  var corMap = {green:'#2e7d5e',blue:'#1565c0',yellow:'#f57f17',red:'#d32f2f'};
+
+  // Build rows — async to allow photo conversion
+  var rows = '';
+  for (var ci=0; ci<all.length; ci++) {
+    var c = all[ci];
+    var cor = corMap[c.cor||'green']||'#2e7d5e';
+    var photos = c.photos || [];
+    var nFotos = photos.length;
+
+    // Convert photos to base64
+    var fotosHtml = '';
+    if (photos.length) {
+      fotosHtml = '<div style="margin-top:10px;">' +
+        '<div style="font-size:9pt;font-weight:700;color:#555;margin-bottom:6px;">📷 FOTOS DO EVENTO ('+nFotos+'):</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+
+      var maxFotos = Math.min(photos.length, 9);
+      for (var pi=0; pi<maxFotos; pi++) {
+        var p = photos[pi];
+        var src = p.dataURL || p.url || '';
+        var b64 = await toBase64(src);
+        if (b64) {
+          fotosHtml += '<img src="' + b64 + '" style="width:120px;height:90px;object-fit:cover;border-radius:4px;border:1px solid #ddd;">';
+        } else {
+          fotosHtml += '<div style="width:120px;height:90px;background:#f5f5f5;border-radius:4px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#aaa;">Foto</div>';
+        }
+      }
+      if (photos.length > 9) {
+        fotosHtml += '<div style="width:120px;height:90px;background:#f5f5f5;border-radius:4px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:14pt;color:#777;">+' + (photos.length-9) + '</div>';
+      }
       fotosHtml += '</div></div>';
     }
-    return '<div style="border-left:5px solid '+cor+';padding:14px 16px;margin-bottom:16px;background:#fff;border-radius:0 6px 6px 0;box-shadow:0 1px 4px rgba(0,0,0,.08);page-break-inside:avoid;">'+
-      '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">'+
-      '<div><div style="font-size:13pt;font-weight:700;color:#1f5c44;">'+c.titulo+'</div>'+
-      '<div style="font-size:9.5pt;color:#555;margin-top:3px;">'+
-      '📅 '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+
-      (c.resp?' &nbsp;|&nbsp; 👤 '+c.resp:'')+
-      (nFotos?' &nbsp;|&nbsp; 📷 '+nFotos+' foto(s)':'')+
-      '</div>'+
-      (c.desc?'<div style="font-size:10pt;color:#444;margin-top:6px;">'+c.desc+'</div>':'')+
-      '</div></div>'+
-      fotosHtml+
+
+    rows += '<div style="border-left:5px solid '+cor+';padding:14px 16px;margin-bottom:16px;background:#fff;border-radius:0 6px 6px 0;box-shadow:0 1px 4px rgba(0,0,0,.08);page-break-inside:avoid;">' +
+      '<div style="font-size:13pt;font-weight:700;color:#1f5c44;">'+c.titulo+'</div>' +
+      '<div style="font-size:9.5pt;color:#555;margin-top:3px;">' +
+      '📅 '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—') +
+      (c.resp?' &nbsp;|&nbsp; 👤 '+c.resp:'') +
+      (nFotos?' &nbsp;|&nbsp; 📷 '+nFotos+' foto(s)':'') +
+      '</div>' +
+      (c.desc?'<div style="font-size:10pt;color:#444;margin-top:6px;">'+c.desc+'</div>':'') +
+      fotosHtml +
       '</div>';
-  }).join('');
+  }
 
   var total = all.length;
   var totalFotos = all.reduce(function(s,c){return s+(c.photos?c.photos.length:0);},0);
 
-  var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-    '<title>Relatório de Campanhas'+(anoF?' – '+anoF:'')+'</title>'+
-    '<style>'+
-    'body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;}'+
-    'h1{color:#1f5c44;font-size:16pt;margin:0 0 4px;}'+
-    '.subtitle{font-size:10pt;color:#555;margin-bottom:20px;border-bottom:2px solid #1f5c44;padding-bottom:8px;}'+
-    '.resumo{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;}'+
-    '.resumo-pill{background:#e8f5ee;border-radius:20px;padding:6px 16px;font-size:10pt;font-weight:700;color:#1f5c44;}'+
-    '.footer{text-align:center;font-size:8.5pt;color:#999;margin-top:24px;border-top:1px solid #eee;padding-top:8px;}'+
-    '@media print{@page{margin:1.5cm;size:A4;}body{margin:0;}}'+
-    '</style></head><body>'+
-    '<h1>&#128200; Relatório de Campanhas'+(anoF?' – '+anoF:'')+'</h1>'+
-    '<div class="subtitle">Gerado em '+new Date().toLocaleDateString('pt-BR')+' | Sistema RH Equilibryum</div>'+
-    '<div class="resumo">'+
-    '<span class="resumo-pill">Total: '+total+' campanha(s)</span>'+
-    (totalFotos?'<span class="resumo-pill">📷 '+totalFotos+' foto(s)</span>':'')+
-    '</div>'+
-    rows+
-    '<div class="footer">Equilibryum – Sistema de RH | Relatório gerado em '+new Date().toLocaleString('pt-BR')+'</div>'+
+  var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    '<title>Relatório de Campanhas'+(anoF?' – '+anoF:'')+'</title>' +
+    '<style>' +
+    'body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;}' +
+    'h1{color:#1f5c44;font-size:16pt;margin:0 0 4px;}' +
+    '.subtitle{font-size:10pt;color:#555;margin-bottom:20px;border-bottom:2px solid #1f5c44;padding-bottom:8px;}' +
+    '.resumo{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;}' +
+    '.resumo-pill{background:#e8f5ee;border-radius:20px;padding:6px 16px;font-size:10pt;font-weight:700;color:#1f5c44;}' +
+    '.footer{text-align:center;font-size:8.5pt;color:#999;margin-top:24px;border-top:1px solid #eee;padding-top:8px;}' +
+    '@media print{@page{margin:1.5cm;size:A4;}body{margin:0;}}' +
+    '</style></head><body>' +
+    '<h1>📋 Relatório de Campanhas'+(anoF?' – '+anoF:'')+'</h1>' +
+    '<div class="subtitle">Gerado em '+new Date().toLocaleDateString('pt-BR')+' | Sistema RH Equilibryum</div>' +
+    '<div class="resumo">' +
+    '<span class="resumo-pill">Total: '+total+' campanha(s)</span>' +
+    (totalFotos?'<span class="resumo-pill">📷 '+totalFotos+' foto(s)</span>':'') +
+    '</div>' +
+    rows +
+    '<div class="footer">Equilibryum – Sistema de RH | Gerado em '+new Date().toLocaleString('pt-BR')+'</div>' +
     '</body></html>';
 
   var win = window.open('','_blank','width=960,height=750');
-  if(win){win.document.write(docHTML);win.document.close();setTimeout(function(){win.focus();win.print();},700);}
-  toast('Relatório aberto! Use Ctrl+P para salvar como PDF.');
+  if(win){
+    win.document.write(docHTML);
+    win.document.close();
+    setTimeout(function(){ win.focus(); win.print(); }, 800);
+  }
+  toast('Relatório gerado com fotos! Use Ctrl+P para salvar como PDF.');
 }
-
 // ── Imprimir Acompanhamento Anual ────────────────────────────
 function imprimirAcompCampanhas() {
   var anoF = (document.getElementById('camp-ano-filter')||{value:''}).value||'';
