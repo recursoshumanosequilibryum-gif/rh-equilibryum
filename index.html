@@ -218,6 +218,21 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .sort-sel:focus{border-color:var(--green);outline:none;}
 .sort-dir{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:12.5px;font-family:inherit;background:#fff;cursor:pointer;}
 
+
+/* ASSINATURA DIGITAL */
+#sig-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;}
+#sig-modal-bg.open{display:flex;}
+#sig-modal{background:#fff;border-radius:var(--radius);padding:28px;width:100%;max-width:640px;box-shadow:var(--shadow-lg);}
+#sig-modal h3{color:var(--green-dark);margin-bottom:6px;font-size:17px;}
+#sig-modal p{font-size:13px;color:var(--gray-600);margin-bottom:14px;}
+#sig-canvas-doc{border:2px dashed var(--gray-200);border-radius:var(--radius-sm);width:100%;height:130px;cursor:crosshair;touch-action:none;background:#fafafa;display:block;}
+#sig-canvas-doc:hover{border-color:var(--green);}
+.sig-toolbar{display:flex;gap:8px;margin-top:8px;align-items:center;}
+.sig-color{width:28px;height:28px;border-radius:50%;border:2px solid #ddd;cursor:pointer;transition:.15s;}
+.sig-color.active{border-color:var(--green);transform:scale(1.15);}
+.sig-thickness{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);}
+#sig-preview-box{margin-top:14px;padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:12px;color:var(--gray-600);border:1px solid var(--gray-200);}
+
 </style>
 </head>
 <body>
@@ -1534,6 +1549,37 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-form-exp')">Cancelar</button>
       <button class="btn btn-primary" id="btn-gen-exp" onclick="gerarFormExp()">&#128196; Gerar DOCX</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASSINATURA DIGITAL -->
+<div id="sig-modal-bg">
+  <div id="sig-modal">
+    <h3>✍️ Assinatura Digital</h3>
+    <p>Assine no campo abaixo usando o dedo (celular) ou o mouse. A assinatura será inserida no documento.</p>
+    <canvas id="sig-canvas-doc" width="580" height="130"></canvas>
+    <div class="sig-toolbar">
+      <div style="display:flex;gap:6px;">
+        <div class="sig-color active" style="background:#000;" data-color="#000000" onclick="sigSetColor(this)" title="Preto"></div>
+        <div class="sig-color" style="background:#1f5c44;" data-color="#1f5c44" onclick="sigSetColor(this)" title="Verde"></div>
+        <div class="sig-color" style="background:#1565c0;" data-color="#1565c0" onclick="sigSetColor(this)" title="Azul"></div>
+      </div>
+      <div class="sig-thickness">
+        Espessura:
+        <input type="range" id="sig-thickness" min="1" max="5" value="2" style="width:80px;" oninput="sigSetThickness(this.value)">
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="sigClear()" style="margin-left:auto;">🗑️ Limpar</button>
+    </div>
+    <div id="sig-preview-box">
+      <strong>Documento:</strong> <span id="sig-doc-name">—</span><br>
+      <strong>Funcionário:</strong> <span id="sig-func-name">—</span><br>
+      <strong>Data:</strong> <span id="sig-data-hoje">—</span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="sigCancelar()">Cancelar</button>
+      <button class="btn btn-outline btn-sm" onclick="sigSemAssinatura()">Continuar sem assinatura</button>
+      <button class="btn btn-primary" onclick="sigConfirmar()">✅ Confirmar e Gerar Documento</button>
     </div>
   </div>
 </div>
@@ -4071,24 +4117,141 @@ function gerarContaSalario(empresa) {
 }
 
 // ── ABRIR E IMPRIMIR + SALVAR NO DRIVE ────────────────────
-async function abrirEImprimirDoc(docHTML, filename, f) {
-  // Abrir em nova aba para impressão/PDF
-  var win = window.open('', '_blank', 'width=900,height=700');
-  if (win) {
-    win.document.write(docHTML);
-    win.document.close();
-    setTimeout(function(){ win.focus(); win.print(); }, 600);
+// Variáveis do modal de assinatura
+var _sigDocHTML = '', _sigFilename = '', _sigFuncObj = null;
+var _sigCanvas = null, _sigCtx = null, _sigDrawing = false, _sigLast = {x:0,y:0};
+var _sigColor = '#000000', _sigThick = 2;
+
+// Intercepta geração de documento — abre modal de assinatura primeiro
+function abrirEImprimirDoc(docHTML, filename, f) {
+  _sigDocHTML  = docHTML;
+  _sigFilename = filename;
+  _sigFuncObj  = f;
+  // Preencher preview
+  document.getElementById('sig-doc-name').textContent  = filename.replace(/_/g,' ');
+  document.getElementById('sig-func-name').textContent = f ? f.n : '—';
+  document.getElementById('sig-data-hoje').textContent = fd(td());
+  // Inicializar canvas
+  sigInitCanvas();
+  // Abrir modal
+  document.getElementById('sig-modal-bg').classList.add('open');
+}
+
+function sigInitCanvas() {
+  _sigCanvas = document.getElementById('sig-canvas-doc');
+  _sigCtx    = _sigCanvas.getContext('2d');
+  _sigCtx.strokeStyle = _sigColor;
+  _sigCtx.lineWidth   = _sigThick;
+  _sigCtx.lineCap     = 'round';
+  _sigCtx.lineJoin    = 'round';
+  _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+
+  function getPos(e, rect) {
+    if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
-  // Salvar no Drive na pasta do funcionário
+  _sigCanvas.onmousedown = _sigCanvas.ontouchstart = function(e) {
+    e.preventDefault(); _sigDrawing = true;
+    var r = _sigCanvas.getBoundingClientRect();
+    _sigLast = getPos(e, r);
+  };
+  _sigCanvas.onmousemove = _sigCanvas.ontouchmove = function(e) {
+    e.preventDefault(); if (!_sigDrawing) return;
+    var r = _sigCanvas.getBoundingClientRect();
+    var p = getPos(e, r);
+    _sigCtx.beginPath();
+    _sigCtx.moveTo(_sigLast.x, _sigLast.y);
+    _sigCtx.lineTo(p.x, p.y);
+    _sigCtx.stroke();
+    _sigLast = p;
+  };
+  _sigCanvas.onmouseup = _sigCanvas.onmouseleave = _sigCanvas.ontouchend = function() {
+    _sigDrawing = false;
+  };
+}
+
+function sigSetColor(el) {
+  _sigColor = el.dataset.color;
+  if (_sigCtx) _sigCtx.strokeStyle = _sigColor;
+  document.querySelectorAll('.sig-color').forEach(function(b){ b.classList.remove('active'); });
+  el.classList.add('active');
+}
+function sigSetThickness(v) {
+  _sigThick = parseInt(v);
+  if (_sigCtx) _sigCtx.lineWidth = _sigThick;
+}
+function sigClear() {
+  if (_sigCtx) _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+}
+function sigCancelar() {
+  document.getElementById('sig-modal-bg').classList.remove('open');
+  _sigDocHTML = ''; _sigFilename = ''; _sigFuncObj = null;
+}
+
+// Continuar sem assinatura
+function sigSemAssinatura() {
+  document.getElementById('sig-modal-bg').classList.remove('open');
+  _abrirDocFinal(_sigDocHTML, _sigFilename, _sigFuncObj, null);
+}
+
+// Confirmar com assinatura
+function sigConfirmar() {
+  // Verificar se assinou
+  var imgData = _sigCtx.getImageData(0, 0, _sigCanvas.width, _sigCanvas.height);
+  var hasContent = false;
+  for (var i = 3; i < imgData.data.length; i += 4) {
+    if (imgData.data[i] > 0) { hasContent = true; break; }
+  }
+  if (!hasContent) {
+    toast('Por favor, faça a assinatura antes de confirmar.', 'warn');
+    return;
+  }
+  var sigDataURL = _sigCanvas.toDataURL('image/png');
+  document.getElementById('sig-modal-bg').classList.remove('open');
+  _abrirDocFinal(_sigDocHTML, _sigFilename, _sigFuncObj, sigDataURL);
+}
+
+// Inserir assinatura no HTML do documento e abrir
+async function _abrirDocFinal(docHTML, filename, f, sigDataURL) {
+  var finalHTML = docHTML;
+  if (sigDataURL) {
+    // Inserir bloco de assinatura antes do </body>
+    var sigBlock = '<div style="page-break-inside:avoid;margin-top:20px;border-top:2px solid #1f5c44;padding-top:12px;">' +
+      '<div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;">' +
+      '<div>' +
+        '<div style="font-size:10pt;color:#555;margin-bottom:4px;font-weight:600;">ASSINATURA DIGITAL DO FUNCIONÁRIO</div>' +
+        '<img src="' + sigDataURL + '" style="max-height:70px;max-width:220px;border-bottom:1px solid #333;display:block;">' +
+        '<div style="font-size:9pt;color:#333;margin-top:4px;font-weight:600;">' + (f ? f.n : '') + '</div>' +
+        '<div style="font-size:8.5pt;color:#777;">CPF: ' + (f ? f.cpf : '') + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:10pt;color:#555;margin-bottom:4px;font-weight:600;">DATA</div>' +
+        '<div style="font-size:11pt;font-weight:700;color:#1f5c44;">' + fd(td()) + '</div>' +
+        '<div style="font-size:8.5pt;color:#777;">Assinado digitalmente</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+    finalHTML = finalHTML.replace('</body>', sigBlock + '</body>');
+  }
+
+  // Abrir em nova aba
+  var win = window.open('', '_blank', 'width=960,height=750');
+  if (win) {
+    win.document.write(finalHTML);
+    win.document.close();
+    setTimeout(function(){ win.focus(); win.print(); }, 700);
+  }
+
+  // Salvar no Drive
   if (driveReady && f) {
     try {
-      var blob = new Blob([docHTML], { type: 'text/html;charset=utf-8' });
-      var file = new File([blob], filename+'.html', { type: 'text/html' });
+      var blob = new Blob([finalHTML], { type: 'text/html;charset=utf-8' });
+      var file = new File([blob], filename + (sigDataURL?'_assinado':'') + '.html', { type: 'text/html' });
       await uploadFileToDrive(file, f.n);
-      toast('Documento salvo no Drive na pasta de ' + f.n + ' ☁️');
+      toast('Documento' + (sigDataURL?' assinado':'')+' salvo no Drive na pasta de ' + f.n + ' ☁️');
     } catch(e) { console.warn('Drive save error:', e); }
   }
-  toast('Documento gerado! Use Ctrl+P para salvar como PDF.');
+  toast('Documento gerado' + (sigDataURL?' com assinatura ✍️':'') + '! Use Ctrl+P para salvar como PDF.');
 }
 
 // ── RECIBO EPI ─────────────────────────────────────────────
