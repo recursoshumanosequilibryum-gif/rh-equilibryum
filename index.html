@@ -323,6 +323,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav('beneficios',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Benefícios
   </div>
+  <div class="nav-item" onclick="nav('documentos',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Gerar Documentos
+  </div>
   <div class="nav-section">Relatórios</div>
   <div class="nav-item" onclick="nav('relatorios',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Relatório de Funcionários
@@ -700,6 +703,125 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     </div>
   </div>
 
+</div>
+
+<!-- DOCUMENTOS -->
+<div class="section-page" id="sec-documentos">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">&#128196; Gerar Documentos</span>
+    </div>
+
+    <!-- Seleção de Funcionário -->
+    <div style="background:var(--green-pale);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="flex:1;min-width:220px;">
+        <label>Funcionário *</label>
+        <select id="doc-func-sel" onchange="onDocFuncChange()">
+          <option value="">Selecione o funcionário</option>
+        </select>
+      </div>
+      <div id="doc-func-info" style="flex:2;font-size:13px;color:var(--green-dark);line-height:1.8;display:none;">
+        <div id="doc-func-card"></div>
+      </div>
+    </div>
+
+    <!-- Grid de documentos -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+
+      <!-- Guia de Exame Equilibryum -->
+      <div class="trein-card" style="border-left:4px solid var(--green);">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#129657; Guia de Exame Médico</div>
+            <div class="tc-meta">Empresa: <strong>Equilibryum</strong></div>
+          </div>
+          <img src="data:image/png;base64,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" style="height:32px;object-fit:contain;">
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Autorização para exame médico (Admissional, Demissional, Periódico, etc.) com dados da Equilibryum.</p>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Tipo de Exame</label>
+          <select id="doc-exm-tipo-eq">
+            <option value="ADMISSIONAL">Admissional</option>
+            <option value="DEMISSIONAL">Demissional</option>
+            <option value="PERIÓDICO">Periódico</option>
+            <option value="MUDANÇA FUNÇÃO">Mudança de Função</option>
+            <option value="RETORNO AO TRABALHO">Retorno ao Trabalho</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Unidade</label>
+          <input id="doc-unidade-eq" type="text" value="TATUAPÉ" placeholder="Ex.: TATUAPÉ">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="gerarGuiaExame('equilibryum')">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Guia de Exame Longhi -->
+      <div class="trein-card" style="border-left:4px solid var(--blue);">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#129657; Guia de Exame Médico</div>
+            <div class="tc-meta">Empresa: <strong>Longhi</strong></div>
+          </div>
+          <div style="font-weight:800;font-size:18px;color:var(--blue);letter-spacing:1px;">LONGHI</div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Autorização para exame médico com dados da Longhi Serviços de Terceirização.</p>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Tipo de Exame</label>
+          <select id="doc-exm-tipo-lg">
+            <option value="ADMISSIONAL">Admissional</option>
+            <option value="DEMISSIONAL">Demissional</option>
+            <option value="PERIÓDICO">Periódico</option>
+            <option value="MUDANÇA FUNÇÃO">Mudança de Função</option>
+            <option value="RETORNO AO TRABALHO">Retorno ao Trabalho</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>CBO (opcional)</label>
+          <input id="doc-cbo-lg" type="text" placeholder="Código CBO">
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:var(--blue);" onclick="gerarGuiaExame('longhi')">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Conta Salário Equilibryum -->
+      <div class="trein-card" style="border-left:4px solid #e65100;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#127981; Carta Conta Salário</div>
+            <div class="tc-meta">Empresa: <strong>Equilibryum</strong></div>
+          </div>
+          <img src="data:image/png;base64,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" style="height:32px;object-fit:contain;">
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Carta para abertura de conta salário no Bradesco – Convênio 100501182.</p>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Salário (R$)</label>
+          <input id="doc-sal-eq" type="text" placeholder="1.500,00">
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:#e65100;" onclick="gerarContaSalario('equilibryum')">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Conta Salário Longhi -->
+      <div class="trein-card" style="border-left:4px solid #6a1b9a;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#127981; Carta Conta Salário</div>
+            <div class="tc-meta">Empresa: <strong>Longhi</strong></div>
+          </div>
+          <div style="font-weight:800;font-size:18px;color:#6a1b9a;letter-spacing:1px;">LONGHI</div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Carta para abertura de conta salário no Bradesco – Convênio 240501669.</p>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Salário (R$)</label>
+          <input id="doc-sal-lg" type="text" placeholder="1.805,43">
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:#6a1b9a;" onclick="gerarContaSalario('longhi')">&#128196; Gerar Documento</button>
+      </div>
+
+    </div>
+
+    <div class="alert alert-info" style="margin-top:20px;">
+      &#128196; Os documentos abrem em nova aba prontos para <strong>imprimir ou salvar como PDF</strong>. Se o Drive estiver conectado, o documento também é salvo automaticamente na pasta do funcionário.
+    </div>
+  </div>
 </div>
 
 <!-- RELATÓRIO FUNCIONÁRIOS -->
@@ -1714,6 +1836,7 @@ function openModal(id) {
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
   if (id === 'modal-benef-comp') { fillFuncSel('bcomp-funcs', true); fillBenefRelMeses(); }
+  if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -1763,9 +1886,9 @@ function nav(id, el) {
   document.getElementById('sec-' + id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
-  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
+  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
   if (rd[id]) rd[id]();
 }
 
@@ -3693,6 +3816,201 @@ function rdBday() {
   }).join('');
 }
 
+
+// ============================================================
+// GERAR DOCUMENTOS
+// ============================================================
+function rdDocs() {
+  fillFuncSel('doc-func-sel');
+}
+
+function onDocFuncChange() {
+  var fid = document.getElementById('doc-func-sel').value;
+  var infoEl = document.getElementById('doc-func-info');
+  var cardEl = document.getElementById('doc-func-card');
+  if (!fid) { infoEl.style.display='none'; return; }
+  var f = DB.g('funcionarios').find(function(x){ return x.id===fid; });
+  if (!f) { infoEl.style.display='none'; return; }
+  var deps = DB.g('departamentos'); var emps = DB.g('empresas');
+  var dep = deps.find(function(d){ return d.id===f.dep; });
+  var emp = emps.find(function(e){ return e.id===f.emp; });
+  cardEl.innerHTML =
+    '<strong style="font-size:15px;color:var(--green-dark)">'+f.n+'</strong><br>'+
+    'CPF: '+f.cpf+' &nbsp;|&nbsp; '+
+    (f.nas?'Nasc.: '+fd(f.nas)+' &nbsp;|&nbsp;':'')+
+    'Cargo: '+(f.car||'—')+' &nbsp;|&nbsp; '+
+    'Admissão: '+fd(f.adm)+'<br>'+
+    'Endereço: '+(f.end||'—')+' &nbsp;|&nbsp; '+
+    'Tel.: '+(f.tel||'—')+' &nbsp;|&nbsp; '+
+    'Empresa: '+(emp?emp.razao:'—');
+  // Pre-fill salary
+  if (f.sal) {
+    var salEq = document.getElementById('doc-sal-eq');
+    var salLg = document.getElementById('doc-sal-lg');
+    if (salEq) salEq.value = f.sal;
+    if (salLg) salLg.value = f.sal;
+  }
+  infoEl.style.display = 'block';
+}
+
+function getDocFunc() {
+  var fid = (document.getElementById('doc-func-sel')||{}).value;
+  if (!fid) { alert('Selecione um funcionário primeiro.'); return null; }
+  return DB.g('funcionarios').find(function(x){ return x.id===fid; });
+}
+
+function fmtDataExtenso(d) {
+  if (!d) { var n=new Date(); d=n.toISOString().split('T')[0]; }
+  var meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var parts=d.split('-');
+  return parseInt(parts[2])+' de '+meses[parseInt(parts[1])-1]+' de '+parts[0];
+}
+
+// ── GUIA DE EXAME ──────────────────────────────────────────
+function gerarGuiaExame(empresa) {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+  var isEq = empresa === 'equilibryum';
+  var tipoExame = isEq ? (document.getElementById('doc-exm-tipo-eq')||{}).value : (document.getElementById('doc-exm-tipo-lg')||{}).value;
+  var tipos = ['ADMISSIONAL','DEMISSIONAL','PERIÓDICO','MUDANÇA FUNÇÃO','RETORNO AO TRABALHO'];
+  var unidade = isEq ? ((document.getElementById('doc-unidade-eq')||{}).value||'TATUAPÉ') : '';
+  var cbo = !isEq ? ((document.getElementById('doc-cbo-lg')||{}).value||'') : '';
+
+  function tipoBox(t) {
+    var sel = tipoExame === t;
+    return '<td style="border:1px solid #333;padding:5px 8px;text-align:center;width:20px;background:'+(sel?'#1f5c44':'#fff')+';color:'+(sel?'#fff':'#000')+';">'+(sel?'X':'')+'</td><td style="border:1px solid #333;padding:5px 10px;">'+t+'</td>';
+  }
+
+  var nomeEmp = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde' : 'LONGHI SERVICOS DE TERCEIRIZACAO A EMPRESAS LTDA';
+  var cnpjEmp = isEq ? '05.441.897/0001-02' : '54.188.772/0001-28';
+  var assinante = isEq ? 'MÔNICA DOS SANTOS' : 'MONICA SANTOS';
+  var cargo_assinante = isEq ? '' : 'Coord. De Recursos Humanos';
+
+  var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Guia de Exame – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;}' +
+    'h2{text-align:center;font-size:14pt;margin-bottom:4px;}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:12px;}' +
+    'td{padding:6px 8px;font-size:10.5pt;}' +
+    '.field{border:1px solid #333;}' +
+    '.info-block{background:#f5f5f5;border:1px solid #ccc;padding:12px;border-radius:4px;margin-top:16px;font-size:10pt;line-height:1.7;}' +
+    '@media print{@page{margin:1.5cm;}}</style></head><body>' +
+    '<h2>AUTORIZAÇÃO PARA EXAME MÉDICO</h2>' +
+    '<table style="border-collapse:collapse;width:100%;margin-bottom:14px;">' +
+    '<tr>'+tipoBox('ADMISSIONAL')+tipoBox('PERIÓDICO')+'</tr>' +
+    '<tr>'+tipoBox('MUDANÇA FUNÇÃO')+tipoBox('DEMISSIONAL')+'</tr>' +
+    '<tr>'+tipoBox('RETORNO AO TRABALHO')+tipoBox('')+'</tr>' +
+    '</table>' +
+    '<table style="border-collapse:collapse;width:100%;">' +
+    '<tr><td colspan="3" class="field"><strong>NOME EMPRESA:</strong> '+nomeEmp+'</td><td class="field"><strong>CNPJ:</strong> '+cnpjEmp+'</td></tr>' +
+    '<tr><td colspan="2" class="field"><strong>NOME FUNCIONÁRIO:</strong> '+f.n+'</td><td colspan="2" class="field">'+(isEq?'<strong>UNIDADE:</strong> '+unidade:'')+'</td></tr>' +
+    '<tr><td class="field"><strong>CPF:</strong> '+f.cpf+'</td><td colspan="2" class="field"><strong>DATA NASCIMENTO:</strong> '+(f.nas?fd(f.nas):'')+'</td><td class="field"><strong>PIS:</strong> '+(f.pis||'')+'</td></tr>' +
+    '<tr><td colspan="2" class="field"><strong>RG:</strong> '+(f.rg||'')+'</td><td colspan="2" class="field"><strong>PIS:</strong> '+(f.pis||'')+'</td></tr>' +
+    '<tr><td colspan="2" class="field"><strong>FUNÇÃO:</strong> '+f.car+'</td><td colspan="2" class="field">'+(isEq?'<strong>SETOR:</strong> '+(unidade||''):'<strong>CBO:</strong> '+cbo)+'</td></tr>' +
+    (!isEq?'<tr><td colspan="4" class="field"><strong>CBO:</strong> '+cbo+' &nbsp;&nbsp;&nbsp; <strong>NÚMERO ESOCIAL/MATRÍCULA:</strong></td></tr>':'') +
+    '<tr><td colspan="4" class="field"><strong>DATA ADMISSÃO/DEMISSÃO:</strong> '+fd(f.adm)+'</td></tr>' +
+    '</table>' +
+    '<p style="margin-top:16px;">O funcionário acima está autorizado a realizar o exame médico indicado para a emissão do Atestado de Saúde Ocupacional (ASO).</p>' +
+    '<p style="margin-top:20px;">Data: '+fmtDataExtenso(hoje)+'</p>' +
+    '<p style="margin-top:30px;">__________________________</p>' +
+    '<p><strong>'+assinante+'</strong></p>' +
+    (cargo_assinante?'<p>'+cargo_assinante+'</p>':'') +
+    '<div class="info-block">' +
+    '<strong>LOCAL DO EXAME:</strong><br>' +
+    'Endereço: Rua Pirambóia, 75 – Vila Carrão<br>' +
+    'Ponto de referência: Subir Rua Doralisa – Trav. Av. Conselheiro Carrão, alt. 2300 (Delegacia 31ª)<br>' +
+    '<strong>Opção de ônibus:</strong><br>' +
+    '309N JD IV Centenário, sai do Metrô Carrão<br>' +
+    '3029-10 Jd das Rosas, sai do Metrô Tatuapé<br>' +
+    '372U-10 Vila Santa Isabel, sai do Metrô Tatuapé<br>' +
+    '<strong>Fone:</strong> (11) 2293-4171 / 2092-6695 / 3467-0538 / 99905-4171' +
+    '</div>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(docHTML, 'Guia_Exame_'+empresa+'_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── CARTA CONTA SALÁRIO ────────────────────────────────────
+function gerarContaSalario(empresa) {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+  var isEq = empresa === 'equilibryum';
+  var salario = isEq ?
+    ((document.getElementById('doc-sal-eq')||{}).value || f.sal || '') :
+    ((document.getElementById('doc-sal-lg')||{}).value || f.sal || '');
+
+  var nomeEmp  = isEq ? 'EQUILIBRYUM E REABILITAÇÃO E CONSULTORIA EM SAÚDE SC LTDA' : 'LONGHI SERVIÇOS DE TERCEIRIZAÇÃO A EMPRESAS LTDA';
+  var cnpjEmp  = isEq ? '05.441.897/0001-02' : '54.188.772/0001-28';
+  var convenio = isEq ? '100501182' : '240501669';
+  var rodape   = isEq ?
+    'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda<br>Rua Dr Costa Júnior, 365 – Perdizes – São Paulo – SP – Cep.: 05002-000<br>Telefones: (11) 2574-4554 e 3791-0252' :
+    'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda<br>Rua Dr Germaine Burchard, 324 – Perdizes – São Paulo – SP – Cep.: 05002-061<br>Telefones: (11) 98803-5369 e (11) 963332165';
+
+  var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Carta Conta Salário – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:2.5cm;font-size:11pt;color:#000;line-height:1.7;}' +
+    'h2{font-size:13pt;margin-bottom:2px;}' +
+    '.header{font-weight:700;font-size:18pt;margin-bottom:20px;}'+(isEq?'':'.header{color:#333;}')  +
+    'table{width:100%;border-collapse:collapse;margin-top:20px;}' +
+    'td{padding:5px 8px;border:1px solid #333;font-size:10pt;}' +
+    '.assinatura{margin-top:40px;border-top:1px solid #333;width:250px;padding-top:6px;font-weight:700;}' +
+    '.rodape{margin-top:30px;font-size:9pt;color:#555;text-align:center;border-top:1px solid #ccc;padding-top:8px;}' +
+    '@media print{@page{margin:2cm;}}</style></head><body>' +
+    (!isEq?'<div class="header">LONGHI</div>':'') +
+    '<p><em>Ao Gerente do Banco Bradesco</em></p>' +
+    '<h2><strong>Carta de Solicitação para Abertura de Conta Salário.</strong></h2>' +
+    '<h2><strong>Convênio '+convenio+'</strong></h2>' +
+    '<p><em>São Paulo, '+fmtDataExtenso(hoje)+'.</em></p>' +
+    '<p><em>Solicitamos abertura de conta salário para o nosso funcionário:</em></p>' +
+    '<p><em><strong>NOME:</strong> '+f.n+'</em></p>' +
+    '<p><em><strong>Endereço:</strong> '+(f.end||'')+'</em></p>' +
+    '<p><em><strong>Bairro/Cidade:</strong> '+(f.cid||'')+'</em></p>' +
+    '<p><em><strong>Telefone:</strong> '+(f.tel||'')+'</em></p>' +
+    '<p><em><strong>CPF:</strong> '+f.cpf+'</em></p>' +
+    '<p><em><strong>Função:</strong> '+(f.car||'')+'</em></p>' +
+    '<p><em><strong>Salário:</strong> R$ '+salario+'</em></p>' +
+    '<p><em>Favor providenciar para o mesmo a abertura da conta salário, desde que ele esteja de posse de todos os documentos necessários descritos abaixo. Na ausência de um dos documentos favor solicitar ao funcionário que providencie e retorne posteriormente para abertura, não fornecendo neste momento o número da conta salário.</em></p>' +
+    '<p><em><strong>Obs.:</strong> O fornecimento do número da conta ao funcionário poderá ocorrer se a conta estiver liberada para recebimento dos créditos relativos ao salário ou demais pertinentes à função exercida na empresa.</em></p>' +
+    '<p style="margin-top:30px;" class="assinatura">MÔNICA SANTOS<br>'+nomeEmp+'<br>CNPJ N.° '+cnpjEmp+'</p>' +
+    '<hr style="margin:24px 0;">' +
+    '<p><strong>Observações para o funcionário:</strong></p>' +
+    '<p><em>Para efetuar a abertura da conta salário, o funcionário deverá <strong>comparecer pessoalmente</strong> na agência e apresentar juntamente com esta carta o seu CPF, um documento de identificação e comprovante de endereço.</em></p>' +
+    '<ul style="font-style:italic;">' +
+    '<li><strong>01 – CPF</strong> – Cadastro de Pessoa Física</li>' +
+    '<li><strong>02 – Documento de identidade</strong> – RG, CNH ou Carteira de Identidade expedida pelo Ministério da Aeronáutica, Marinha ou Exército.</li>' +
+    '<li><strong>03 – Comprovante de Endereço</strong> (com o máximo de 30 dias de emissão): Conta de luz, telefone fixo, móvel pós, gás (em seu nome) ou Contrato de Aluguel autenticado.</li>' +
+    '</ul>' +
+    '<p><em>Obs.: É obrigado levar os originais e cópias dos documentos listados.</em></p>' +
+    '<table>' +
+    '<tr><td colspan="2"><strong>Para uso exclusivo do Banco Bradesco:</strong></td></tr>' +
+    '<tr><td>Número da Conta Corrente:</td><td style="width:70%;">&nbsp;</td></tr>' +
+    '<tr><td>Responsável pelo atendimento:</td><td>&nbsp;</td></tr>' +
+    '<tr><td>Nome e número da agência:</td><td>&nbsp;</td></tr>' +
+    '</table>' +
+    '<div class="rodape">'+rodape+'</div>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(docHTML, 'Conta_Salario_'+empresa+'_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── ABRIR E IMPRIMIR + SALVAR NO DRIVE ────────────────────
+async function abrirEImprimirDoc(docHTML, filename, f) {
+  // Abrir em nova aba para impressão/PDF
+  var win = window.open('', '_blank', 'width=900,height=700');
+  if (win) {
+    win.document.write(docHTML);
+    win.document.close();
+    setTimeout(function(){ win.focus(); win.print(); }, 600);
+  }
+  // Salvar no Drive na pasta do funcionário
+  if (driveReady && f) {
+    try {
+      var blob = new Blob([docHTML], { type: 'text/html;charset=utf-8' });
+      var file = new File([blob], filename+'.html', { type: 'text/html' });
+      await uploadFileToDrive(file, f.n);
+      toast('Documento salvo no Drive na pasta de ' + f.n + ' ☁️');
+    } catch(e) { console.warn('Drive save error:', e); }
+  }
+  toast('Documento gerado! Use Ctrl+P para salvar como PDF.');
+}
 
 // ============================================================
 // INIT
