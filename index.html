@@ -742,21 +742,55 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:14px;background:var(--green-pale);border-radius:var(--radius-sm);">
         <div class="form-group" style="min-width:200px;">
           <label>Empresa *</label>
-          <select id="flash-empresa">
+          <select id="flash-empresa" onchange="onFlashEmpChange()">
             <option value="">Selecione</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>CNPJ (automático)</label>
+          <input type="text" id="flash-cnpj" placeholder="Preenchido automaticamente" readonly style="background:var(--gray-100);">
         </div>
         <div class="form-group">
           <label>Competência (mês/ano) *</label>
           <input type="month" id="flash-comp">
         </div>
         <div class="form-group">
-          <label>CNPJ da Empresa</label>
-          <input type="text" id="flash-cnpj" placeholder="00.000.000/0001-00">
-        </div>
-        <div class="form-group">
           <label>Unidade</label>
           <input type="text" id="flash-unidade" placeholder="Ex.: TATUAPÉ">
+        </div>
+      </div>
+      <!-- Filtro de benefícios para exportar -->
+      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;">📋 Selecione quais benefícios incluir no arquivo:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;" id="flash-benef-checks">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-vt" checked> 🚌 VT (por dia)
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-vr" checked> 🍽️ VR (por dia)
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-va" checked> 🛒 VA
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-comb" checked> ⛽ Combustível
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-assim" checked> ⭐ Assiduidade
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-bonus" checked> 💰 Bônus
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-odonto"> 🦷 Odonto
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:5px 10px;background:#fff;border-radius:20px;border:1.5px solid var(--gray-200);">
+            <input type="checkbox" id="flash-chk-med"> 🏥 Assist. Médica
+          </label>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="flashCheckAll(true)">Marcar todos</button>
+          <button class="btn btn-outline btn-sm" onclick="flashCheckAll(false)">Desmarcar todos</button>
         </div>
       </div>
 
@@ -1479,52 +1513,156 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- Google API -->
 <!-- Modal: Atribuir Benefício ao Funcionário -->
 <div class="modal-bg" id="modal-benef-atr">
-  <div class="modal" style="max-width:680px">
+  <div class="modal" style="max-width:760px">
     <div class="modal-header">
-      <span class="modal-title" id="benef-atr-title">Atribuir Benefício ao Funcionário</span>
+      <span class="modal-title" id="benef-atr-title">&#128101; Atribuir Benefícios ao Funcionário</span>
       <button class="modal-close" onclick="closeModal('modal-benef-atr')">&#215;</button>
     </div>
     <div class="form-grid">
-      <div class="form-group form-full"><label>Funcionário *</label>
-        <select id="batr-func"><option value="">Selecione</option></select>
-      </div>
-      <div class="form-group"><label>Tipo de Benefício *</label>
-        <select id="batr-tipo" onchange="benefTipoChange(this)">
-          <option value="">Selecione</option>
-          <option value="VR – Vale Refeição">VR – Vale Refeição</option>
-          <option value="VA – Vale Alimentação">VA – Vale Alimentação</option>
-          <option value="Combustível">Combustível</option>
-          <option value="Assistência Médica">Assistência Médica</option>
-          <option value="Assistência Odontológica">Assistência Odontológica</option>
-          <option value="Assiduidade">Assiduidade</option>
-          <option value="Bônus">Bônus</option>
-          <option value="Triênio">Triênio</option>
-          <option value="Outros">Outros</option>
-        </select>
-      </div>
-      <div class="form-group" id="batr-outros-group" style="display:none">
-        <label>Especificar</label>
-        <input id="batr-outros-desc" type="text" placeholder="Descreva o benefício">
-      </div>
-      <div class="form-group"><label>Valor Mensal (R$)</label>
-        <input id="batr-valor" type="number" step="0.01" min="0" placeholder="0,00">
-      </div>
-      <div class="form-group"><label>Início *</label>
-        <input id="batr-ini" type="date">
-      </div>
-      <div class="form-group"><label>Fim (opcional)</label>
-        <input id="batr-fim" type="date">
-      </div>
-      <div class="form-group"><label>Status</label>
-        <select id="batr-st"><option>Ativo</option><option>Suspenso</option><option>Encerrado</option></select>
-      </div>
-      <div class="form-group form-full"><label>Observações</label>
-        <textarea id="batr-obs" rows="2" placeholder="Informações adicionais, plano, operadora..."></textarea>
+      <div class="form-group form-full">
+        <label>Funcionário *</label>
+        <select id="batr-func" onchange="onBatrFuncChange()"><option value="">Selecione</option></select>
       </div>
     </div>
+    <!-- Info do funcionário -->
+    <div id="batr-func-info" style="display:none;background:var(--green-pale);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--green-dark);"></div>
+    <!-- Tabela de benefícios -->
+    <div class="table-wrap" style="margin-bottom:0;">
+      <table style="min-width:100%;">
+        <thead>
+          <tr>
+            <th style="min-width:180px;">Benefício</th>
+            <th style="min-width:110px;">Tipo Valor</th>
+            <th style="min-width:120px;">Valor (R$)</th>
+            <th style="min-width:110px;">Valor/dia</th>
+            <th style="min-width:80px;">Status</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody id="batr-tbody">
+          <tr id="batr-row-vt">
+            <td><strong style="color:#e65100;">🚌 VT – Vale Transporte</strong></td>
+            <td><select id="batr-vt-tipo" onchange="batrUpdateCalc('vt')" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="dia">Por dia</option>
+              <option value="mes">Mensal fixo</option>
+            </select></td>
+            <td><input type="number" id="batr-vt-val" step="0.01" min="0" placeholder="0,00" oninput="batrUpdateCalc('vt')" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td id="batr-vt-calc" style="font-size:12px;color:var(--gray-400);text-align:center;">—</td>
+            <td><select id="batr-vt-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-vt-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-vr">
+            <td><strong style="color:#1565c0;">🍽️ VR – Vale Refeição</strong></td>
+            <td><select id="batr-vr-tipo" onchange="batrUpdateCalc('vr')" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="dia">Por dia</option>
+              <option value="mes">Mensal fixo</option>
+            </select></td>
+            <td><input type="number" id="batr-vr-val" step="0.01" min="0" placeholder="0,00" oninput="batrUpdateCalc('vr')" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td id="batr-vr-calc" style="font-size:12px;color:var(--gray-400);text-align:center;">—</td>
+            <td><select id="batr-vr-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-vr-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-va">
+            <td><strong style="color:#2e7d5e;">🛒 VA – Vale Alimentação</strong></td>
+            <td><select id="batr-va-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal fixo</option>
+            </select></td>
+            <td><input type="number" id="batr-va-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--gray-400);">—</td>
+            <td><select id="batr-va-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-va-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-comb">
+            <td><strong style="color:#6a1b9a;">⛽ Combustível</strong></td>
+            <td><select id="batr-comb-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal fixo</option>
+            </select></td>
+            <td><input type="number" id="batr-comb-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--gray-400);">—</td>
+            <td><select id="batr-comb-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-comb-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-assim">
+            <td><strong style="color:#00695c;">⭐ Assiduidade</strong></td>
+            <td><select id="batr-assim-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal</option>
+            </select></td>
+            <td><input type="number" id="batr-assim-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--green-dark);font-weight:600;" id="batr-assim-note">Variável/mês</td>
+            <td><select id="batr-assim-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-assim-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-bonus">
+            <td><strong style="color:#bf360c;">💰 Bônus / Premiação</strong></td>
+            <td><select id="batr-bonus-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal</option>
+            </select></td>
+            <td><input type="number" id="batr-bonus-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--green-dark);font-weight:600;">Variável/mês</td>
+            <td><select id="batr-bonus-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-bonus-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-odonto">
+            <td><strong style="color:#880e4f;">🦷 Assist. Odontológica</strong></td>
+            <td><select id="batr-odonto-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal</option>
+            </select></td>
+            <td><input type="number" id="batr-odonto-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--gray-400);">—</td>
+            <td><select id="batr-odonto-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-odonto-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-med">
+            <td><strong style="color:#1565c0;">🏥 Assist. Médica</strong></td>
+            <td><select id="batr-med-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal</option>
+            </select></td>
+            <td><input type="number" id="batr-med-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--gray-400);">—</td>
+            <td><select id="batr-med-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-med-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+          <tr id="batr-row-trienio">
+            <td><strong style="color:#4a148c;">📅 Triênio</strong></td>
+            <td><select id="batr-trienio-tipo" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;width:100%;">
+              <option value="mes">Mensal</option>
+            </select></td>
+            <td><input type="number" id="batr-trienio-val" step="0.01" min="0" placeholder="0,00" style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;"></td>
+            <td style="text-align:center;font-size:12px;color:var(--gray-400);">—</td>
+            <td><select id="batr-trienio-st" style="font-size:12px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">
+              <option value="Ativo">Ativo</option><option value="Suspenso">Suspenso</option><option value="Encerrado">Encerrado</option>
+            </select></td>
+            <td><input type="text" id="batr-trienio-obs" placeholder="Obs." style="width:100%;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11.5px;color:var(--gray-500);margin:10px 0 4px;padding:0 4px;">
+      💡 Deixe o valor em branco ou 0,00 para benefícios que o funcionário não recebe. Assiduidade e Bônus podem ser alterados mês a mês.
+    </div>
     <div class="modal-footer">
+      <div style="display:flex;gap:8px;align-items:center;flex:1;">
+        <label style="font-size:12px;">Início:</label>
+        <input type="date" id="batr-ini" style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12px;">
+      </div>
       <button class="btn btn-outline" onclick="closeModal('modal-benef-atr')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savBenefAtr()">&#128190; Salvar</button>
+      <button class="btn btn-primary" onclick="savBenefAtrNovo()">&#128190; Salvar Todos os Benefícios</button>
     </div>
   </div>
 </div>
@@ -5483,9 +5621,17 @@ function rdFlash() {
     selEmp.innerHTML = '<option value="">Selecione</option>';
     DB.g('empresas').forEach(function(e) {
       var o = document.createElement('option');
-      o.value = e.id; o.textContent = e.razao; selEmp.appendChild(o);
+      o.value = e.id;
+      o.textContent = e.razao + (e.cnpj ? ' – ' + e.cnpj : '');
+      selEmp.appendChild(o);
     });
-    if (cur) selEmp.value = cur;
+    if (cur) {
+      selEmp.value = cur;
+      // Update CNPJ field
+      var emp = DB.g('empresas').find(function(e){return e.id===cur;});
+      var cnpjEl = document.getElementById('flash-cnpj');
+      if (emp && cnpjEl) cnpjEl.value = emp.cnpj || '';
+    }
   }
   if (!document.getElementById('flash-comp').value) {
     var now = new Date();
@@ -5666,20 +5812,30 @@ async function gerarFlashXLSX() {
   var headers = ['CNPJ','NOME COMPLETO','CPF','VT DIA','COMBUSTÍVEL','UNIDADE','CARGO','VT E AC','ESCALA','VR DIA','PREMIACAO NO CARTAO (R$)','MOBILIDADE (R$)','REFEICAO E ALIMENTACAO (R$)','ALIMENTACAO (R$)','REFEICAO (R$)','PREMIACAO VIRTUAL (R$)'];
   var rows = [headers.join(SEP)];
 
+  // Get selected benefit filters
+  var chkVT    = (document.getElementById('flash-chk-vt')||{checked:true}).checked;
+  var chkVR    = (document.getElementById('flash-chk-vr')||{checked:true}).checked;
+  var chkVA    = (document.getElementById('flash-chk-va')||{checked:true}).checked;
+  var chkComb  = (document.getElementById('flash-chk-comb')||{checked:true}).checked;
+  var chkAssim = (document.getElementById('flash-chk-assim')||{checked:true}).checked;
+  var chkBonus = (document.getElementById('flash-chk-bonus')||{checked:true}).checked;
+  var chkOdonto= (document.getElementById('flash-chk-odonto')||{checked:false}).checked;
+  var chkMed   = (document.getElementById('flash-chk-med')||{checked:false}).checked;
+
   funcs.forEach(function(f) {
     var escSel = document.getElementById('escala-'+f.id);
     var escala = escSel ? escSel.value : '55';
     var dias   = getDiasEscala(escala);
     var escLabel = escala === '56' ? 'SEG A SAB' : 'SEG A SEX';
 
-    var vtDia  = parseFloat((document.getElementById('vt-'+f.id)||{}).value)||0;
-    var vrDia  = parseFloat((document.getElementById('vr-'+f.id)||{}).value)||0;
-    var va     = parseFloat((document.getElementById('va-'+f.id)||{}).value)||0;
-    var comb   = parseFloat((document.getElementById('comb-'+f.id)||{}).value)||0;
-    var assim  = parseFloat((document.getElementById('assim-'+f.id)||{}).value)||0;
-    var bonus  = parseFloat((document.getElementById('bonus-'+f.id)||{}).value)||0;
-    var odonto = parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0;
-    var med    = parseFloat((document.getElementById('med-'+f.id)||{}).value)||0;
+    var vtDia  = chkVT    ? (parseFloat((document.getElementById('vt-'+f.id)||{}).value)||0) : 0;
+    var vrDia  = chkVR    ? (parseFloat((document.getElementById('vr-'+f.id)||{}).value)||0) : 0;
+    var va     = chkVA    ? (parseFloat((document.getElementById('va-'+f.id)||{}).value)||0) : 0;
+    var comb   = chkComb  ? (parseFloat((document.getElementById('comb-'+f.id)||{}).value)||0) : 0;
+    var assim  = chkAssim ? (parseFloat((document.getElementById('assim-'+f.id)||{}).value)||0) : 0;
+    var bonus  = chkBonus ? (parseFloat((document.getElementById('bonus-'+f.id)||{}).value)||0) : 0;
+    var odonto = chkOdonto? (parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0) : 0;
+    var med    = chkMed   ? (parseFloat((document.getElementById('med-'+f.id)||{}).value)||0) : 0;
     var trienio= parseFloat((document.getElementById('tri-'+f.id)||{}).value)||0;
 
     // VT E AC: soma VT diário * dias + combustível mensal
@@ -5950,6 +6106,269 @@ function importarBeneficiosPlanilhas() {
   rdBenefFunc();
   rdBenef();
   toast('Importação concluída! ' + importados + ' benefício(s) cadastrado(s).');
+}
+
+// ============================================================
+// IMPORTAÇÃO MASSIVA DE BENEFÍCIOS DAS PLANILHAS
+// ============================================================
+var BENEF_IMPORT_DATA = {"581.424.628-69": {"nome": "AGATHA CRISTINA FERREIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 120.0}, "424.148.348-89": {"nome": "AGATHA CRISTINE DE OLIVEIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 10.6, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 120.0}, "574.503.998-14": {"nome": "ANNE SOPHIE MODESTO PINTO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "235.569.968-20": {"nome": "ALINE RODRIGUES DOS SANTOS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 25.9, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "567.906.578-94": {"nome": "BRENNO DIEGO FERREIRA DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "468.476.818-02": {"nome": "BRENO VALENTIM DA SILVA SANTOS", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 120.0}, "423.308.688-20": {"nome": "BRUNA TENUTA BARBOSA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 120.0}, "454.329.098-47": {"nome": "CAMILA EVANGELISTA TRINDADE", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 24.1, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 143.46}, "440.245.438-73": {"nome": "CAMILA DE FIGUEIREDO BARBOSA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "574.862.748-50": {"nome": "CAMILA GOMES CARDOSO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "716.092.061-93": {"nome": "CAMILA PEREIRA DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 191.28}, "454.611.568-78": {"nome": "CARLA LOPES DA PAZ", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "370.136.218-11": {"nome": "CRISTIANE ALVES DE LIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "494.260.008-10": {"nome": "DANIELLE BOTELHO RADU", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "394.692.978-81": {"nome": "DEBORA DE SOUZA LABIAPARI", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 143.46}, "513.565.818-11": {"nome": "EMANUELLE VICTORIA BARBOSA MARQUES", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "538.387.788-63": {"nome": "ENZO VALENTIM FRANDINI LIMA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "107.598.257-00": {"nome": "ESTER RAMOS SOUZA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "479.497.128-13": {"nome": "FABIA BORGES DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "601.223.448-12": {"nome": "FABRICIO RAPHAEL BORGES RIBEIRO", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 10.8, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 117.23}, "403.072.868-51": {"nome": "FERNANDA BISPO BORBA AUGUSTO", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "548.952.678-57": {"nome": "GABRIELA CAMPACCI DERENZO", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 0.0, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 143.46}, "460.573.708-13": {"nome": "GABRIELLY VICTORIA CERQUEIRA DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 120.0}, "595.409.148-09": {"nome": "GEOVANNA ROCHA PEREIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "041.514.323-37": {"nome": "Gilvandro Benvindo Pereira de Carvalho", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 0.0, "comb": 300.0, "assim": 0.0, "bonus": 0.0}, "557.802.998-11": {"nome": "GUILHERME DA SILVA ARCANJO", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 191.28}, "456.492.208-40": {"nome": "ISABELLY FERNANDES DE ALMEIDA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "320.032.138-56": {"nome": "IVANETE SANTOS REBOUCAS FERNADES", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "504.179.388-37": {"nome": "JAQUELINE KELLY COSTA SILVA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "509.568.408-09": {"nome": "JHONATA RODRIGUES GUIMARAES DOS SANTOS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "525.432.918-14": {"nome": "JOÃO VICTOR PARLADORI GOMES", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 10.8, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 150.45}, "050.585.554-25": {"nome": "JOSE SEBASTIAO DE SANTANA FILHO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "567.368.128-36": {"nome": "JULIA ALVES DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "417.330.188-08": {"nome": "KAUANE SILVA RODRIGUES", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "478.491.808-60": {"nome": "LARISSA CARDOZO DIAS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 10.6, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "492.766.868-19": {"nome": "LAURA LAOPOLDINO MENDES", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 10.6, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "509.693.878-65": {"nome": "LETICIA FERREIRA DE OLIVEIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 143.46}, "392.522.768-74": {"nome": "LEONARDO DE MELO NASCIMENTO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "482.355.338-12": {"nome": "LILIAN VITORIA CANDIDO NAVAS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 117.23}, "404.517.168-17": {"nome": "MARCELA RIBEIRO MARTINS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 156.31}, "504.343.358-27": {"nome": "LEONARDO TOLENTINO DE SOUZA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "443.777.288-14": {"nome": "MARCELO FRANCISCO DE SOUZA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "584.680.258-36": {"nome": "MARIA CLARA CADETE DOS SANTOS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 24.1, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 156.31}, "479.075.498-76": {"nome": "MARIA FERNANDA MAGDALENA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 10.6, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 120.0}, "140.778.118-99": {"nome": "MARISA ROSA DA SILVA SANTOS", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 0.0, "vr": 24.8, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "527.686.678-38": {"nome": "NICOLE SOUZA SILVA BATISTA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "569.599.428-45": {"nome": "NICOLI ROCHA DE ALMEIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "544.226.788-09": {"nome": "PAMELA RIBEIRO DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 153.34}, "444.197.508-20": {"nome": "PATRICIA SOUZA DO CARMO", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 22.8, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "116.478.538-93": {"nome": "Paula Andrea Rodrigues Marques", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 0.0, "comb": 300.0, "assim": 0.0, "bonus": 0.0}, "545.375.498-23": {"nome": "PHELIPY FIRMINO AUGUSTO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 10.6, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 95.63}, "523.278.578-80": {"nome": "RAFAEL PEREIRA DOS SANTOS", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "466.510.998-25": {"nome": "RAQUEL MELQUIADES DA SILVA", "cnpj": "05.441.897/0001-02", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "265.882.838-14": {"nome": "SANDRA DO NASCIMENTO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "256.298.208-85": {"nome": "SIDNEI BATISTA PEREIRA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 0.0, "vr": 24.8, "va": 0.0, "comb": 400.0, "assim": 0.0, "bonus": 0.0}, "483.960.788-58": {"nome": "TALITA DE CASSIA CARVALHO", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 10.6, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "335.706.038-81": {"nome": "THAIS MONTEIRO DA SILVA BARBOSA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "426.824.028-44": {"nome": "WILLIAN DE ALMEIDA ROCHA", "cnpj": "05.441.897/0001-02", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 0.0, "comb": 0.0, "assim": 0.0, "bonus": 200.84}, "385.098.018-94": {"nome": "AILTON SOARES BATISTA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 10.8, "vr": 24.8, "va": 520.8, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "182.844.888-50": {"nome": "ALEX ZAPAROLLI DE AGUSTINI", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "396.775.298-46": {"nome": "ANDRE TOMAZELLI", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "325.932.158-60": {"nome": "ANGELITA MARIA DA SILVA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "486.930.998-09": {"nome": "APARECIDO HENRIQUE DE MACEDO", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "359.216.428-78": {"nome": "ARIETE DOS SANTOS TOMAZ", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "470.439.398-44": {"nome": "BRUNA GOMES TAVARES", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 22.6, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "478.575.318-80": {"nome": "BRUNA STEFANY ARAUJO PEREIRA SABINO", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 10.6, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "410.647.028-48": {"nome": "BRUNO NATHAN DA SILVA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 24.8, "va": 520.8, "comb": 0.0, "assim": 0.0, "bonus": 150.0}, "154.460.558-70": {"nome": "CARLA RODRIGUES", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "302.252.558-39": {"nome": "DANIELA DOS SANTOS", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 10.6, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 180.54}, "175.974.098-50": {"nome": "ELTON DA SILVA MATOS", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 24.8, "va": 520.8, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "083.132.135-07": {"nome": "ERICA FERNANDA SANTOS DE SOUZA", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 570.4, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "287.305.898-60": {"nome": "FABIANI MIAMOTO NIYAMA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "361.119.348-80": {"nome": "FLAVIA MARTINS MIRANDA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "163.797.024-23": {"nome": "GEICE KELLY DA SILVA FERREIRA RAMOS", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 204.48, "bonus": 150.45}, "454.716.808-39": {"nome": "GEOVANA SILVA SOUSA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "713.628.502-09": {"nome": "GIELI COSTA DOS SANTOS", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 620.0, "comb": 0.0, "assim": 180.43, "bonus": 0.0}, "332.084.208-03": {"nome": "GISLAM LUTTI SILVA BATISTA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 27.6, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "098.394.064-93": {"nome": "GUSTAVO COLLIN LANA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 24.54, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "290.479.908-70": {"nome": "GUSTAVO HIROSHI KANNO", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "503.395.778-35": {"nome": "HADASSA AMARO VIANA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "038.733.105-03": {"nome": "ISMAEL MAIQUE CHAGAS SILVA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "378.138.068-83": {"nome": "JANAINA DOS REIS DA SILVA", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "457.052.418-44": {"nome": "JANAINA SOARES DA SILVA MORAES", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 620.0, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "377.712.558-09": {"nome": "JHAY FELIPE DE ALBUQUERQUE", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 24.8, "va": 520.8, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "316.802.338-82": {"nome": "KELLY FERREIRA DOS SANTOS SILVA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "482.522.918-21": {"nome": "KETELYN RODRIGUES FERREIRA DA SILVA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 4.35, "bonus": 0.0}, "365.550.128-54": {"nome": "LEILANE FRANCA FERREIRA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "433.556.068-04": {"nome": "LETICIA AKAMINE MARCHEZONI", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "491.094.418-40": {"nome": "LETICIA GARCIA RAMOS", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "118.857.718-27": {"nome": "LUCIDALVA NUNES CERQUEIRA DA SILVA", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 620.0, "comb": 0.0, "assim": 180.43, "bonus": 0.0}, "111.620.448-70": {"nome": "MARIA REGINA RODRIGUES", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "421.032.088-97": {"nome": "MATHEUS ALVES DE MATOS", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "358.719.988-44": {"nome": "MEIRIANE CRISTINA FRAZÃO SILVA", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 24.24, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 180.43, "bonus": 0.0}, "415.481.768-00": {"nome": "MELISSA RIBEIRO DANTAS", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "363.327.818-40": {"nome": "MIRIAN SANTANA MEDEIROS", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "336.366.068-59": {"nome": "MONICA DOS SANTOS SILVA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 24.8, "va": 520.8, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "325.295.938-09": {"nome": "PRISCILA GOMES DE MACEDO", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 10.6, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "428.906.748-43": {"nome": "RAFAEL CUKIERMAN", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 24.8, "va": 520.8, "comb": 0.0, "assim": 0.0, "bonus": 1000.0}, "344.586.748-89": {"nome": "RAFAEL ELIAS RODRIGUES", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "076.498.825-51": {"nome": "RAIANE SENA DOS SANTOS", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "297.849.458-19": {"nome": "ROBERTA GONÇALVES JULIETTE VALDO ALELUIA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "408.242.378-89": {"nome": "SABRINE DE SOUSA LIMA", "cnpj": "54.188.772/0001-28", "escala": "55", "vt": 0.0, "vr": 0.0, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}, "482.173.285-87": {"nome": "SELMA BORGES DOS SANTOS", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 570.4, "comb": 0.0, "assim": 180.43, "bonus": 0.0}, "326.536.758-46": {"nome": "SIMONE SANTOS CAIRES", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 620.0, "comb": 0.0, "assim": 180.43, "bonus": 0.0}, "481.897.028-07": {"nome": "THAYLA ANGEL DA SILVA CAVALCANTE", "cnpj": "54.188.772/0001-28", "escala": "56", "vt": 18.76, "vr": 24.8, "va": 174.1, "comb": 0.0, "assim": 0.0, "bonus": 0.0}};
+
+async function importarBeneficiosPlanilhas() {
+  var data = BENEF_IMPORT_DATA;
+  var funcs = DB.g('funcionarios');
+  var existing = DB.g('benef-atrib');
+
+  var hoje = td();
+  var adicionados = 0, atualizados = 0, naoEncontrados = [];
+
+  var tipoMap = {
+    vt:    'VT – Vale Transporte',
+    vr:    'VR – Vale Refeição',
+    va:    'VA – Vale Alimentação',
+    comb:  'Combustível',
+    assim: 'Assiduidade',
+    bonus: 'Bônus'
+  };
+
+  Object.entries(data).forEach(function(entry) {
+    var cpf = entry[0];
+    var d   = entry[1];
+    // Normaliza CPF para comparação
+    var cpfNorm = cpf.replace(/[^0-9]/g,'');
+    var func = funcs.find(function(f) {
+      return f.cpf && f.cpf.replace(/[^0-9]/g,'') === cpfNorm;
+    });
+
+    if (!func) {
+      naoEncontrados.push(d.nome + ' (' + cpf + ')');
+      return;
+    }
+
+    // Atualizar escala do funcionário
+    if (d.escala && d.escala !== func.escala) {
+      func.escala = d.escala;
+    }
+
+    // Para cada tipo de benefício com valor > 0
+    Object.entries(tipoMap).forEach(function(te) {
+      var tipo = te[0];
+      var tipoLabel = te[1];
+      var valor = d[tipo];
+      if (!valor || valor <= 0) return;
+
+      // Verificar se já existe
+      var existeIdx = existing.findIndex(function(a) {
+        return a.fid === func.id &&
+          (a.tipoBase === tipoLabel || (a.tipo||'').includes(tipoLabel.split(' ')[0]));
+      });
+
+      if (existeIdx >= 0) {
+        // Atualizar valor
+        existing[existeIdx].valor = valor.toFixed(2);
+        existing[existeIdx].st = 'Ativo';
+        atualizados++;
+      } else {
+        // Criar novo
+        existing.push({
+          id: uid(),
+          fid: func.id,
+          tipo: tipoLabel,
+          tipoBase: tipoLabel,
+          valor: valor.toFixed(2),
+          ini: hoje,
+          fim: '',
+          st: 'Ativo',
+          obs: 'Importado das planilhas Flash Benefícios'
+        });
+        adicionados++;
+      }
+    });
+  });
+
+  // Salvar funcionários com escala atualizada
+  DB.s('funcionarios', funcs);
+  DB.s('benef-atrib', existing);
+
+  if (driveReady) {
+    await driveSync('benef-atrib');
+    await driveSync('funcionarios');
+  }
+
+  rdBenefFunc();
+  rdBenef();
+
+  var msg = '✅ Importação concluída!\n' +
+    adicionados + ' benefício(s) adicionado(s)\n' +
+    atualizados + ' benefício(s) atualizado(s)\n';
+  if (naoEncontrados.length) {
+    msg += '\n⚠️ ' + naoEncontrados.length + ' funcionário(s) não encontrado(s) no sistema (CPF não cadastrado):\n' +
+      naoEncontrados.slice(0,10).join('\n') +
+      (naoEncontrados.length > 10 ? '\n...e mais ' + (naoEncontrados.length-10) : '');
+  }
+  alert(msg);
+  toast('Benefícios importados das planilhas! ' + (driveReady ? '☁️' : ''));
+}
+
+// ============================================================
+// MODAL BENEFÍCIO NOVO — TODOS OS TIPOS POR FUNCIONÁRIO
+// ============================================================
+var BATR_TIPOS = {
+  vt:     'VT – Vale Transporte',
+  vr:     'VR – Vale Refeição',
+  va:     'VA – Vale Alimentação',
+  comb:   'Combustível',
+  assim:  'Assiduidade',
+  bonus:  'Bônus',
+  odonto: 'Assistência Odontológica',
+  med:    'Assistência Médica',
+  trienio:'Triênio'
+};
+
+// Dias úteis padrão por escala
+function batrGetDias() {
+  var fid = (document.getElementById('batr-func')||{}).value;
+  var func = fid ? DB.g('funcionarios').find(function(f){return f.id===fid;}) : null;
+  var escala = func ? (func.escala||'55') : '55';
+  return escala === '56' ? 26 : 22;
+}
+
+function batrUpdateCalc(tipo) {
+  var tipoSel = (document.getElementById('batr-'+tipo+'-tipo')||{}).value;
+  var val     = parseFloat((document.getElementById('batr-'+tipo+'-val')||{}).value)||0;
+  var calcEl  = document.getElementById('batr-'+tipo+'-calc');
+  if (!calcEl) return;
+  if (!val) { calcEl.textContent = '—'; calcEl.style.color='var(--gray-400)'; return; }
+  if (tipoSel === 'dia') {
+    var dias = batrGetDias();
+    var mes = val * dias;
+    calcEl.innerHTML = '<strong>R$ '+mes.toFixed(2).replace('.',',')+'</strong><br><small>'+dias+' dias</small>';
+    calcEl.style.color = 'var(--green-dark)';
+  } else {
+    calcEl.textContent = 'Mensal fixo';
+    calcEl.style.color = 'var(--gray-600)';
+  }
+}
+
+function onBatrFuncChange() {
+  var fid = (document.getElementById('batr-func')||{}).value;
+  var infoEl = document.getElementById('batr-func-info');
+  if (!fid) { infoEl.style.display='none'; return; }
+  var f = DB.g('funcionarios').find(function(x){return x.id===fid;});
+  if (!f) { infoEl.style.display='none'; return; }
+  var deps = DB.g('departamentos'); var emps = DB.g('empresas');
+  var dep = deps.find(function(d){return d.id===f.dep;});
+  var emp = emps.find(function(e){return e.id===f.emp;});
+  infoEl.innerHTML = '<strong>'+f.n+'</strong> | '+
+    (f.car||'—')+' | Escala: '+(f.escala==='56'?'Seg–Sab (26 dias)':'Seg–Sex (22 dias)')+' | '+
+    (emp?emp.razao:'—')+'<br>'+
+    '<small style="opacity:.7;">CPF: '+f.cpf+'</small>';
+  infoEl.style.display = 'block';
+  // Load existing benefits for this funcionario
+  batrLoadExisting(fid);
+  // Recalculate
+  ['vt','vr'].forEach(function(t){ batrUpdateCalc(t); });
+}
+
+function batrLoadExisting(fid) {
+  var atribs = DB.g('benef-atrib').filter(function(a){return a.fid===fid;});
+  var MATCH = {
+    'VT – Vale Transporte':      'vt',
+    'VR – Vale Refeição':        'vr',
+    'VA – Vale Alimentação':     'va',
+    'Combustível':               'comb',
+    'Assiduidade':               'assim',
+    'Bônus':                     'bonus',
+    'Assistência Odontológica':  'odonto',
+    'Assistência Médica':        'med',
+    'Triênio':                   'trienio'
+  };
+  // Clear all fields first
+  Object.values(BATR_TIPOS).forEach(function(label) {
+    var k = MATCH[label];
+    if (!k) return;
+    var valEl = document.getElementById('batr-'+k+'-val');
+    var obsEl = document.getElementById('batr-'+k+'-obs');
+    var stEl  = document.getElementById('batr-'+k+'-st');
+    if (valEl) valEl.value = '';
+    if (obsEl) obsEl.value = '';
+    if (stEl)  stEl.value  = 'Ativo';
+  });
+  // Fill from existing
+  atribs.forEach(function(a) {
+    var tipo = a.tipoBase || a.tipo || '';
+    var k = MATCH[tipo];
+    if (!k) return;
+    var valEl = document.getElementById('batr-'+k+'-val');
+    var obsEl = document.getElementById('batr-'+k+'-obs');
+    var stEl  = document.getElementById('batr-'+k+'-st');
+    if (valEl && a.valor) valEl.value = parseFloat(a.valor).toFixed(2);
+    if (obsEl && a.obs)   obsEl.value = a.obs;
+    if (stEl  && a.st)    stEl.value  = a.st;
+  });
+  ['vt','vr'].forEach(function(t){ batrUpdateCalc(t); });
+}
+
+async function savBenefAtrNovo() {
+  var fid = (document.getElementById('batr-func')||{}).value;
+  if (!fid) { alert('Selecione um funcionário.'); return; }
+  var hoje = td();
+  var ini  = (document.getElementById('batr-ini')||{}).value || hoje;
+
+  var atribs = DB.g('benef-atrib');
+  // Remove existing for this func (will be replaced)
+  var semEsse = atribs.filter(function(a){return a.fid!==fid;});
+
+  var novos = [];
+  Object.entries(BATR_TIPOS).forEach(function(entry) {
+    var k = entry[0];
+    var tipoLabel = entry[1];
+    var valEl = document.getElementById('batr-'+k+'-val');
+    var tipoEl = document.getElementById('batr-'+k+'-tipo');
+    var stEl   = document.getElementById('batr-'+k+'-st');
+    var obsEl  = document.getElementById('batr-'+k+'-obs');
+    var val = parseFloat((valEl||{}).value)||0;
+    // Keep 0 values too so we record them
+    novos.push({
+      id:      uid(),
+      fid:     fid,
+      tipo:    tipoLabel,
+      tipoBase:tipoLabel,
+      tipoCalc:(tipoEl ? tipoEl.value : 'mes'),
+      valor:   val.toFixed(2),
+      ini:     ini,
+      fim:     '',
+      st:      (stEl ? stEl.value : 'Ativo'),
+      obs:     (obsEl ? obsEl.value : '')
+    });
+  });
+
+  DB.s('benef-atrib', semEsse.concat(novos));
+  if (driveReady) await driveSync('benef-atrib');
+  closeModal('modal-benef-atr');
+  rdBenefFunc(); rdBenef();
+  toast('Benefícios do funcionário salvos!' + (driveReady?' ☁️':''));
+}
+
+// Keep old savBenefAtr for compatibility
+async function savBenefAtr() { return savBenefAtrNovo(); }
+
+// ── Flash: auto CNPJ ao selecionar empresa ────────────────────
+function onFlashEmpChange() {
+  var empId = (document.getElementById('flash-empresa')||{}).value;
+  var cnpjEl = document.getElementById('flash-cnpj');
+  if (!empId) { if(cnpjEl) cnpjEl.value=''; return; }
+  var emp = DB.g('empresas').find(function(e){return e.id===empId;});
+  if (emp && cnpjEl) {
+    cnpjEl.value = emp.cnpj || emp.razao || '';
+  }
+  renderFlashTable();
+}
+
+function flashCheckAll(val) {
+  ['vt','vr','va','comb','assim','bonus','odonto','med'].forEach(function(k){
+    var el = document.getElementById('flash-chk-'+k);
+    if (el) el.checked = val;
+  });
 }
 
 // ============================================================
