@@ -255,6 +255,14 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 #lightbox-nav button{background:rgba(255,255,255,.15);color:#fff;border:none;padding:8px 20px;border-radius:20px;cursor:pointer;font-size:14px;}
 #lightbox-nav button:hover{background:rgba(255,255,255,.3);}
 
+
+/* FLASH TABLE */
+#flash-table input[type=number]{width:80px;padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;font-family:inherit;text-align:right;}
+#flash-table input[type=number]:focus{border-color:var(--green);outline:none;background:#fffde7;}
+#flash-table input[type=number].has-val{background:#e8f5ee;border-color:var(--green);}
+#flash-table .calc-cell{font-size:12px;font-weight:700;color:var(--green-dark);text-align:right;padding:6px 8px;white-space:nowrap;}
+#flash-table select.escala-sel{padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;}
+
 </style>
 </head>
 <body>
@@ -662,6 +670,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="tabs" id="benef-main-tabs">
     <div class="tab active" onclick="benefTab('bt-func',this)">&#128101; Por Funcionário</div>
     <div class="tab" onclick="benefTab('bt-compras',this)">&#128722; Compras / Recargas</div>
+    <div class="tab" onclick="benefTab('bt-flash',this)">&#9889; Gerar Arquivo Flash</div>
     <div class="tab" onclick="benefTab('bt-rel',this)">&#128202; Relatório Geral</div>
   </div>
 
@@ -713,6 +722,85 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <thead><tr><th>Data</th><th>Tipo</th><th>Fornecedor</th><th>Qtd Funcionários</th><th>Valor Unit.</th><th>Valor Total</th><th>Competência</th><th>Ações</th></tr></thead>
           <tbody id="tb-benef-comp"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA: FLASH BENEFÍCIOS -->
+  <div id="bt-flash" style="display:none">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-header">
+        <span class="card-title">⚡ Gerar Arquivo de Importação – Flash Benefícios</span>
+        <button class="btn btn-primary btn-sm" onclick="gerarFlashXLSX()">&#128196; Gerar XLSX Flash</button>
+      </div>
+
+      <!-- Seleção de empresa e competência -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:14px;background:var(--green-pale);border-radius:var(--radius-sm);">
+        <div class="form-group" style="min-width:200px;">
+          <label>Empresa *</label>
+          <select id="flash-empresa">
+            <option value="">Selecione</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Competência (mês/ano) *</label>
+          <input type="month" id="flash-comp">
+        </div>
+        <div class="form-group">
+          <label>CNPJ da Empresa</label>
+          <input type="text" id="flash-cnpj" placeholder="00.000.000/0001-00">
+        </div>
+        <div class="form-group">
+          <label>Unidade</label>
+          <input type="text" id="flash-unidade" placeholder="Ex.: TATUAPÉ">
+        </div>
+      </div>
+
+      <!-- Escalas de trabalho -->
+      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;">⏰ Dias úteis por escala (para cálculo diário)</div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div class="form-group">
+            <label>Seg a Sex (dias no mês)</label>
+            <input type="number" id="flash-dias-55" value="22" min="1" max="27" style="width:80px;">
+          </div>
+          <div class="form-group">
+            <label>Seg a Sab (dias no mês)</label>
+            <input type="number" id="flash-dias-56" value="26" min="1" max="31" style="width:80px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de funcionários com benefícios editáveis -->
+      <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;">
+        ✏️ Edite os valores antes de gerar — campos em branco = não recebe no mês
+      </div>
+      <div class="table-wrap">
+        <table id="flash-table">
+          <thead>
+            <tr>
+              <th>Funcionário</th>
+              <th>CPF</th>
+              <th>Cargo</th>
+              <th>Escala</th>
+              <th style="color:#e65100;">VT/dia (R$)</th>
+              <th style="color:#e65100;">VT Calc. Mensal</th>
+              <th style="color:#1565c0;">VR/dia (R$)</th>
+              <th style="color:#1565c0;">VR Calc. Mensal</th>
+              <th style="color:#2e7d5e;">VA Mensal (R$)</th>
+              <th style="color:#6a1b9a;">Combustível (R$)</th>
+              <th style="color:#00695c;">Assiduidade (R$)</th>
+              <th style="color:#bf360c;">Bônus/Prem. (R$)</th>
+              <th style="color:#880e4f;">Odonto (R$)</th>
+              <th style="color:#1565c0;">Assist. Méd. (R$)</th>
+              <th style="color:#4a148c;">Triênio (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="flash-tbody"></tbody>
+        </table>
+      </div>
+      <div id="flash-empty" class="alert alert-info" style="display:none;margin-top:10px;">
+        Selecione uma empresa para carregar os funcionários.
       </div>
     </div>
   </div>
@@ -1002,18 +1090,36 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- TREINAMENTOS -->
 <div class="section-page" id="sec-treinamentos">
   <div class="card">
-    <div class="section-header">
+    <div class="card-header">
       <span class="card-title">&#128187; Treinamentos</span>
-      <button class="btn btn-primary" onclick="openModal('modal-trein')">+ Novo Treinamento</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="trein-ano-filter" onchange="rdTrein()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os anos</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="imprimirRelTreinamentos()">&#128438; Relatório c/ Fotos</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimirAcompTreinamentos()">&#128202; Acompanhamento Anual</button>
+        <button class="btn btn-primary" onclick="openModal('modal-trein')">+ Novo Treinamento</button>
+      </div>
     </div>
-    <div class="tabs">
-      <div class="tab active" onclick="treinTab('tr-agenda',this)">Agendados</div>
-      <div class="tab" onclick="treinTab('tr-conc',this)">Concluídos</div>
-      <div class="tab" onclick="treinTab('tr-todos',this)">Todos</div>
+    <div class="tabs" id="trein-main-tabs">
+      <div class="tab active" onclick="treinTabMain('tr-lista',this)">&#128187; Lista</div>
+      <div class="tab" onclick="treinTabMain('tr-acomp',this)">&#128202; Acompanhamento Anual</div>
     </div>
-    <div id="tr-agenda"><div id="trein-agenda-list"></div></div>
-    <div id="tr-conc" style="display:none"><div id="trein-conc-list"></div></div>
-    <div id="tr-todos" style="display:none"><div id="trein-todos-list"></div></div>
+    <!-- LISTA COM ABAS -->
+    <div id="tr-lista">
+      <div class="tabs" id="trein-sub-tabs">
+        <div class="tab active" onclick="treinTab('tr-agenda',this)">Agendados</div>
+        <div class="tab" onclick="treinTab('tr-conc',this)">Concluídos</div>
+        <div class="tab" onclick="treinTab('tr-todos',this)">Todos</div>
+      </div>
+      <div id="tr-agenda"><div id="trein-agenda-list"></div></div>
+      <div id="tr-conc" style="display:none"><div id="trein-conc-list"></div></div>
+      <div id="tr-todos" style="display:none"><div id="trein-todos-list"></div></div>
+    </div>
+    <!-- ACOMPANHAMENTO ANUAL -->
+    <div id="tr-acomp" style="display:none;">
+      <div id="trein-acomp-content"></div>
+    </div>
   </div>
 </div>
 
@@ -3505,9 +3611,10 @@ function fmtMoney(val) {
 }
 
 function benefTab(id, btn) {
-  ['bt-func','bt-compras','bt-rel'].forEach(function(t) {
+  ['bt-func','bt-compras','bt-flash','bt-rel'].forEach(function(t) {
     var el = document.getElementById(t); if(el) el.style.display='none';
   });
+  if(id==='bt-flash') rdFlash();
   document.getElementById(id).style.display='block';
   btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   btn.classList.add('active');
@@ -3792,6 +3899,9 @@ function rdBenef(){
     if(cur)sel.value=cur;
   }
   fillBenefRelMeses();
+  // Refresh flash tab if visible
+  var flashTab=document.getElementById('bt-flash');
+  if(flashTab&&flashTab.style.display!=='none') rdFlash();
 }
 
 // ============================================================
@@ -3799,7 +3909,23 @@ function rdBenef(){
 // ============================================================
 var treinFiles=[], editingTreinId=null;
 function handleTreinFile(inp){treinFiles=Array.from(inp.files);var el=document.getElementById('tr-file-list');el.innerHTML=treinFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
-function treinTab(id,btn){['tr-agenda','tr-conc','tr-todos'].forEach(function(t){document.getElementById(t).style.display='none';});document.getElementById(id).style.display='block';btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');}
+function treinTab(id,btn){
+  ['tr-agenda','tr-conc','tr-todos'].forEach(function(t){
+    var el=document.getElementById(t); if(el) el.style.display='none';
+  });
+  document.getElementById(id).style.display='block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+}
+function treinTabMain(id,btn){
+  ['tr-lista','tr-acomp'].forEach(function(t){
+    var el=document.getElementById(t); if(el) el.style.display='none';
+  });
+  document.getElementById(id).style.display='block';
+  btn.closest('#trein-main-tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  if(id==='tr-acomp') renderAcompTrein();
+}
 async function savTrein(){
   var titulo=document.getElementById('tr-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
   var parts=Array.from(document.getElementById('tr-parts').selectedOptions).map(function(o){return o.value;});
@@ -3832,7 +3958,13 @@ async function savTrein(){
   closeModal('modal-trein');rdTrein();toast('Treinamento salvo'+(driveReady?' ☁️':'!'));
 }
 function rdTrein(){
+  fillTreinAnoFilter();
+  // Se aba acompanhamento estiver ativa, re-renderizar
+  var acomp = document.getElementById('tr-acomp');
+  if (acomp && acomp.style.display !== 'none') renderAcompTrein();
   var all=DB.g('treinamentos');var funcs=DB.g('funcionarios');
+  var anoF=(document.getElementById('trein-ano-filter')||{value:''}).value||'';
+  if(anoF) all=all.filter(function(t){return t.data&&t.data.startsWith(anoF);});
   var agend=all.filter(function(t){return t.st==='Agendado'||t.st==='Em andamento';});
   var conc=all.filter(function(t){return t.st==='Concluído';});
   function renderList(arr,elId){
@@ -5026,6 +5158,569 @@ function imprimirAcompCampanhas() {
   var win = window.open('','_blank','width=1100,height=750');
   if(win){win.document.write(docHTML);win.document.close();setTimeout(function(){win.focus();win.print();},700);}
   toast('Acompanhamento aberto! Use Ctrl+P para salvar como PDF (paisagem).');
+}
+
+// ============================================================
+// TREINAMENTOS — RELATÓRIOS
+// ============================================================
+function fillTreinAnoFilter() {
+  var sel = document.getElementById('trein-ano-filter'); if(!sel) return;
+  var cur = sel.value;
+  var anos = [...new Set(DB.g('treinamentos').map(function(t){
+    return t.data ? t.data.split('-')[0] : null;
+  }).filter(Boolean))].sort().reverse();
+  sel.innerHTML = '<option value="">Todos os anos</option>';
+  anos.forEach(function(a){
+    var o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o);
+  });
+  if(cur) sel.value=cur;
+}
+
+// ── Acompanhamento Anual inline ──────────────────────────────
+function renderAcompTrein() {
+  var anoF = (document.getElementById('trein-ano-filter')||{value:''}).value||'';
+  var all  = DB.g('treinamentos');
+  if(!all.length){
+    document.getElementById('trein-acomp-content').innerHTML='<div class="alert alert-info">Nenhum treinamento cadastrado.</div>'; return;
+  }
+
+  var grupos={};
+  all.forEach(function(t){
+    var ano = t.data?t.data.split('-')[0]:'Sem data';
+    if(anoF && ano!==anoF) return;
+    if(!grupos[ano]) grupos[ano]=[];
+    grupos[ano].push(t);
+  });
+
+  if(!Object.keys(grupos).length){
+    document.getElementById('trein-acomp-content').innerHTML='<div class="alert alert-info">Nenhum treinamento no período selecionado.</div>'; return;
+  }
+
+  var meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var stColors={Agendado:'var(--blue)','Em andamento':'var(--green)',Concluído:'var(--gray-600)',Cancelado:'var(--red)'};
+  var stBadge={Agendado:'badge-blue','Em andamento':'badge-green',Concluído:'badge-gray',Cancelado:'badge-red'};
+
+  var html='';
+  Object.keys(grupos).sort().reverse().forEach(function(ano){
+    var lista=grupos[ano];
+    var total=lista.length;
+    var totalFotos=lista.reduce(function(s,t){return s+(t.photos?t.photos.length:0);},0);
+    var conc=lista.filter(function(t){return t.st==='Concluído';}).length;
+    var agend=lista.filter(function(t){return t.st==='Agendado'||t.st==='Em andamento';}).length;
+
+    html+='<div style="margin-bottom:28px;">';
+    html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">';
+    html+='<h3 style="font-size:18px;color:var(--green-dark);margin:0;">&#128197; '+ano+'</h3>';
+    html+='<span class="badge badge-green">'+total+' treinamento(s)</span>';
+    html+='<span class="badge badge-blue">'+agend+' agendado(s)</span>';
+    html+='<span class="badge badge-gray">'+conc+' concluído(s)</span>';
+    if(totalFotos) html+='<span class="badge badge-blue">&#128247; '+totalFotos+' foto(s)</span>';
+    html+='</div>';
+
+    // Barra de meses
+    var porMes={};
+    lista.forEach(function(t){
+      var m=t.data?parseInt(t.data.split('-')[1])-1:-1;
+      if(!porMes[m]) porMes[m]=[];
+      porMes[m].push(t);
+    });
+    html+='<div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:16px;">';
+    for(var m=0;m<12;m++){
+      var tem=porMes[m]&&porMes[m].length>0;
+      html+='<div style="background:'+(tem?'var(--green)':'var(--gray-100)')+';color:'+(tem?'#fff':'var(--gray-400)')+
+        ';border-radius:6px;padding:6px 4px;text-align:center;font-size:11px;font-weight:600;" title="'+
+        (tem?porMes[m].map(function(t){return t.titulo;}).join(', '):'Sem treinamentos')+'">'+
+        meses[m]+(tem?'<br><strong>'+porMes[m].length+'</strong>':'')+'</div>';
+    }
+    html+='</div>';
+
+    // Lista de treinamentos do ano
+    html+='<div style="display:flex;flex-direction:column;gap:10px;">';
+    lista.sort(function(a,b){return (a.data||'').localeCompare(b.data||'');}).forEach(function(t){
+      var nFotos=t.photos?t.photos.length:0;
+      var bc=stBadge[t.st]||'badge-gray';
+      html+='<div style="border-left:4px solid var(--green);padding:12px 16px;background:#fff;border-radius:0 var(--radius-sm) var(--radius-sm) 0;box-shadow:var(--shadow);">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">'+
+        '<div><strong style="font-size:13.5px;color:var(--green-dark);">'+t.titulo+'</strong>'+
+        '<div style="font-size:12px;color:var(--gray-600);margin-top:2px;">'+
+        '&#128197; '+(t.data?fd(t.data):'—')+' '+(t.hora||'')+
+        (t.local?' &nbsp;|&nbsp; &#128205; '+t.local:'')+
+        (t.inst?' &nbsp;|&nbsp; &#128100; '+t.inst:'')+
+        (t.ch?' &nbsp;|&nbsp; &#9201; '+t.ch+'h':'')+
+        (nFotos?' &nbsp;|&nbsp; &#128247; '+nFotos+' foto(s)':'')+
+        '</div>'+
+        (t.desc?'<div style="font-size:12px;color:var(--gray-600);margin-top:4px;">'+t.desc+'</div>':'')+
+        '</div>'+
+        '<span class="badge '+bc+'">'+t.st+'</span>'+
+        '</div></div>';
+    });
+    html+='</div></div>';
+  });
+
+  document.getElementById('trein-acomp-content').innerHTML=html;
+}
+
+// ── Relatório com Fotos (PDF) ────────────────────────────────
+async function imprimirRelTreinamentos() {
+  var anoF=(document.getElementById('trein-ano-filter')||{value:''}).value||'';
+  var all=DB.g('treinamentos');
+  if(anoF) all=all.filter(function(t){return t.data&&t.data.startsWith(anoF);});
+  if(!all.length){alert('Nenhum treinamento'+(anoF?' em '+anoF:'')+' para imprimir.');return;}
+  all=[...all].sort(function(a,b){return (a.data||'').localeCompare(b.data||'');});
+
+  toast('Preparando relatório com fotos... aguarde.');
+
+  async function toBase64(src){
+    if(!src) return '';
+    if(src.startsWith('data:')) return src;
+    try{
+      var headers={};
+      if(driveReady&&driveToken&&src.includes('googleapis.com')) headers['Authorization']='Bearer '+driveToken;
+      var r=await fetch(src,{headers:headers});
+      var blob=await r.blob();
+      return await new Promise(function(resolve){
+        var reader=new FileReader();
+        reader.onload=function(e){resolve(e.target.result);};
+        reader.onerror=function(){resolve('');};
+        reader.readAsDataURL(blob);
+      });
+    }catch(e){return '';}
+  }
+
+  var stColors={Agendado:'#1565c0','Em andamento':'#2e7d5e',Concluído:'#555',Cancelado:'#d32f2f'};
+  var funcs=DB.g('funcionarios');
+
+  var rows='';
+  for(var i=0;i<all.length;i++){
+    var t=all[i];
+    var cor=stColors[t.st]||'#2e7d5e';
+    var photos=t.photos||[];
+    var partsNames=(t.parts||[]).map(function(id){var f=funcs.find(function(x){return x.id===id;});return f?f.n:'?';}).join(', ');
+
+    // Convert photos to base64
+    var fotosHtml='';
+    if(photos.length){
+      fotosHtml='<div style="margin-top:10px;">'+
+        '<div style="font-size:9pt;font-weight:700;color:#555;margin-bottom:6px;">📷 FOTOS DO TREINAMENTO ('+photos.length+'):</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      var maxF=Math.min(photos.length,9);
+      for(var pi=0;pi<maxF;pi++){
+        var p=photos[pi];
+        var src=p.dataURL||p.url||'';
+        var b64=await toBase64(src);
+        if(b64){
+          fotosHtml+='<img src="'+b64+'" style="width:120px;height:90px;object-fit:cover;border-radius:4px;border:1px solid #ddd;">';
+        } else {
+          fotosHtml+='<div style="width:120px;height:90px;background:#f5f5f5;border-radius:4px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#aaa;">Foto</div>';
+        }
+      }
+      if(photos.length>9) fotosHtml+='<div style="width:120px;height:90px;background:#f5f5f5;border-radius:4px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:14pt;color:#777;">+'+(photos.length-9)+'</div>';
+      fotosHtml+='</div></div>';
+    }
+
+    rows+='<div style="border-left:5px solid '+cor+';padding:14px 16px;margin-bottom:16px;background:#fff;border-radius:0 6px 6px 0;box-shadow:0 1px 4px rgba(0,0,0,.08);page-break-inside:avoid;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">'+
+      '<div style="flex:1;"><div style="font-size:13pt;font-weight:700;color:#1f5c44;">'+t.titulo+'</div>'+
+      '<div style="font-size:9.5pt;color:#555;margin-top:3px;">'+
+      '📅 '+(t.data?fd(t.data):'—')+(t.hora?' '+t.hora:'')+
+      (t.local?' &nbsp;|&nbsp; 📍 '+t.local:'')+
+      (t.inst?' &nbsp;|&nbsp; 👤 '+t.inst:'')+
+      (t.ch?' &nbsp;|&nbsp; ⏱ '+t.ch+'h':'')+
+      '</div>'+
+      (t.desc?'<div style="font-size:10pt;color:#444;margin-top:4px;">'+t.desc+'</div>':'')+
+      (partsNames?'<div style="font-size:9.5pt;color:#555;margin-top:4px;"><strong>Participantes:</strong> '+partsNames+'</div>':'')+
+      '</div>'+
+      '<span style="background:'+cor+';color:#fff;border-radius:20px;padding:3px 12px;font-size:9pt;font-weight:600;white-space:nowrap;">'+t.st+'</span>'+
+      '</div>'+
+      fotosHtml+
+      '</div>';
+  }
+
+  var total=all.length;
+  var conc=all.filter(function(t){return t.st==='Concluído';}).length;
+  var totalFotos=all.reduce(function(s,t){return s+(t.photos?t.photos.length:0);},0);
+  var totalH=all.reduce(function(s,t){return s+(parseInt(t.ch)||0);},0);
+
+  var docHTML='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<title>Relatório de Treinamentos'+(anoF?' – '+anoF:'')+'</title>'+
+    '<style>'+
+    'body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;}'+
+    'h1{color:#1f5c44;font-size:16pt;margin:0 0 4px;}'+
+    '.subtitle{font-size:10pt;color:#555;margin-bottom:20px;border-bottom:2px solid #1f5c44;padding-bottom:8px;}'+
+    '.resumo{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}'+
+    '.pill{background:#e8f5ee;border-radius:20px;padding:5px 14px;font-size:10pt;font-weight:700;color:#1f5c44;}'+
+    '.pill.blue{background:#e3f2fd;color:#1565c0;}'+
+    '.pill.gray{background:#f5f5f5;color:#555;}'+
+    '.footer{text-align:center;font-size:8.5pt;color:#999;margin-top:24px;border-top:1px solid #eee;padding-top:8px;}'+
+    '@media print{@page{margin:1.5cm;size:A4;}body{margin:0;}}'+
+    '</style></head><body>'+
+    '<h1>🎓 Relatório de Treinamentos'+(anoF?' – '+anoF:'')+'</h1>'+
+    '<div class="subtitle">Gerado em '+new Date().toLocaleDateString('pt-BR')+' | Sistema RH Equilibryum</div>'+
+    '<div class="resumo">'+
+    '<span class="pill">Total: '+total+'</span>'+
+    '<span class="pill">Concluídos: '+conc+'</span>'+
+    '<span class="pill blue">'+totalH+'h de treinamento</span>'+
+    (totalFotos?'<span class="pill blue">📷 '+totalFotos+' foto(s)</span>':'')+
+    '</div>'+
+    rows+
+    '<div class="footer">Equilibryum – Sistema de RH | Gerado em '+new Date().toLocaleString('pt-BR')+'</div>'+
+    '</body></html>';
+
+  var win=window.open('','_blank','width=960,height=750');
+  if(win){win.document.write(docHTML);win.document.close();setTimeout(function(){win.focus();win.print();},800);}
+  toast('Relatório de treinamentos gerado! Use Ctrl+P para salvar como PDF.');
+}
+
+// ── Acompanhamento Anual (PDF) ───────────────────────────────
+function imprimirAcompTreinamentos() {
+  var anoF=(document.getElementById('trein-ano-filter')||{value:''}).value||'';
+  var all=DB.g('treinamentos');
+  if(anoF) all=all.filter(function(t){return t.data&&t.data.startsWith(anoF);});
+  if(!all.length){alert('Nenhum treinamento para gerar acompanhamento.');return;}
+
+  var mesesAbr=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var stColor={Agendado:'#1565c0','Em andamento':'#2e7d5e',Concluído:'#555',Cancelado:'#d32f2f'};
+
+  // Agrupar por ano
+  var grupos={};
+  all.forEach(function(t){
+    var ano=t.data?t.data.split('-')[0]:'Sem data';
+    if(!grupos[ano]) grupos[ano]=Array.from({length:12},function(){return [];});
+    var m=t.data?parseInt(t.data.split('-')[1])-1:-1;
+    if(m>=0) grupos[ano][m].push(t);
+  });
+
+  var thead='<tr><th style="background:#1f5c44;color:#fff;padding:8px;border:1px solid #1f5c44;white-space:nowrap;">Ano</th>'+
+    mesesAbr.map(function(m){return '<th style="background:#1f5c44;color:#fff;padding:8px;border:1px solid #1f5c44;font-size:9pt;">'+m+'</th>';}).join('')+
+    '<th style="background:#1f5c44;color:#fff;padding:8px;border:1px solid #1f5c44;">Total</th></tr>';
+
+  var tbody=Object.keys(grupos).sort().reverse().map(function(ano){
+    var total=grupos[ano].reduce(function(s,m){return s+m.length;},0);
+    var totalH=all.filter(function(t){return t.data&&t.data.startsWith(ano);}).reduce(function(s,t){return s+(parseInt(t.ch)||0);},0);
+    var cols=grupos[ano].map(function(campsMes,m){
+      if(!campsMes.length) return '<td style="border:1px solid #ddd;padding:8px;background:#f9f9f9;min-width:55px;"></td>';
+      var items=campsMes.map(function(t){
+        var cor=stColor[t.st]||'#2e7d5e';
+        return '<div style="background:'+cor+';color:#fff;border-radius:3px;padding:2px 5px;font-size:7.5pt;margin-bottom:2px;line-height:1.3;">'+
+          t.titulo.substring(0,18)+(t.titulo.length>18?'...':'')+
+          '<br><span style="opacity:.8;">'+t.ch+'h</span></div>';
+      }).join('');
+      return '<td style="border:1px solid #ddd;padding:6px;vertical-align:top;min-width:55px;">'+items+'</td>';
+    }).join('');
+    return '<tr>'+
+      '<td style="border:1px solid #ddd;padding:8px;font-weight:700;white-space:nowrap;background:#e8f5ee;color:#1f5c44;">'+ano+'<br>'+
+      '<small style="font-weight:400;color:#555;">'+total+' trein. / '+totalH+'h</small></td>'+
+      cols+
+      '<td style="border:1px solid #ddd;padding:8px;font-weight:700;text-align:center;color:#1f5c44;">'+total+'</td>'+
+      '</tr>';
+  }).join('');
+
+  // Legenda status
+  var legenda='<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:9pt;">'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#2e7d5e;border-radius:2px;"></span> Em andamento</span>'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#1565c0;border-radius:2px;"></span> Agendado</span>'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#555;border-radius:2px;"></span> Concluído</span>'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#d32f2f;border-radius:2px;"></span> Cancelado</span>'+
+    '</div>';
+
+  var docHTML='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<title>Acompanhamento de Treinamentos'+(anoF?' – '+anoF:'')+'</title>'+
+    '<style>'+
+    'body{font-family:Arial,sans-serif;margin:1.5cm;font-size:10pt;color:#000;}'+
+    'h1{color:#1f5c44;font-size:15pt;margin:0 0 4px;}'+
+    '.subtitle{font-size:9.5pt;color:#555;margin-bottom:14px;border-bottom:2px solid #1f5c44;padding-bottom:6px;}'+
+    'table{width:100%;border-collapse:collapse;margin-top:10px;}'+
+    '.footer{text-align:center;font-size:8pt;color:#999;margin-top:18px;border-top:1px solid #eee;padding-top:6px;}'+
+    '@media print{@page{margin:1cm;size:A4 landscape;}body{margin:0;}}'+
+    '</style></head><body>'+
+    '<h1>🎓 Acompanhamento de Treinamentos'+(anoF?' – '+anoF:'')+'</h1>'+
+    '<div class="subtitle">Gerado em '+new Date().toLocaleDateString('pt-BR')+' | Sistema RH Equilibryum</div>'+
+    '<table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table>'+
+    legenda+
+    '<div class="footer">Equilibryum – Sistema de RH | Gerado em '+new Date().toLocaleString('pt-BR')+'</div>'+
+    '</body></html>';
+
+  var win=window.open('','_blank','width=1100,height=750');
+  if(win){win.document.write(docHTML);win.document.close();setTimeout(function(){win.focus();win.print();},700);}
+  toast('Acompanhamento de treinamentos gerado! Use Ctrl+P para PDF (paisagem).');
+}
+
+// ============================================================
+// FLASH BENEFÍCIOS — GERAR ARQUIVO XLSX
+// ============================================================
+
+// Tipos de benefício e mapeamento para colunas Flash
+var FLASH_COLS = {
+  vt:        { label:'VT/dia (R$)',      col:'VT DIA',                     type:'daily'  },
+  vr:        { label:'VR/dia (R$)',      col:'VR DIA',                     type:'daily'  },
+  va:        { label:'VA Mensal (R$)',   col:'ALIMENTACAO (R$)',            type:'monthly'},
+  comb:      { label:'Combustível (R$)',  col:'COMBUSTÍVEL',                type:'monthly'},
+  assim:     { label:'Assiduidade (R$)', col:'PREMIACAO VIRTUAL (R$)',      type:'monthly'},
+  bonus:     { label:'Bônus/Prem.(R$)',  col:'PREMIACAO NO CARTAO (R$)',    type:'monthly'},
+  odonto:    { label:'Odonto (R$)',      col:'MOBILIDADE (R$)',             type:'monthly'},
+  med:       { label:'Assist.Méd.(R$)', col:'REFEICAO E ALIMENTACAO (R$)', type:'monthly'},
+  trienio:   { label:'Triênio (R$)',     col:'REFEICAO (R$)',               type:'monthly'}
+};
+
+var ESCALA_DIAS = { '55':'flash-dias-55', '56':'flash-dias-56' };
+
+function getDiasEscala(escala) {
+  if (!escala || escala === '55' || escala.toLowerCase().includes('sex')) {
+    return parseInt((document.getElementById('flash-dias-55')||{value:22}).value)||22;
+  }
+  return parseInt((document.getElementById('flash-dias-56')||{value:26}).value)||26;
+}
+
+function rdFlash() {
+  // Fill empresa select
+  var selEmp = document.getElementById('flash-empresa');
+  if (selEmp) {
+    var cur = selEmp.value;
+    selEmp.innerHTML = '<option value="">Selecione</option>';
+    DB.g('empresas').forEach(function(e) {
+      var o = document.createElement('option');
+      o.value = e.id; o.textContent = e.razao; selEmp.appendChild(o);
+    });
+    if (cur) selEmp.value = cur;
+  }
+  if (!document.getElementById('flash-comp').value) {
+    var now = new Date();
+    document.getElementById('flash-comp').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  }
+  renderFlashTable();
+}
+
+function renderFlashTable() {
+  var empId = (document.getElementById('flash-empresa')||{}).value || '';
+  var tbody = document.getElementById('flash-tbody');
+  var empty = document.getElementById('flash-empty');
+  var tbl   = document.getElementById('flash-table');
+
+  if (!empId) {
+    if (tbody) tbody.innerHTML = '';
+    if (empty) empty.style.display = 'flex';
+    if (tbl)   tbl.style.display = 'none';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  if (tbl)   tbl.style.display  = '';
+
+  var funcs = DB.g('funcionarios').filter(function(f) {
+    return f.emp === empId && f.st !== 'Desligado';
+  });
+  var atribs = DB.g('benef-atrib');
+
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  funcs.forEach(function(f) {
+    var fBenefs = atribs.filter(function(a) { return a.fid === f.id && a.st === 'Ativo'; });
+    var getVal = function(tipo) {
+      var b = fBenefs.find(function(a) {
+        var t = (a.tipoBase||a.tipo||'').toLowerCase();
+        return t.includes(tipo);
+      });
+      return b ? (parseFloat(b.valor)||0) : 0;
+    };
+
+    // Default values from benefit registrations
+    var vtDia   = getVal('vt') || getVal('vale refeição') > 0 ? 0 : 0;
+    // Try to find VT specifically
+    var vtB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('VT')||((a.tipoBase||a.tipo||'').toUpperCase().includes('VALE TRANS')); });
+    var vrB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('VR')||((a.tipoBase||a.tipo||'').toUpperCase().includes('VALE REFEI')); });
+    var vaB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('VA')||((a.tipoBase||a.tipo||'').toUpperCase().includes('ALIMENTA')); });
+    var combB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('COMBUST'); });
+    var assimB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('ASSIDU'); });
+    var bonusB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('BÔN')||(a.tipoBase||a.tipo||'').toUpperCase().includes('BON')||(a.tipoBase||a.tipo||'').toUpperCase().includes('PREM'); });
+    var odontoB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('ODONTO'); });
+    var medB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('MÉD')||(a.tipoBase||a.tipo||'').toUpperCase().includes('MED'); });
+    var trienioB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('TRIEN'); });
+
+    var rowId = 'flash-row-' + f.id;
+    var tr = document.createElement('tr');
+    tr.id = rowId;
+
+    // Escala do funcionário (padrão: Seg a Sex)
+    var escalaDefault = f.escala || '55';
+
+    function makeInput(id, val, color) {
+      var inp = document.createElement('input');
+      inp.type = 'number'; inp.step = '0.01'; inp.min = '0';
+      inp.id = id; inp.dataset.fid = f.id;
+      if (val) { inp.value = parseFloat(val).toFixed(2); inp.className = 'has-val'; }
+      inp.style.borderColor = color || '';
+      inp.oninput = function() {
+        this.className = this.value ? 'has-val' : '';
+        updateCalcCell(f.id);
+      };
+      return inp;
+    }
+
+    function makeTd(inp) {
+      var td = document.createElement('td');
+      td.style.padding = '6px 8px';
+      td.appendChild(inp);
+      return td;
+    }
+
+    // TD nome
+    var tdNome = document.createElement('td');
+    tdNome.innerHTML = '<strong style="font-size:12.5px;">'+f.n+'</strong>';
+    tdNome.style.padding = '6px 8px';
+
+    // TD CPF
+    var tdCpf = document.createElement('td');
+    tdCpf.textContent = f.cpf || '';
+    tdCpf.style.padding = '6px 8px; font-size:12px;';
+
+    // TD Cargo
+    var tdCargo = document.createElement('td');
+    tdCargo.textContent = f.car || '';
+    tdCargo.style.cssText = 'padding:6px 8px;font-size:12px;';
+
+    // TD Escala select
+    var tdEsc = document.createElement('td');
+    tdEsc.style.padding = '6px 8px';
+    var selEsc = document.createElement('select');
+    selEsc.className = 'escala-sel';
+    selEsc.id = 'escala-'+f.id;
+    selEsc.innerHTML = '<option value="55"'+(escalaDefault==='55'?' selected':'')+'>Seg–Sex</option><option value="56"'+(escalaDefault==='56'?' selected':'')+'>Seg–Sab</option>';
+    selEsc.onchange = function() { updateCalcCell(f.id); };
+    tdEsc.appendChild(selEsc);
+
+    // VT/dia input + calc cell
+    var inpVT = makeInput('vt-'+f.id, vtB ? vtB.valor : '', '#e65100');
+    var tdVT = makeTd(inpVT);
+    var tdVTcalc = document.createElement('td');
+    tdVTcalc.className = 'calc-cell';
+    tdVTcalc.id = 'vtcalc-'+f.id;
+    tdVTcalc.style.color = '#e65100';
+
+    // VR/dia input + calc cell
+    var inpVR = makeInput('vr-'+f.id, vrB ? vrB.valor : '', '#1565c0');
+    var tdVR = makeTd(inpVR);
+    var tdVRcalc = document.createElement('td');
+    tdVRcalc.className = 'calc-cell';
+    tdVRcalc.id = 'vrcalc-'+f.id;
+    tdVRcalc.style.color = '#1565c0';
+
+    // Monthly fields
+    var inpVA    = makeInput('va-'+f.id,     vaB    ? vaB.valor    : '', '#2e7d5e');
+    var inpComb  = makeInput('comb-'+f.id,   combB  ? combB.valor  : '', '#6a1b9a');
+    var inpAssim = makeInput('assim-'+f.id,  assimB ? assimB.valor : '', '#00695c');
+    var inpBonus = makeInput('bonus-'+f.id,  bonusB ? bonusB.valor : '', '#bf360c');
+    var inpOd    = makeInput('odonto-'+f.id, odontoB? odontoB.valor: '', '#880e4f');
+    var inpMed   = makeInput('med-'+f.id,    medB   ? medB.valor   : '', '#1565c0');
+    var inpTri   = makeInput('tri-'+f.id,    trienioB?trienioB.valor:'','#4a148c');
+
+    [tdNome, tdCpf, tdCargo, tdEsc,
+     tdVT, tdVTcalc,
+     tdVR, tdVRcalc,
+     makeTd(inpVA), makeTd(inpComb), makeTd(inpAssim),
+     makeTd(inpBonus), makeTd(inpOd), makeTd(inpMed), makeTd(inpTri)
+    ].forEach(function(td){ tr.appendChild(td); });
+
+    tbody.appendChild(tr);
+    updateCalcCell(f.id);
+  });
+
+  if (!funcs.length) {
+    tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum funcionário ativo nesta empresa.</td></tr>';
+  }
+}
+
+function updateCalcCell(fid) {
+  var escSel = document.getElementById('escala-'+fid);
+  var escala = escSel ? escSel.value : '55';
+  var dias = getDiasEscala(escala);
+  var vtDia = parseFloat((document.getElementById('vt-'+fid)||{}).value)||0;
+  var vrDia = parseFloat((document.getElementById('vr-'+fid)||{}).value)||0;
+  var vtMes = vtDia * dias;
+  var vrMes = vrDia * dias;
+  var vtcalc = document.getElementById('vtcalc-'+fid);
+  var vrcalc = document.getElementById('vrcalc-'+fid);
+  if (vtcalc) vtcalc.textContent = vtDia > 0 ? 'R$ '+vtMes.toFixed(2).replace('.',',') : '—';
+  if (vrcalc) vrcalc.textContent = vrDia > 0 ? 'R$ '+vrMes.toFixed(2).replace('.',',') : '—';
+}
+
+// ── Gerar XLSX Flash ─────────────────────────────────────────
+async function gerarFlashXLSX() {
+  var empId  = (document.getElementById('flash-empresa')||{}).value||'';
+  var comp   = (document.getElementById('flash-comp')||{}).value||'';
+  var cnpj   = (document.getElementById('flash-cnpj')||{}).value||'';
+  var unid   = (document.getElementById('flash-unidade')||{}).value||'';
+
+  if (!empId) { alert('Selecione uma empresa.'); return; }
+
+  var emp = DB.g('empresas').find(function(e){return e.id===empId;});
+  var funcs = DB.g('funcionarios').filter(function(f){return f.emp===empId&&f.st!=='Desligado';});
+
+  if (!funcs.length) { alert('Nenhum funcionário ativo nesta empresa.'); return; }
+
+  // Build CSV data (semicolon for Excel BR) matching Flash format
+  var SEP = ';';
+  var headers = ['CNPJ','NOME COMPLETO','CPF','VT DIA','COMBUSTÍVEL','UNIDADE','CARGO','VT E AC','ESCALA','VR DIA','PREMIACAO NO CARTAO (R$)','MOBILIDADE (R$)','REFEICAO E ALIMENTACAO (R$)','ALIMENTACAO (R$)','REFEICAO (R$)','PREMIACAO VIRTUAL (R$)'];
+  var rows = [headers.join(SEP)];
+
+  funcs.forEach(function(f) {
+    var escSel = document.getElementById('escala-'+f.id);
+    var escala = escSel ? escSel.value : '55';
+    var dias   = getDiasEscala(escala);
+    var escLabel = escala === '56' ? 'SEG A SAB' : 'SEG A SEX';
+
+    var vtDia  = parseFloat((document.getElementById('vt-'+f.id)||{}).value)||0;
+    var vrDia  = parseFloat((document.getElementById('vr-'+f.id)||{}).value)||0;
+    var va     = parseFloat((document.getElementById('va-'+f.id)||{}).value)||0;
+    var comb   = parseFloat((document.getElementById('comb-'+f.id)||{}).value)||0;
+    var assim  = parseFloat((document.getElementById('assim-'+f.id)||{}).value)||0;
+    var bonus  = parseFloat((document.getElementById('bonus-'+f.id)||{}).value)||0;
+    var odonto = parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0;
+    var med    = parseFloat((document.getElementById('med-'+f.id)||{}).value)||0;
+    var trienio= parseFloat((document.getElementById('tri-'+f.id)||{}).value)||0;
+
+    // VT E AC: soma VT diário * dias + combustível mensal
+    var vtEAc = vtDia > 0 ? (vtDia * dias + comb).toFixed(2) : (comb > 0 ? comb.toFixed(2) : '');
+
+    var fmtN = function(v){ return v > 0 ? v.toFixed(2).replace('.',',') : ''; };
+
+    var row = [
+      cnpj || (emp?emp.cnpj||'':''),  // CNPJ
+      f.n,                              // NOME COMPLETO
+      f.cpf,                            // CPF
+      fmtN(vtDia),                      // VT DIA
+      fmtN(comb),                       // COMBUSTÍVEL
+      unid,                             // UNIDADE
+      f.car||'',                        // CARGO
+      vtEAc,                            // VT E AC
+      escLabel,                         // ESCALA
+      fmtN(vrDia),                      // VR DIA
+      fmtN(bonus),                      // PREMIACAO NO CARTAO
+      fmtN(odonto),                     // MOBILIDADE
+      fmtN(med),                        // REFEICAO E ALIMENTACAO
+      fmtN(va),                         // ALIMENTACAO
+      '',                               // REFEICAO
+      fmtN(assim)                       // PREMIACAO VIRTUAL
+    ];
+    rows.push(row.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(SEP));
+  });
+
+  var csv = '\uFEFF' + rows.join('\r\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var nomeArq = 'Flash_Beneficios_' + (comp||td()).replace('-','_') + '.csv';
+  a.download = nomeArq;
+  a.click();
+
+  // Salvar no Drive
+  if (driveReady) {
+    try {
+      var file = new File([blob], nomeArq, {type:'text/csv'});
+      await uploadFileToDrive(file, 'Beneficios/Flash');
+      toast('Arquivo Flash salvo no Drive ☁️');
+    } catch(e) { console.warn(e); }
+  }
+  toast('Arquivo gerado! Abra no Excel e importe no Flash Benefícios.');
 }
 
 // ============================================================
