@@ -818,6 +818,85 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
     </div>
 
+
+      <!-- Recibo EPI -->
+      <div class="trein-card" style="border-left:4px solid #2e7d5e;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#129421; Recibo de EPI</div>
+            <div class="tc-meta">Equilibryum – Código 11 FORM</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Recibo de Equipamentos de Proteção Individual. Preencha os EPIs abaixo, o sistema monta a tabela automaticamente.</p>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label>EPIs entregues (um por linha: Descrição, CA, Qtd, Data)</label>
+          <textarea id="doc-epi-lista" rows="4" placeholder="Ex.:&#10;Luva de procedimento, CA 12345, 2, 15/06/2026&#10;Máscara cirúrgica, CA 67890, 5, 15/06/2026"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="gerarReciboEPI()">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Recibo Uniforme -->
+      <div class="trein-card" style="border-left:4px solid #00695c;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#128089; Recibo de Entrega de Uniformes</div>
+            <div class="tc-meta">Equilibryum – Código RH 33</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Recibo de entrega de uniformes com tabela de quantidade, especificação, recebimento e devolução.</p>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label>Uniformes entregues (um por linha: Qtd, Especificação)</label>
+          <textarea id="doc-uni-lista" rows="3" placeholder="Ex.:&#10;2, Camiseta polo verde M&#10;1, Calça social preta G"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:#00695c;" onclick="gerarReciboUniforme()">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Recibo Equipamentos e Ferramentas -->
+      <div class="trein-card" style="border-left:4px solid #1565c0;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#128187; Recibo de Equipamentos e Ferramentas</div>
+            <div class="tc-meta">Equilibryum – Código 04 FORM</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Declaração de recebimento de equipamentos/ferramentas com responsabilidade civil.</p>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label>Relação de equipamentos</label>
+          <textarea id="doc-equip-lista" rows="3" placeholder="Ex.:&#10;Notebook Dell Inspiron, Nº Série ABC123&#10;Carregador tipo C"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:#1565c0;" onclick="gerarReciboEquipamentos()">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Termo de Responsabilidade Equipamentos e Senhas -->
+      <div class="trein-card" style="border-left:4px solid #4a148c;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#128274; Termo de Responsabilidade</div>
+            <div class="tc-meta">Equipamentos e Senhas – Código 05 FORM</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Termo de responsabilidade pela guarda e uso de equipamento, senha e informações confidenciais.</p>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label>Equipamentos / Senhas (um por linha: Tipo, Marca, Modelo, IMEI/Obs)</label>
+          <textarea id="doc-termo-lista" rows="3" placeholder="Ex.:&#10;Celular, Samsung, A16 5G, IMEI 350907321477780&#10;Carregador, Maxmidia, Tipo C, —"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" style="background:#4a148c;" onclick="gerarTermoResponsabilidade()">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Recibo Regulamento Interno -->
+      <div class="trein-card" style="border-left:4px solid #bf360c;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#128221; Recibo de Regulamento Interno</div>
+            <div class="tc-meta">Equilibryum – Código RH 81</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Declaração de recebimento do Regulamento Interno da Clínica Equilibryum.</p>
+        <button class="btn btn-primary btn-sm" style="background:#bf360c;" onclick="gerarReciboRegulamento()">&#128196; Gerar Documento</button>
+      </div>
+
+    </div>
+
     <div class="alert alert-info" style="margin-top:20px;">
       &#128196; Os documentos abrem em nova aba prontos para <strong>imprimir ou salvar como PDF</strong>. Se o Drive estiver conectado, o documento também é salvo automaticamente na pasta do funcionário.
     </div>
@@ -4010,6 +4089,245 @@ async function abrirEImprimirDoc(docHTML, filename, f) {
     } catch(e) { console.warn('Drive save error:', e); }
   }
   toast('Documento gerado! Use Ctrl+P para salvar como PDF.');
+}
+
+// ── RECIBO EPI ─────────────────────────────────────────────
+function gerarReciboEPI() {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+  var linhas = (document.getElementById('doc-epi-lista').value||'').trim().split('\n').filter(Boolean);
+
+  var rows = linhas.map(function(l){
+    var p = l.split(',').map(function(x){ return x.trim(); });
+    return '<tr>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[0]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;text-align:center;">'+(p[1]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;text-align:center;">'+(p[2]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[3]||fd(hoje))+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+    '</tr>';
+  });
+  // Add empty rows to complete table
+  while (rows.length < 13) rows.push('<tr><td style="border:1px solid #ccc;padding:10px;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>');
+
+  var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de EPI – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:10.5pt;color:#000;line-height:1.6;}' +
+    'h1{color:#1f5c44;font-size:15pt;text-align:center;margin:0 0 4px;}' +
+    '.header-meta{font-size:9pt;color:#444;margin-bottom:14px;border-bottom:1px solid #ccc;padding-bottom:8px;}' +
+    'table{width:100%;border-collapse:collapse;margin:14px 0;}' +
+    'th{background:#1f5c44;color:#fff;padding:7px 8px;font-size:10pt;text-align:left;border:1px solid #1f5c44;}' +
+    '@media print{@page{margin:1.5cm;}}</style></head><body>' +
+    '<h1>Recibo de EPIs – Equipamento de Proteção Individual</h1>' +
+    '<div class="header-meta">Código: <strong>11 FORM</strong> &nbsp;|&nbsp; Revisão: 02/03/2026 &nbsp;|&nbsp; Status: <strong>Vigente</strong> &nbsp;|&nbsp; Versão: 02<br>' +
+    'Setor: <strong>Departamento Pessoal</strong> &nbsp;|&nbsp; Revisor: <strong>MÔNICA SANTOS</strong></div>' +
+    '<p>Recebi da <strong>Equilibryum Reabilitação e Consultoria em Saúde S/S Ltda</strong> os Equipamentos de Proteção Individual (E.P.I.), abaixo discriminados, destinados à minha proteção pessoal e estou ciente da necessidade do uso para minha segurança e que a lei determina o uso obrigatório nos locais de riscos de acidentes.</p>' +
+    '<p><strong>Comprometo-me</strong> a fazer uso constante e adequado conforme orientação da Segurança do Trabalho e Encarregados, responsabilizando-me pela guarda e conservação, inclusive pelos extravios dos equipamentos de segurança mim confiados.</p>' +
+    '<p><strong>OBRIGAÇÃO LEGAL DO EMPREGADO – NR 6</strong><br>' +
+    'Item 6.7.1. – Determina o uso obrigatório dos E.P.I´s, Portaria 3.214/78:<br>' +
+    '• Uso obrigatório para a finalidade a que se destina;<br>' +
+    '• Responsabilizar-se por sua guarda e conservação;<br>' +
+    '• Comunicar ao empregador qualquer alteração que o torne impróprio para o uso.</p>' +
+    '<p><em>Obs. Constitui ato faltoso a recusa injustificada do empregado ao cumprimento do disposto nos itens acima.</em></p>' +
+    '<p style="margin-top:20px;"><strong>Nome:</strong> '+f.n+' &nbsp;&nbsp;&nbsp; <strong>Cargo:</strong> '+(f.car||'')+'</p>' +
+    '<p><strong>CPF:</strong> '+f.cpf+' &nbsp;&nbsp;&nbsp; <strong>Data:</strong> '+fd(hoje)+'</p>' +
+    '<table>' +
+    '<thead><tr><th>Descrição</th><th>C.A</th><th>Qtd</th><th>Data</th><th>Assinatura</th></tr></thead>' +
+    '<tbody>'+rows.join('')+'</tbody>' +
+    '</table>' +
+    '<p style="margin-top:30px;">_________________________________________<br><strong>'+f.n+'</strong><br>Funcionário</p>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Recibo_EPI_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── RECIBO UNIFORME ────────────────────────────────────────
+function gerarReciboUniforme() {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+  var linhas = (document.getElementById('doc-uni-lista').value||'').trim().split('\n').filter(Boolean);
+
+  var rows = linhas.map(function(l){
+    var p = l.split(',').map(function(x){ return x.trim(); });
+    return '<tr>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;text-align:center;">'+(p[0]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[1]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[2]||fd(hoje))+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+    '</tr>';
+  });
+  while (rows.length < 15) rows.push('<tr><td style="border:1px solid #ccc;padding:10px;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>');
+
+  var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de Uniforme – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:10.5pt;color:#000;line-height:1.6;}' +
+    'h1{color:#1f5c44;font-size:15pt;text-align:center;margin:0 0 4px;}' +
+    '.header-meta{font-size:9pt;color:#444;margin-bottom:14px;border-bottom:1px solid #ccc;padding-bottom:8px;}' +
+    'table{width:100%;border-collapse:collapse;margin:14px 0;}' +
+    'th{background:#1f5c44;color:#fff;padding:7px 8px;font-size:9.5pt;text-align:center;border:1px solid #1f5c44;}' +
+    '@media print{@page{margin:1.5cm;}}</style></head><body>' +
+    '<h1>Recibo – Entrega de Uniformes</h1>' +
+    '<div class="header-meta">Código: <strong>RH 33 form</strong> &nbsp;|&nbsp; Criação: 11/10/2016 &nbsp;|&nbsp; Revisão: 14/10/2016 &nbsp;|&nbsp; Status: <strong>Vigente</strong><br>' +
+    'Setor: <strong>Departamento Pessoal</strong> &nbsp;|&nbsp; Autor: Nayane Renata &nbsp;|&nbsp; Revisor: Ricardo Hodish &nbsp;|&nbsp; Versão: 01</div>' +
+    '<p>Recebi, para ser usado no desempenho de minhas funções, o uniforme abaixo relacionado. Estou ciente de que sou responsável pela conservação do mesmo e o indenizarei em caso de perda ou danos, em valor integral. Estou ciente, também, de que o não uso deste implicará em insubordinação, sujeito a sanções disciplinares previstas na legislação vigente. Minha assinatura ou rubrica, aposta no local indicado nesta ficha, representa a minha concordância.</p>' +
+    '<p><strong>FUNCIONÁRIO:</strong> '+f.n+'<br><strong>FUNÇÃO:</strong> '+(f.car||'')+'</p>' +
+    '<table>' +
+    '<thead>' +
+    '<tr>' +
+    '<th rowspan="2" style="width:60px;">QTDE</th>' +
+    '<th rowspan="2">ESPECIFICAÇÃO</th>' +
+    '<th colspan="2">RECEBIMENTO/ASSINATURA</th>' +
+    '<th rowspan="2" style="width:80px;">DATA</th>' +
+    '<th colspan="2">DEVOLUÇÃO/ASSINATURA</th>' +
+    '</tr>' +
+    '<tr><th>Funcionário</th><th>Empresa</th><th>Funcionário</th><th>Empresa/Data</th></tr>' +
+    '</thead>' +
+    '<tbody>'+rows.join('')+'</tbody>' +
+    '</table>' +
+    '<p style="margin-top:20px;">Ciente: ___________________________________________________________________</p>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Recibo_Uniforme_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── RECIBO EQUIPAMENTOS E FERRAMENTAS ─────────────────────
+function gerarReciboEquipamentos() {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+  var equipamentos = (document.getElementById('doc-equip-lista').value||'').trim().replace(/\n/g,'\n');
+
+  var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de Equipamentos – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;line-height:1.8;}' +
+    'h1{color:#1565c0;font-size:14pt;text-align:center;margin:0 0 4px;}' +
+    '.header-meta{font-size:9pt;color:#444;margin-bottom:16px;border-bottom:1px solid #ccc;padding-bottom:8px;}' +
+    '.assin{border-top:1px solid #333;width:280px;margin-top:30px;padding-top:6px;}' +
+    '@media print{@page{margin:1.5cm;}}</style></head><body>' +
+    '<h1>RECIBO DE EQUIPAMENTO E FERRAMENTAS</h1>' +
+    '<div class="header-meta">Código: <strong>04 FORM</strong> &nbsp;|&nbsp; Criação: 04/03/2026 &nbsp;|&nbsp; Status: <strong>APROVADO</strong><br>' +
+    'Setor: <strong>RH</strong> &nbsp;|&nbsp; Autor: MÔNICA SANTOS &nbsp;|&nbsp; Versão: 00</div>' +
+    '<p>Eu, <strong>'+f.n+'</strong>, inscrito no CPF n° <strong>'+f.cpf+'</strong>, função <strong>'+(f.car||'')+'</strong>, '+
+    'telefone de contato <strong>'+(f.tel||'')+'</strong>, venho para os devidos fins DECLARAR que a empresa '+
+    '<strong>EQUILIBRYUM REABILITAÇÃO E CONSULTORIA EM SAUDE</strong>, inscrita no CNPJ n° 05.441.897/0001-02 '+
+    'na qualidade de minha empregadora, está entregando nesta data, a título de empréstimo, o(s) equipamento(s) '+
+    'abaixo discriminado(s) em perfeito estado de conservação e funcionamento, me comprometendo a mantê-lo(s) '+
+    'nestas mesmas características, ficando ciente que:</p>' +
+    '<p>I – Assumo <strong>TOTAL</strong> responsabilidade civil, criminal, administrativo e ambiental pelo uso e direção do respectivo equipamento, '+
+    'havendo eventuais avarias e/ou despesas com multas e acidentes, estas serão ressarcidas à <strong>EQUILIBRYUM</strong>, '+
+    'incluindo taxas administrativas e honorários advocatícios, salvo se culpa exclusiva de terceiros, '+
+    'autorizando desde já, os respectivos descontos em folha de pagamento ou rescisão contratual.</p>' +
+    '<p><strong>Relação de equipamentos:</strong></p>' +
+    '<p style="border:1px solid #ccc;padding:12px;min-height:80px;white-space:pre-line;">'+equipamentos+'</p>' +
+    '<p>São Paulo, '+fmtDataExtenso(hoje)+'.</p>' +
+    '<div style="display:flex;justify-content:space-between;margin-top:40px;">' +
+    '<div class="assin">RH – Recursos Humanos</div>' +
+    '<div class="assin">'+f.n+'<br>Colaborador</div>' +
+    '</div>' +
+    '<hr style="margin:30px 0;">' +
+    '<p><strong>Devolução:</strong></p>' +
+    '<p>Atestamos que o bem foi devolvido na data ___/___/_____ nas seguintes condições:</p>' +
+    '<p>( &nbsp;) Em perfeito estado &nbsp;&nbsp; ( &nbsp;) Apresentando defeito &nbsp;&nbsp; ( &nbsp;) Faltando peças/acessórios</p>' +
+    '<div style="display:flex;justify-content:space-between;margin-top:30px;">' +
+    '<div class="assin">Recursos Humanos</div>' +
+    '<div class="assin">'+f.n+'<br>Colaborador</div>' +
+    '</div>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Recibo_Equipamentos_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── TERMO DE RESPONSABILIDADE EQUIPAMENTOS E SENHAS ───────
+function gerarTermoResponsabilidade() {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+  var itens = (document.getElementById('doc-termo-lista').value||'').trim().split('\n').filter(Boolean);
+
+  var rows = itens.map(function(l){
+    var p = l.split(',').map(function(x){ return x.trim(); });
+    return '<tr>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[0]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[0]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[1]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[2]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[3]||'')+'</td>' +
+      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+    '</tr>';
+  });
+  if (!rows.length) rows.push('<tr><td colspan="6" style="border:1px solid #ccc;padding:20px;"></td></tr>');
+
+  var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Termo de Responsabilidade – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:10.5pt;color:#000;line-height:1.7;}' +
+    'h1{color:#4a148c;font-size:13pt;text-align:center;margin:0 0 4px;}' +
+    '.header-meta{font-size:9pt;color:#444;margin-bottom:14px;border-bottom:1px solid #ccc;padding-bottom:8px;}' +
+    'table{width:100%;border-collapse:collapse;margin:14px 0;}' +
+    'th{background:#4a148c;color:#fff;padding:7px 8px;font-size:9.5pt;border:1px solid #4a148c;}' +
+    'li{margin-bottom:4px;}' +
+    '.assin{border-top:1px solid #333;width:260px;margin-top:28px;padding-top:6px;}' +
+    '.footer{text-align:center;font-size:9pt;color:#666;margin-top:20px;border-top:1px solid #ccc;padding-top:8px;}' +
+    '@media print{@page{margin:1.5cm;}}</style></head><body>' +
+    '<h1>TERMO DE RESPONSABILIDADE PELA GUARDA E USO DE EQUIPAMENTO DE TRABALHO, SENHA E INFORMAÇÕES CONFIDENCIAIS</h1>' +
+    '<div class="header-meta">Código: <strong>adm 05 FORM</strong> &nbsp;|&nbsp; Criação: 21/06/2017 &nbsp;|&nbsp; Revisão: 03/03/2026 &nbsp;|&nbsp; Status: <strong>APROVADO</strong> &nbsp;|&nbsp; Versão: 03<br>' +
+    'Setor: <strong>INSTITUIÇÃO</strong> &nbsp;|&nbsp; Autor: ELAINE MARUCCI &nbsp;|&nbsp; Revisor: <strong>MÔNICA SANTOS</strong></div>' +
+    '<p>Eu, <strong>'+f.n+'</strong>, CPF: <strong>'+f.cpf+'</strong>, declaro que recebi da <strong>EQUILIBRYUM REABILITAÇÃO E CONSULTORIA EM SAÚDE</strong>, CNPJ nº. 05.441.897/0001-02, a título de empréstimo, para meu uso exclusivo durante as atividades laborais, o(s) equipamento(s) e/ou senhas, ou informações confidenciais especificadas neste termo de responsabilidade, comprometendo-me a manter os equipamentos em perfeito estado de conservação, e/ou manter sigilo sobre senhas recebidas ficando ciente de que:</p>' +
+    '<p><strong>Em sendo equipamentos:</strong></p>' +
+    '<ul>' +
+    '<li>Se o equipamento for danificado ou inutilizado por emprego inadequado, mau uso, negligência ou extravio, a empresa me fornecerá novo equipamento e cobrará o valor de um equipamento da mesma marca ou equivalente ao da praça;</li>' +
+    '<li>Em caso de furto ou roubo, deverá ser apresentado B.O. ao DP/RH e assim a empresa me fornecerá novo equipamento sem cobrança ao colaborador;</li>' +
+    '<li>Em caso de parada de funcionamento, após análise técnica, identificado que o dano não foi originado por mau uso, a empresa me fornecerá novo equipamento sem cobrança;</li>' +
+    '<li>Em caso de dano, inutilização ou extravio, devo comunicar imediatamente ao DP/RH via e-mail: dp@equilibryum.com.br copiando o gestor imediato;</li>' +
+    '<li>No caso de rescisão do contrato de trabalho, devolverei o equipamento completo e em perfeito estado no dia do encerramento do contrato;</li>' +
+    '<li>Estando os equipamentos em minha posse, estarei sujeito a inspeções sem prévio aviso.</li>' +
+    '</ul>' +
+    '<p><strong>Em sendo senha ou informações confidenciais:</strong></p>' +
+    '<ul>' +
+    '<li>Uso de senha é pessoal e intransferível;</li>' +
+    '<li>Compromisso em manter sigilo, sendo responsabilidade do portador vazamento de senha/informação;</li>' +
+    '<li>Ter ciência que as senhas do sistema de alarme são monitoradas pela diretoria e pela empresa de segurança.</li>' +
+    '</ul>' +
+    '<table>' +
+    '<thead><tr><th>IDENTIFICAÇÃO</th><th>EQUIPAMENTO</th><th>MARCA</th><th>MODELO</th><th>IMEI</th><th>AVARIA</th></tr></thead>' +
+    '<tbody>'+rows.join('')+'</tbody>' +
+    '</table>' +
+    '<p>São Paulo, '+fmtDataExtenso(hoje)+'.</p>' +
+    '<div style="display:flex;justify-content:space-between;">' +
+    '<div class="assin"><strong>'+f.n+'</strong><br>COLABORADOR(A)<br>RG: '+(f.rg||'')+'</div>' +
+    '<div class="assin">RH – Responsável</div>' +
+    '</div>' +
+    '<hr style="margin:24px 0;">' +
+    '<p><strong>DEVOLUÇÃO:</strong></p>' +
+    '<p>Atestamos que o(s) bem(s) foi(am) devolvido(s) em ___/___/_____.</p>' +
+    '<p>As condições foi:<br>' +
+    'Equipamento 1: ( &nbsp;) em perfeito estado &nbsp; ( &nbsp;) apresentando defeito &nbsp; ( &nbsp;) faltando peças ou acessórios</p>' +
+    '<div class="assin">RH – Responsável pelo recebimento</div>' +
+    '<div class="footer">3675-6289 / 4304-6289 &nbsp;|&nbsp; www.equilibryum.com.br &nbsp;|&nbsp; equilibryum@equilibryum.com.br</div>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Termo_Responsabilidade_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── RECIBO REGULAMENTO INTERNO ─────────────────────────────
+function gerarReciboRegulamento() {
+  var f = getDocFunc(); if (!f) return;
+  var hoje = td();
+
+  var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo Regulamento Interno – '+f.n+'</title>' +
+    '<style>body{font-family:Arial,sans-serif;margin:3cm 2.5cm;font-size:11.5pt;color:#000;line-height:2;}' +
+    'h1{font-size:14pt;text-align:center;margin:0 0 4px;}' +
+    '.header-meta{font-size:9pt;color:#444;margin-bottom:24px;border-bottom:1px solid #ccc;padding-bottom:8px;}' +
+    '.assin{border-top:1px solid #333;width:260px;margin-top:50px;padding-top:6px;text-align:center;}' +
+    '@media print{@page{margin:2cm;}}</style></head><body>' +
+    '<h1>REGULAMENTO INTERNO – Recibo de Entrega</h1>' +
+    '<div class="header-meta">Código: <strong>RH 81</strong> &nbsp;|&nbsp; Status: <strong>APROVADO</strong> &nbsp;|&nbsp; Criação: 20/07/2017 &nbsp;|&nbsp; Revisão: 03/03/2026<br>' +
+    'Setor: <strong>RH</strong> &nbsp;|&nbsp; Autor: IVANILDA JESUS &nbsp;|&nbsp; Revisor: <strong>MÔNICA SANTOS</strong> &nbsp;|&nbsp; Versão: 05</div>' +
+    '<p>Eu, <strong>'+f.n+'</strong>,</p>' +
+    '<p>inscrito no CPF: <strong>'+f.cpf+'</strong>, declaro que recebi o Regulamento Interno da</p>' +
+    '<p>Clínica Equilibryum na data <strong>'+fd(hoje)+'</strong>.</p>' +
+    '<div style="margin-top:60px;">' +
+    '<div class="assin">'+f.n+'<br>Assinatura do colaborador</div>' +
+    '</div>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Recibo_Regulamento_'+f.n.replace(/\s+/g,'_'), f);
 }
 
 // ============================================================
