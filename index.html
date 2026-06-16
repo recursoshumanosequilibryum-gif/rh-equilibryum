@@ -263,6 +263,27 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 #flash-table .calc-cell{font-size:12px;font-weight:700;color:var(--green-dark);text-align:right;padding:6px 8px;white-space:nowrap;}
 #flash-table select.escala-sel{padding:5px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;}
 
+
+/* BENEFÍCIOS — CARD POR FUNCIONÁRIO */
+.benef-func-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1.5px solid var(--gray-100);}
+.benef-func-card-header{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:.15s;user-select:none;}
+.benef-func-card-header:hover{background:var(--gray-50);}
+.benef-func-card-header .bfc-avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.benef-func-card-header .bfc-info{flex:1;}
+.benef-func-card-header .bfc-name{font-weight:700;font-size:13.5px;color:var(--green-dark);}
+.benef-func-card-header .bfc-meta{font-size:12px;color:var(--gray-500);margin-top:1px;}
+.benef-func-card-header .bfc-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.benef-func-card-header .bfc-total{font-weight:700;font-size:13px;color:var(--green-dark);white-space:nowrap;}
+.benef-func-card-header .bfc-toggle{font-size:16px;color:var(--gray-400);transition:.2s;}
+.benef-func-card-header.open .bfc-toggle{transform:rotate(180deg);}
+.benef-func-card-body{display:none;border-top:1px solid var(--gray-100);}
+.benef-func-card-body.open{display:block;}
+.benef-func-card-body table{width:100%;border-collapse:collapse;}
+.benef-func-card-body td{padding:9px 14px;font-size:12.5px;border-bottom:1px solid var(--gray-50);}
+.benef-func-card-body tr:last-child td{border-bottom:none;}
+.benef-func-card-body tr:hover td{background:var(--gray-50);}
+.benef-tipo-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
+
 </style>
 </head>
 <body>
@@ -690,12 +711,8 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <button class="btn btn-primary btn-sm" onclick="openModal('modal-benef-atr')">+ Atribuir Benefício</button>
         </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Funcionário</th><th>Benefício</th><th>Valor / Mês</th><th>Início</th><th>Status</th><th>Obs.</th><th>Ações</th></tr></thead>
-          <tbody id="tb-benef-func"></tbody>
-        </table>
-      </div>
+      <div id="benef-func-cards" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="benef-func-empty" class="alert alert-info" style="display:none;">Nenhum benefício atribuído.</div>
     </div>
   </div>
 
@@ -3803,38 +3820,156 @@ async function savBenefAtr() {
 }
 
 function rdBenefFunc() {
-  var filterFid=(document.getElementById('benef-func-filter')||{}).value||'';
-  var list=DB.g('benef-atrib');
-  if(filterFid) list=list.filter(function(x){return x.fid===filterFid;});
-  var funcs=DB.g('funcionarios');
-  var tb=document.getElementById('tb-benef-func');
-  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhum benefício atribuído.</td></tr>';return;}
-  list=[...list].sort(function(a,b){
-    var fa=funcs.find(function(x){return x.id===a.fid;}),fb=funcs.find(function(x){return x.id===b.fid;});
+  var filterFid = (document.getElementById('benef-func-filter')||{}).value || '';
+  var allAtribs = DB.g('benef-atrib');
+  var funcs     = DB.g('funcionarios');
+  var deps      = DB.g('departamentos');
+  var emps      = DB.g('empresas');
+  var container = document.getElementById('benef-func-cards');
+  var emptyEl   = document.getElementById('benef-func-empty');
+  if (!container) return;
+
+  // Agrupar atribuições por funcionário
+  var byFunc = {};
+  allAtribs.forEach(function(a) {
+    if (filterFid && a.fid !== filterFid) return;
+    if (!byFunc[a.fid]) byFunc[a.fid] = [];
+    byFunc[a.fid].push(a);
+  });
+
+  // Ordenar funcionários por nome
+  var fids = Object.keys(byFunc).sort(function(a, b) {
+    var fa = funcs.find(function(f){return f.id===a;});
+    var fb = funcs.find(function(f){return f.id===b;});
     return (fa?fa.n:'').localeCompare(fb?fb.n:'');
   });
-  tb.innerHTML='';
-  list.forEach(function(r){
-    var f=funcs.find(function(x){return x.id===r.fid;});
-    var cls=BENEF_CSS_CLASS[r.tipoBase||r.tipo]||'outros';
-    var icon=BENEF_ICONS[r.tipoBase||r.tipo]||'📌';
-    var stBc=r.st==='Ativo'?'badge-green':r.st==='Suspenso'?'badge-yellow':'badge-red';
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td><strong>'+(f?f.n:'—')+'</strong><br><small style="color:var(--gray-400)">'+(f?f.car||'':'')+'</small></td>'+
-      '<td><span class="benef-badge '+cls+'">'+icon+' '+r.tipo+'</span></td>'+
-      '<td><strong>'+(r.valor?fmtMoney(r.valor):'—')+'</strong></td>'+
-      '<td>'+(r.ini?fd(r.ini):'—')+'</td>'+
-      '<td><span class="badge '+stBc+'">'+(r.st||'Ativo')+'</span></td>'+
-      '<td style="max-width:160px;font-size:12px;color:var(--gray-600)">'+(r.obs||'—')+'</td>'+
-      '<td style="display:flex;gap:6px;"></td>';
-    var btns=tr.querySelector('td:last-child');
-    var be=document.createElement('button');be.className='btn-icon';be.innerHTML='&#9999;&#65039;';
-    (function(rid){be.onclick=function(){editBenefAtr(rid);};})(r.id);
-    var bd=document.createElement('button');bd.className='btn-icon danger';bd.innerHTML='&#128465;';
-    (function(rid){bd.onclick=function(){delBenefAtr(rid);};})(r.id);
-    btns.appendChild(be);btns.appendChild(bd);
-    tb.appendChild(tr);
+
+  container.innerHTML = '';
+  if (!fids.length) {
+    if (emptyEl) emptyEl.style.display = 'flex';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  var TIPO_COLORS = {
+    'VT – Vale Transporte':     {bg:'#fff3e0',color:'#e65100'},
+    'VR – Vale Refeição':       {bg:'#e3f2fd',color:'#1565c0'},
+    'VA – Vale Alimentação':    {bg:'#e8f5ee',color:'#2e7d5e'},
+    'Combustível':              {bg:'#f3e5f5',color:'#6a1b9a'},
+    'Assiduidade':              {bg:'#e0f7fa',color:'#00695c'},
+    'Bônus':                    {bg:'#fbe9e7',color:'#bf360c'},
+    'Assistência Odontológica': {bg:'#fce4ec',color:'#880e4f'},
+    'Assistência Médica':       {bg:'#e8eaf6',color:'#1a237e'},
+    'Triênio':                  {bg:'#ede7f6',color:'#4a148c'}
+  };
+  var TIPO_ICON = {
+    'VT – Vale Transporte':'🚌','VR – Vale Refeição':'🍽️','VA – Vale Alimentação':'🛒',
+    'Combustível':'⛽','Assiduidade':'⭐','Bônus':'💰',
+    'Assistência Odontológica':'🦷','Assistência Médica':'🏥','Triênio':'📅'
+  };
+
+  fids.forEach(function(fid) {
+    var f = funcs.find(function(x){return x.id===fid;});
+    if (!f) return;
+    var dep = deps.find(function(d){return d.id===f.dep;});
+    var emp = emps.find(function(e){return e.id===f.emp;});
+    var atribs = byFunc[fid];
+
+    // Calcular total mensal (apenas ativos com valor > 0)
+    var totalMes = atribs.reduce(function(s,a){
+      if (a.st === 'Encerrado') return s;
+      var v = parseFloat(a.valor)||0;
+      return s + v;
+    }, 0);
+
+    // Badges dos benefícios ativos com valor > 0
+    var badgesAtivos = atribs.filter(function(a){
+      return a.st !== 'Encerrado' && parseFloat(a.valor||0) > 0;
+    });
+
+    // Card
+    var card = document.createElement('div');
+    card.className = 'benef-func-card';
+    card.dataset.fid = fid;
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'benef-func-card-header';
+    header.innerHTML =
+      '<div class="bfc-avatar">' + f.n[0].toUpperCase() + '</div>' +
+      '<div class="bfc-info">' +
+        '<div class="bfc-name">' + f.n + '</div>' +
+        '<div class="bfc-meta">' + (f.car||'—') + (emp?' &nbsp;·&nbsp; '+emp.razao:'') + '</div>' +
+        '<div class="bfc-badges">' +
+          badgesAtivos.map(function(a){
+            var tipo = a.tipoBase||a.tipo||'';
+            var c = TIPO_COLORS[tipo] || {bg:'var(--gray-100)',color:'var(--gray-600)'};
+            var icon = TIPO_ICON[tipo] || '📌';
+            return '<span class="benef-tipo-pill" style="background:'+c.bg+';color:'+c.color+'">'+icon+' '+tipo.split(' ')[0]+'</span>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="bfc-total">' + (totalMes > 0 ? 'R$ '+totalMes.toFixed(2).replace('.',',') : '—') + '</div>' +
+      '<div style="display:flex;gap:6px;align-items:center;">' +
+        '<button class="btn btn-primary btn-sm" title="Editar benefícios" onclick="event.stopPropagation();abrirEditarBenef(\'' + fid + '\')">✏️ Editar</button>' +
+      '</div>' +
+      '<div class="bfc-toggle">▼</div>';
+    header.onclick = function() { toggleBenefCard(fid); };
+
+    // Body — tabela de benefícios
+    var body = document.createElement('div');
+    body.className = 'benef-func-card-body';
+    body.id = 'benef-body-' + fid;
+
+    var rows = atribs.map(function(a) {
+      var tipo = a.tipoBase || a.tipo || '';
+      var c = TIPO_COLORS[tipo] || {bg:'var(--gray-100)',color:'var(--gray-600)'};
+      var icon = TIPO_ICON[tipo] || '📌';
+      var val  = parseFloat(a.valor||0);
+      var stBc = a.st === 'Ativo' ? 'badge-green' : a.st === 'Suspenso' ? 'badge-yellow' : 'badge-red';
+      var valStr = val > 0 ? '<strong>R$ '+val.toFixed(2).replace('.',',')+'</strong>' : '<span style="color:var(--gray-400)">R$ 0,00</span>';
+      return '<tr>' +
+        '<td><span class="benef-tipo-pill" style="background:'+c.bg+';color:'+c.color+'">'+icon+' '+tipo+'</span></td>' +
+        '<td>' + valStr + '</td>' +
+        '<td>' + (a.ini ? fd(a.ini) : '—') + '</td>' +
+        '<td><span class="badge '+stBc+'">'+a.st+'</span></td>' +
+        '<td style="color:var(--gray-500);font-size:11.5px;">' + (a.obs||'—') + '</td>' +
+        '</tr>';
+    }).join('');
+
+    body.innerHTML =
+      '<table>' +
+      '<thead><tr>' +
+        '<th>Benefício</th><th>Valor</th><th>Início</th><th>Status</th><th>Obs.</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '</table>';
+
+    card.appendChild(header);
+    card.appendChild(body);
+    container.appendChild(card);
   });
+}
+
+function toggleBenefCard(fid) {
+  var header = document.querySelector('.benef-func-card[data-fid="'+fid+'"] .benef-func-card-header');
+  var body   = document.getElementById('benef-body-'+fid);
+  if (!header || !body) return;
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+}
+
+function abrirEditarBenef(fid) {
+  // Pre-select funcionario e abrir modal
+  openModal('modal-benef-atr');
+  setTimeout(function() {
+    var sel = document.getElementById('batr-func');
+    if (sel) {
+      sel.value = fid;
+      onBatrFuncChange();
+    }
+  }, 100);
 }
 
 function editBenefAtr(id){
