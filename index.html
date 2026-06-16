@@ -1020,11 +1020,29 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- CAMPANHAS -->
 <div class="section-page" id="sec-campanhas">
   <div class="card">
-    <div class="section-header">
+    <div class="card-header">
       <span class="card-title">&#128200; Campanhas</span>
-      <button class="btn btn-primary" onclick="openModal('modal-camp')">+ Nova Campanha</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="camp-ano-filter" onchange="rdCamp()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os anos</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="imprimirRelCampanhas()">&#128438; Relatório c/ Fotos</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimirAcompCampanhas()">&#128202; Acompanhamento Anual</button>
+        <button class="btn btn-primary" onclick="openModal('modal-camp')">+ Nova Campanha</button>
+      </div>
     </div>
-    <div id="camp-list"></div>
+    <div class="tabs" id="camp-tabs">
+      <div class="tab active" onclick="campTab('camp-lista',this)">&#128200; Lista</div>
+      <div class="tab" onclick="campTab('camp-acomp',this)">&#128202; Acompanhamento Anual</div>
+    </div>
+    <!-- LISTA -->
+    <div id="camp-lista">
+      <div id="camp-list"></div>
+    </div>
+    <!-- ACOMPANHAMENTO ANUAL -->
+    <div id="camp-acomp" style="display:none;">
+      <div id="camp-acomp-content"></div>
+    </div>
   </div>
 </div>
 
@@ -3875,6 +3893,10 @@ async function savCamp(){
   closeModal('modal-camp');rdCamp();toast('Campanha salva'+(driveReady?' ☁️':'!'));
 }
 function rdCamp(){
+  fillCampAnoFilter();
+  // Se aba acompanhamento estiver ativa, re-renderizar
+  var acomp = document.getElementById('camp-acomp');
+  if (acomp && acomp.style.display !== 'none') renderAcompCamp();
   var list=DB.g('campanhas');var el=document.getElementById('camp-list');
   if(!list.length){el.innerHTML='<div class="alert alert-info">&#128200; Nenhuma campanha cadastrada.</div>';return;}
   el.innerHTML=list.map(function(c){
@@ -4714,6 +4736,251 @@ function renderPhotoGalleryInline(photos, containerEl) {
   });
   wrap.appendChild(grid);
   containerEl.appendChild(wrap);
+}
+
+// ============================================================
+// CAMPANHAS — RELATÓRIOS
+// ============================================================
+
+function campTab(id, btn) {
+  ['camp-lista','camp-acomp'].forEach(function(t){
+    var el=document.getElementById(t); if(el) el.style.display='none';
+  });
+  document.getElementById(id).style.display='block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  if (id==='camp-acomp') renderAcompCamp();
+}
+
+function fillCampAnoFilter() {
+  var sel = document.getElementById('camp-ano-filter'); if(!sel) return;
+  var cur = sel.value;
+  var anos = [...new Set(DB.g('campanhas').map(function(c){
+    return c.ini ? c.ini.split('-')[0] : (c.fim ? c.fim.split('-')[0] : null);
+  }).filter(Boolean))].sort().reverse();
+  sel.innerHTML = '<option value="">Todos os anos</option>';
+  anos.forEach(function(a){
+    var o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o);
+  });
+  if(cur) sel.value=cur;
+}
+
+// ── Acompanhamento Anual (inline na tela) ────────────────────
+function renderAcompCamp() {
+  var anoF = (document.getElementById('camp-ano-filter')||{value:''}).value||'';
+  var all  = DB.g('campanhas');
+  if (!all.length) {
+    document.getElementById('camp-acomp-content').innerHTML =
+      '<div class="alert alert-info">Nenhuma campanha cadastrada.</div>'; return;
+  }
+
+  // Agrupar por ano
+  var grupos = {};
+  all.forEach(function(c) {
+    var ano = c.ini ? c.ini.split('-')[0] : (c.fim ? c.fim.split('-')[0] : 'Sem data');
+    if (anoF && ano !== anoF) return;
+    if (!grupos[ano]) grupos[ano] = [];
+    grupos[ano].push(c);
+  });
+
+  var meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var corMap = {green:'#2e7d5e',blue:'#1565c0',yellow:'#f57f17',red:'#d32f2f'};
+
+  var html = '';
+  Object.keys(grupos).sort().reverse().forEach(function(ano) {
+    var lista = grupos[ano];
+    // Resumo do ano
+    var total = lista.length;
+    var totalFotos = lista.reduce(function(s,c){return s+(c.photos?c.photos.length:0);},0);
+
+    html += '<div style="margin-bottom:28px;">';
+    html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">';
+    html += '<h3 style="font-size:18px;color:var(--green-dark);margin:0;">&#128197; '+ano+'</h3>';
+    html += '<span class="badge badge-green">'+total+' campanha(s)</span>';
+    if(totalFotos) html += '<span class="badge badge-blue">&#128247; '+totalFotos+' foto(s)</span>';
+    html += '</div>';
+
+    // Timeline/cards por mês
+    var porMes = {};
+    lista.forEach(function(c){
+      var m = c.ini ? parseInt(c.ini.split('-')[1])-1 : -1;
+      if (!porMes[m]) porMes[m] = [];
+      porMes[m].push(c);
+    });
+
+    // Barra de meses
+    html += '<div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:16px;">';
+    for(var m=0;m<12;m++){
+      var tem = porMes[m] && porMes[m].length > 0;
+      html += '<div style="background:'+(tem?'var(--green)':'var(--gray-100)')+';color:'+(tem?'#fff':'var(--gray-400)')+
+        ';border-radius:6px;padding:6px 4px;text-align:center;font-size:11px;font-weight:600;" title="'+
+        (tem?porMes[m].map(function(c){return c.titulo;}).join(', '):'Sem campanhas')+'">'+
+        meses[m]+(tem?'<br><strong>'+porMes[m].length+'</strong>':'')+'</div>';
+    }
+    html += '</div>';
+
+    // Lista das campanhas do ano
+    html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+    lista.sort(function(a,b){return (a.ini||'').localeCompare(b.ini||'');}).forEach(function(c){
+      var cor = corMap[c.cor||'green']||'#2e7d5e';
+      var nFotos = c.photos ? c.photos.length : 0;
+      html += '<div style="border-left:4px solid '+cor+';padding:12px 16px;background:#fff;border-radius:0 var(--radius-sm) var(--radius-sm) 0;box-shadow:var(--shadow);">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'+
+        '<div><strong style="font-size:13.5px;color:var(--green-dark);">'+c.titulo+'</strong>'+
+        '<div style="font-size:12px;color:var(--gray-600);margin-top:2px;">'+
+        '&#128197; '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+
+        (c.resp?' &nbsp;|&nbsp; &#128100; '+c.resp:'')+
+        (nFotos?' &nbsp;|&nbsp; &#128247; '+nFotos+' foto(s)':'')+
+        '</div>'+
+        (c.desc?'<div style="font-size:12px;color:var(--gray-600);margin-top:4px;">'+c.desc+'</div>':'')+
+        '</div></div>'+
+        '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  document.getElementById('camp-acomp-content').innerHTML = html ||
+    '<div class="alert alert-info">Nenhuma campanha no período selecionado.</div>';
+}
+
+// ── Imprimir Relatório com Fotos ─────────────────────────────
+function imprimirRelCampanhas() {
+  var anoF = (document.getElementById('camp-ano-filter')||{value:''}).value||'';
+  var all  = DB.g('campanhas');
+  if(anoF) all = all.filter(function(c){
+    var ano = c.ini?c.ini.split('-')[0]:(c.fim?c.fim.split('-')[0]:'');
+    return ano===anoF;
+  });
+  if(!all.length){alert('Nenhuma campanha'+(anoF?' em '+anoF:'')+' para imprimir.');return;}
+  all = [...all].sort(function(a,b){return (a.ini||'').localeCompare(b.ini||'');});
+
+  var corMap = {green:'#2e7d5e',blue:'#1565c0',yellow:'#f57f17',red:'#d32f2f'};
+  var rows = all.map(function(c){
+    var cor = corMap[c.cor||'green']||'#2e7d5e';
+    var nFotos = c.photos ? c.photos.length : 0;
+    // Fotos (max 6 por campanha para não pesar demais no PDF)
+    var fotosHtml = '';
+    if (c.photos && c.photos.length) {
+      fotosHtml = '<div style="margin-top:10px;"><div style="font-size:9pt;font-weight:700;color:#555;margin-bottom:6px;">📷 FOTOS DO EVENTO ('+c.photos.length+'):</div>';
+      fotosHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      c.photos.slice(0,9).forEach(function(p){
+        var src = p.url || p.dataURL || '';
+        if(src) fotosHtml += '<img src="'+src+'" style="width:120px;height:90px;object-fit:cover;border-radius:4px;border:1px solid #ddd;">';
+      });
+      if(c.photos.length>9) fotosHtml += '<div style="width:120px;height:90px;background:#f5f5f5;border-radius:4px;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11pt;color:#777;">+' + (c.photos.length-9) + '</div>';
+      fotosHtml += '</div></div>';
+    }
+    return '<div style="border-left:5px solid '+cor+';padding:14px 16px;margin-bottom:16px;background:#fff;border-radius:0 6px 6px 0;box-shadow:0 1px 4px rgba(0,0,0,.08);page-break-inside:avoid;">'+
+      '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">'+
+      '<div><div style="font-size:13pt;font-weight:700;color:#1f5c44;">'+c.titulo+'</div>'+
+      '<div style="font-size:9.5pt;color:#555;margin-top:3px;">'+
+      '📅 '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+
+      (c.resp?' &nbsp;|&nbsp; 👤 '+c.resp:'')+
+      (nFotos?' &nbsp;|&nbsp; 📷 '+nFotos+' foto(s)':'')+
+      '</div>'+
+      (c.desc?'<div style="font-size:10pt;color:#444;margin-top:6px;">'+c.desc+'</div>':'')+
+      '</div></div>'+
+      fotosHtml+
+      '</div>';
+  }).join('');
+
+  var total = all.length;
+  var totalFotos = all.reduce(function(s,c){return s+(c.photos?c.photos.length:0);},0);
+
+  var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<title>Relatório de Campanhas'+(anoF?' – '+anoF:'')+'</title>'+
+    '<style>'+
+    'body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;}'+
+    'h1{color:#1f5c44;font-size:16pt;margin:0 0 4px;}'+
+    '.subtitle{font-size:10pt;color:#555;margin-bottom:20px;border-bottom:2px solid #1f5c44;padding-bottom:8px;}'+
+    '.resumo{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;}'+
+    '.resumo-pill{background:#e8f5ee;border-radius:20px;padding:6px 16px;font-size:10pt;font-weight:700;color:#1f5c44;}'+
+    '.footer{text-align:center;font-size:8.5pt;color:#999;margin-top:24px;border-top:1px solid #eee;padding-top:8px;}'+
+    '@media print{@page{margin:1.5cm;size:A4;}body{margin:0;}}'+
+    '</style></head><body>'+
+    '<h1>&#128200; Relatório de Campanhas'+(anoF?' – '+anoF:'')+'</h1>'+
+    '<div class="subtitle">Gerado em '+new Date().toLocaleDateString('pt-BR')+' | Sistema RH Equilibryum</div>'+
+    '<div class="resumo">'+
+    '<span class="resumo-pill">Total: '+total+' campanha(s)</span>'+
+    (totalFotos?'<span class="resumo-pill">📷 '+totalFotos+' foto(s)</span>':'')+
+    '</div>'+
+    rows+
+    '<div class="footer">Equilibryum – Sistema de RH | Relatório gerado em '+new Date().toLocaleString('pt-BR')+'</div>'+
+    '</body></html>';
+
+  var win = window.open('','_blank','width=960,height=750');
+  if(win){win.document.write(docHTML);win.document.close();setTimeout(function(){win.focus();win.print();},700);}
+  toast('Relatório aberto! Use Ctrl+P para salvar como PDF.');
+}
+
+// ── Imprimir Acompanhamento Anual ────────────────────────────
+function imprimirAcompCampanhas() {
+  var anoF = (document.getElementById('camp-ano-filter')||{value:''}).value||'';
+  var all  = DB.g('campanhas');
+  if(anoF) all = all.filter(function(c){
+    var ano = c.ini?c.ini.split('-')[0]:(c.fim?c.fim.split('-')[0]:'');
+    return ano===anoF;
+  });
+  if(!all.length){alert('Nenhuma campanha para gerar acompanhamento.');return;}
+
+  var meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var mesesAbr=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var corMap={green:'#2e7d5e',blue:'#1565c0',yellow:'#f57f17',red:'#d32f2f'};
+
+  // Agrupar por ano e mês
+  var grupos={};
+  all.forEach(function(c){
+    var ano = c.ini?c.ini.split('-')[0]:(c.fim?c.fim.split('-')[0]:'Sem data');
+    if(!grupos[ano]) grupos[ano]=Array.from({length:12},function(){return [];});
+    var m = c.ini?parseInt(c.ini.split('-')[1])-1:-1;
+    if(m>=0) grupos[ano][m].push(c);
+    else grupos[ano][11].push(c); // sem mês vai pro final
+  });
+
+  var anosRows = Object.keys(grupos).sort().reverse().map(function(ano){
+    var mesesCols = grupos[ano].map(function(campsMes, m){
+      if(!campsMes.length) return '<td style="border:1px solid #ddd;padding:8px;vertical-align:top;background:#f9f9f9;min-width:60px;"></td>';
+      var items = campsMes.map(function(c){
+        var cor = corMap[c.cor||'green']||'#2e7d5e';
+        return '<div style="background:'+cor+';color:#fff;border-radius:4px;padding:3px 6px;font-size:8pt;margin-bottom:3px;line-height:1.3;">'+c.titulo+'</div>';
+      }).join('');
+      return '<td style="border:1px solid #ddd;padding:8px;vertical-align:top;min-width:60px;">'+items+'</td>';
+    }).join('');
+    var total = grupos[ano].reduce(function(s,m){return s+m.length;},0);
+    return '<tr><td style="border:1px solid #ddd;padding:8px;font-weight:700;white-space:nowrap;background:#e8f5ee;color:#1f5c44;">'+ano+'<br><small>'+total+' campanha(s)</small></td>'+mesesCols+'</tr>';
+  }).join('');
+
+  var thead = '<tr><th style="background:#1f5c44;color:#fff;padding:8px;border:1px solid #1f5c44;">Ano</th>'+
+    mesesAbr.map(function(m){return '<th style="background:#1f5c44;color:#fff;padding:8px;border:1px solid #1f5c44;font-size:9pt;">'+m+'</th>';}).join('')+'</tr>';
+
+  // Legenda de cores
+  var legenda = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;font-size:9pt;">'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#2e7d5e;border-radius:2px;"></span> Saúde</span>'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#1565c0;border-radius:2px;"></span> Informativo</span>'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#f57f17;border-radius:2px;"></span> Prevenção</span>'+
+    '<span><span style="display:inline-block;width:12px;height:12px;background:#d32f2f;border-radius:2px;"></span> Urgente</span>'+
+    '</div>';
+
+  var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<title>Acompanhamento de Campanhas'+(anoF?' – '+anoF:'')+'</title>'+
+    '<style>'+
+    'body{font-family:Arial,sans-serif;margin:1.5cm;font-size:10.5pt;color:#000;}'+
+    'h1{color:#1f5c44;font-size:15pt;margin:0 0 4px;}'+
+    '.subtitle{font-size:9.5pt;color:#555;margin-bottom:16px;border-bottom:2px solid #1f5c44;padding-bottom:6px;}'+
+    'table{width:100%;border-collapse:collapse;margin-top:12px;}'+
+    '.footer{text-align:center;font-size:8pt;color:#999;margin-top:20px;border-top:1px solid #eee;padding-top:6px;}'+
+    '@media print{@page{margin:1cm;size:A4 landscape;}body{margin:0;}}'+
+    '</style></head><body>'+
+    '<h1>&#128202; Acompanhamento de Campanhas'+(anoF?' – '+anoF:'')+'</h1>'+
+    '<div class="subtitle">Gerado em '+new Date().toLocaleDateString('pt-BR')+' | Sistema RH Equilibryum</div>'+
+    '<table><thead>'+thead+'</thead><tbody>'+anosRows+'</tbody></table>'+
+    legenda+
+    '<div class="footer">Equilibryum – Sistema de RH | Gerado em '+new Date().toLocaleString('pt-BR')+'</div>'+
+    '</body></html>';
+
+  var win = window.open('','_blank','width=1100,height=750');
+  if(win){win.document.write(docHTML);win.document.close();setTimeout(function(){win.focus();win.print();},700);}
+  toast('Acompanhamento aberto! Use Ctrl+P para salvar como PDF (paisagem).');
 }
 
 // ============================================================
