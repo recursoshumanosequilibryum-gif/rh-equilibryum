@@ -285,19 +285,27 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .benef-tipo-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
 
 
-/* VAGAS */
-.vaga-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1.5px solid var(--gray-100);overflow:hidden;transition:.2s;}
-.vaga-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px);}
-.vaga-card-header{padding:14px 16px;border-left:4px solid var(--green);display:flex;gap:12px;align-items:flex-start;}
-.vaga-card.em-selecao .vaga-card-header{border-left-color:var(--blue);}
-.vaga-card.encerrada .vaga-card-header{border-left-color:var(--gray-400);}
-.vaga-card.cancelada .vaga-card-header{border-left-color:var(--red);}
-.vaga-titulo{font-size:15px;font-weight:700;color:var(--green-dark);}
-.vaga-meta{font-size:12px;color:var(--gray-500);margin-top:3px;display:flex;gap:12px;flex-wrap:wrap;}
-.vaga-meta span{display:flex;align-items:center;gap:4px;}
-.vaga-benef-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.vaga-benef-pill{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--green-pale);color:var(--green-dark);font-weight:600;}
-.vaga-card-footer{padding:10px 16px;background:var(--gray-50);border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+/* VAGAS — LAYOUT MELHORADO */
+.vaga-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-100);overflow:hidden;transition:.22s;margin-bottom:14px;}
+.vaga-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.10);transform:translateY(-2px);}
+.vaga-card-top{display:flex;align-items:stretch;}
+.vaga-card-stripe{width:5px;flex-shrink:0;background:var(--green);}
+.vaga-card.em-selecao .vaga-card-stripe{background:var(--blue);}
+.vaga-card.encerrada  .vaga-card-stripe{background:var(--gray-400);}
+.vaga-card.cancelada  .vaga-card-stripe{background:var(--red);}
+.vaga-card-body{flex:1;padding:16px 18px;}
+.vaga-card-side{padding:14px 16px;display:flex;flex-direction:column;gap:10px;align-items:flex-end;justify-content:space-between;border-left:1px solid var(--gray-100);min-width:160px;}
+.vaga-titulo{font-size:15.5px;font-weight:700;color:var(--green-dark);margin-bottom:5px;}
+.vaga-meta{font-size:12px;color:var(--gray-500);display:flex;gap:14px;flex-wrap:wrap;margin-top:4px;}
+.vaga-meta span{display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.vaga-benef-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.vaga-benef-pill{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--green-pale);color:var(--green-dark);font-weight:600;border:1px solid rgba(46,125,94,.15);}
+.vaga-cand-box{background:var(--gray-50);border-radius:var(--radius-sm);padding:10px 12px;text-align:center;border:1px solid var(--gray-100);}
+.vaga-cand-num{font-size:24px;font-weight:700;line-height:1;}
+.vaga-cand-label{font-size:11px;color:var(--gray-500);margin-top:2px;}
+.vaga-card-footer{padding:10px 18px;background:var(--gray-50);border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.vaga-prog-bar{height:6px;background:var(--gray-100);border-radius:20px;overflow:hidden;margin-top:6px;}
+.vaga-prog-fill{height:100%;border-radius:20px;background:var(--green);transition:width .4s;}
 .cand-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);}
 .cand-row:last-child{border-bottom:none;}
 .cand-row input{flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;}
@@ -6732,15 +6740,18 @@ function rdVagas() {
   var all = DB.g('vagas');
   var statsEl = document.getElementById('vaga-stats');
   if (statsEl) {
-    var abertas   = all.filter(function(v){return v.status==='Aberta';}).length;
-    var emSel     = all.filter(function(v){return v.status==='Em Seleção';}).length;
-    var encerradas= all.filter(function(v){return v.status==='Encerrada';}).length;
-    var totalCands= all.reduce(function(s,v){return s+(v.candidatos?v.candidatos.length:0);},0);
+    // Somar qtd de vagas (cada cadastro pode ter mais de 1 vaga)
+    var abertas    = all.filter(function(v){return v.status==='Aberta';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
+    var emSel      = all.filter(function(v){return v.status==='Em Seleção';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
+    var encerradas = all.filter(function(v){return v.status==='Encerrada';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
+    var totalCands = all.reduce(function(s,v){return s+(v.candidatos?v.candidatos.length:0);},0);
+    var totalAprov = all.reduce(function(s,v){return s+(v.aprovados?v.aprovados.length:0);},0);
     statsEl.innerHTML = [
-      ['🟢 Abertas', abertas, 'var(--green)'],
+      ['🟢 Vagas Abertas', abertas, 'var(--green)'],
       ['🔵 Em Seleção', emSel, 'var(--blue)'],
       ['⚫ Encerradas', encerradas, 'var(--gray-600)'],
-      ['👥 Total Candidatos', totalCands, 'var(--accent)']
+      ['👥 Candidatos', totalCands, 'var(--accent)'],
+      ['✅ Aprovados', totalAprov, '#2e7d5e']
     ].map(function(r){
       return '<div style="background:#fff;border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow);border-top:3px solid '+r[2]+';">'+
         '<div style="font-size:22px;font-weight:700;color:'+r[2]+'">'+r[1]+'</div>'+
@@ -6773,37 +6784,65 @@ function rdVagas() {
     }).join('');
     if (vaga.benefOutros) benefHtml += '<span class="vaga-benef-pill">'+vaga.benefOutros+'</span>';
 
+    // Progress bar: candidatos vs vagas disponíveis
+    var qtdVagas = parseInt(vaga.qtd)||1;
+    var progPct  = Math.min(Math.round((nCands/Math.max(qtdVagas,1))*100), 100);
+    var progColor = progPct >= 100 ? 'var(--green)' : progPct >= 50 ? 'var(--accent)' : 'var(--blue)';
+
     var card = document.createElement('div');
     card.className = 'vaga-card ' + stCls;
-    card.style.marginBottom = '12px';
     card.innerHTML =
-      '<div class="vaga-card-header">' +
-        '<div style="flex:1;">' +
-          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-            '<div class="vaga-titulo">'+vaga.titulo+'</div>' +
-            '<span class="badge '+stBc+'">'+vaga.status+'</span>' +
-            (vaga.qtd > 1 ? '<span class="badge badge-blue">'+vaga.qtd+' vagas</span>' : '') +
+      '<div class="vaga-card-top">' +
+        '<div class="vaga-card-stripe"></div>' +
+        '<div class="vaga-card-body">' +
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
+            '<div>' +
+              '<div class="vaga-titulo">'+vaga.titulo+'</div>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">' +
+                '<span class="badge '+stBc+'">'+vaga.status+'</span>' +
+                '<span class="badge badge-blue">'+qtdVagas+' vaga'+(qtdVagas>1?'s':'')+'</span>' +
+                (vaga.tipo?'<span class="badge badge-gray">'+vaga.tipo+'</span>':'') +
+              '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:6px;">' +
+              '<button class="btn btn-outline btn-sm" title="Editar" onclick="editVaga(\''+vaga.id+'\')" style="padding:5px 10px;">✏️ Editar</button>' +
+              '<button class="btn-icon danger" title="Excluir" onclick="delVaga(\''+vaga.id+'\')" style="margin-top:2px;">🗑️</button>' +
+            '</div>' +
           '</div>' +
-          '<div class="vaga-meta">' +
+          '<div class="vaga-meta" style="margin-top:10px;">' +
             (emp?'<span>🏢 '+emp.razao+'</span>':'') +
             (dep?'<span>📁 '+dep.nome+'</span>':'') +
             (vaga.unidade?'<span>📍 '+vaga.unidade+'</span>':'') +
             (vaga.ch?'<span>⏰ '+vaga.ch+'</span>':'') +
-            (vaga.sal?'<span>💰 R$ '+vaga.sal+'</span>':'') +
-            (vaga.tipo?'<span>📋 '+vaga.tipo+'</span>':'') +
+            (vaga.sal?'<span>💰 '+vaga.sal+'</span>':'') +
             (vaga.escala?'<span>🗓️ '+vaga.escala+'</span>':'') +
-            (vaga.aber?'<span>📅 Abertura: '+fd(vaga.aber)+'</span>':'') +
+            (vaga.aber?'<span>📅 '+fd(vaga.aber)+'</span>':'') +
             (vaga.prazo?'<span>⏳ Prazo: '+fd(vaga.prazo)+'</span>':'') +
           '</div>' +
-          (vaga.desc?'<p style="font-size:12.5px;color:var(--gray-600);margin-top:8px;margin-bottom:4px;">'+vaga.desc+'</p>':'') +
+          (vaga.desc?'<p style="font-size:12.5px;color:var(--gray-600);margin-top:10px;line-height:1.6;">'+vaga.desc+'</p>':'') +
           (benefHtml?'<div class="vaga-benef-list">'+benefHtml+'</div>':'') +
         '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">' +
-          '<div style="display:flex;gap:6px;">' +
-            '<button class="btn-icon" title="Editar" onclick="editVaga(\''+vaga.id+'\')">✏️</button>' +
-            '<button class="btn-icon danger" title="Excluir" onclick="delVaga(\''+vaga.id+'\')">🗑️</button>' +
+        '<div class="vaga-card-side">' +
+          // Candidatos box
+          '<div class="vaga-cand-box" style="border-top:3px solid var(--blue);min-width:130px;">' +
+            '<div class="vaga-cand-num" style="color:var(--blue);">'+nCands+'</div>' +
+            '<div class="vaga-cand-label">candidato'+(nCands!==1?'s':'')+' inscritos</div>' +
+            // Progress bar
+            '<div class="vaga-prog-bar" style="margin-top:8px;">' +
+              '<div class="vaga-prog-fill" style="width:'+progPct+'%;background:'+progColor+';"></div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--gray-400);margin-top:3px;">'+progPct+'% das '+qtdVagas+' vaga'+(qtdVagas>1?'s':'')+'</div>' +
           '</div>' +
-          '<div style="font-size:12px;color:var(--gray-600);text-align:right;">👥 '+nCands+' candidato(s)<br>✅ '+nAprov+' aprovado(s)</div>' +
+          // Aprovados box
+          '<div class="vaga-cand-box" style="border-top:3px solid var(--green);">' +
+            '<div class="vaga-cand-num" style="color:var(--green);">'+nAprov+'</div>' +
+            '<div class="vaga-cand-label">aprovado'+(nAprov!==1?'s':'')+'</div>' +
+          '</div>' +
+          // Actions
+          '<div style="display:flex;flex-direction:column;gap:6px;width:100%;">' +
+            (nCands?'<button class="btn btn-outline btn-sm" style="width:100%;font-size:12px;" onclick="verCandidatos(\''+vaga.id+'\')" >👥 Ver Candidatos</button>':'') +
+            (nAprov?'<button class="btn btn-primary btn-sm" style="width:100%;font-size:12px;" onclick="verAprovados(\''+vaga.id+'\')" >✅ Ver Aprovados</button>':'') +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div class="vaga-card-footer">' +
@@ -6851,8 +6890,36 @@ function onVagaEmpChange() {
 
 // ── Candidatos ────────────────────────────────────────────────
 function addCandidato() {
-  vagaCandidatos.push({id:uid(),nome:'',tel:'',email:'',st:'Em análise',obs:''});
+  vagaCandidatos.push({id:uid(),nome:'',tel:'',email:'',st:'Em análise',obs:'',curriculo:null});
   renderCandidatos();
+}
+
+async function handleCurriculoUpload(inp, idx) {
+  var file = inp.files[0];
+  if (!file) return;
+  var el = document.getElementById('curr-status-'+idx);
+  if (el) el.textContent = '⏳ Enviando...';
+  if (driveReady) {
+    try {
+      var up = await uploadFileToDrive(file, 'Vagas/Curriculos');
+      vagaCandidatos[idx].curriculo = { name: file.name, id: up.id, url: up.webViewLink };
+      if (el) el.innerHTML = '<a href="'+up.webViewLink+'" target="_blank" style="color:var(--green);font-size:12px;">📄 '+file.name+'</a>';
+      toast('Currículo enviado ao Drive ☁️');
+    } catch(e) {
+      // Save as dataURL fallback
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        vagaCandidatos[idx].curriculo = { name: file.name, dataURL: ev.target.result };
+        if (el) el.innerHTML = '<span style="color:var(--green);font-size:12px;">📄 '+file.name+'</span>';
+      };
+      reader.readAsDataURL(file);
+    }
+  } else {
+    // No drive — store name only
+    vagaCandidatos[idx].curriculo = { name: file.name };
+    if (el) el.innerHTML = '<span style="color:var(--gray-600);font-size:12px;">📄 '+file.name+' (local)</span>';
+  }
+  inp.value = '';
 }
 
 function renderCandidatos() {
@@ -6864,18 +6931,62 @@ function renderCandidatos() {
   el.innerHTML = '';
   vagaCandidatos.forEach(function(c, i) {
     var row = document.createElement('div');
-    row.className = 'cand-row';
-    row.innerHTML =
+    row.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--gray-100);';
+    // Linha 1: dados principais
+    var l1 = document.createElement('div');
+    l1.className = 'cand-row';
+    l1.style.marginBottom = '6px';
+    l1.innerHTML =
       '<input type="text" placeholder="Nome *" value="'+c.nome+'" oninput="vagaCandidatos['+i+'].nome=this.value">'+
       '<input type="text" placeholder="Telefone" value="'+c.tel+'" oninput="vagaCandidatos['+i+'].tel=this.value" style="max-width:140px;">'+
       '<input type="email" placeholder="E-mail" value="'+c.email+'" oninput="vagaCandidatos['+i+'].email=this.value">'+
-      '<select oninput="vagaCandidatos['+i+'].st=this.value" style="max-width:130px;">'+
+      '<select oninput="vagaCandidatos['+i+'].st=this.value" style="max-width:140px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">'+
         ['Em análise','Entrevista agendada','Aprovado na etapa','Reprovado','Desistiu'].map(function(s){
           return '<option'+(c.st===s?' selected':'')+'>'+s+'</option>';
         }).join('')+
       '</select>'+
-      '<input type="text" placeholder="Obs." value="'+c.obs+'" oninput="vagaCandidatos['+i+'].obs=this.value">'+
-      '<button class="btn-icon danger" onclick="vagaCandidatos.splice('+i+',1);renderCandidatos()">🗑️</button>';
+      '<button class="btn-icon danger" title="Remover candidato" onclick="vagaCandidatos.splice('+i+',1);renderCandidatos()">🗑️</button>';
+    // Linha 2: obs + currículo
+    var l2 = document.createElement('div');
+    l2.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:0 2px;';
+    // Obs
+    var obsInp = document.createElement('input');
+    obsInp.type = 'text'; obsInp.placeholder = 'Observações';
+    obsInp.value = c.obs||'';
+    obsInp.style.cssText = 'flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;min-width:140px;';
+    (function(idx2){ obsInp.oninput = function(){ vagaCandidatos[idx2].obs = this.value; }; })(i);
+    // Currículo upload
+    var currDiv = document.createElement('div');
+    currDiv.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var currLabel = document.createElement('label');
+    currLabel.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;border:1.5px solid var(--gray-200);border-radius:6px;cursor:pointer;font-size:12px;background:#fff;white-space:nowrap;';
+    currLabel.innerHTML = '📎 Currículo';
+    var currInp = document.createElement('input');
+    currInp.type = 'file'; currInp.accept = '.pdf,.doc,.docx,.jpg,.png';
+    currInp.style.display = 'none';
+    (function(idx2){ currInp.onchange = function(){ handleCurriculoUpload(this, idx2); }; })(i);
+    currLabel.appendChild(currInp);
+    // Status do currículo
+    var currStatus = document.createElement('span');
+    currStatus.id = 'curr-status-'+i;
+    currStatus.style.cssText = 'font-size:12px;';
+    if (c.curriculo) {
+      if (c.curriculo.url) {
+        currStatus.innerHTML = '<a href="'+c.curriculo.url+'" target="_blank" style="color:var(--green);">📄 '+c.curriculo.name+'</a>';
+      } else {
+        currStatus.textContent = '📄 '+c.curriculo.name;
+        currStatus.style.color = 'var(--green-dark)';
+      }
+    } else {
+      currStatus.textContent = 'Nenhum arquivo';
+      currStatus.style.color = 'var(--gray-400)';
+    }
+    currDiv.appendChild(currLabel);
+    currDiv.appendChild(currStatus);
+    l2.appendChild(obsInp);
+    l2.appendChild(currDiv);
+    row.appendChild(l1);
+    row.appendChild(l2);
     el.appendChild(row);
   });
 }
