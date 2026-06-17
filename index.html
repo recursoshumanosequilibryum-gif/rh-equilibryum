@@ -2476,9 +2476,13 @@ function openModal(id) {
   if (id === 'modal-uni-item') { if(!editingUniItemId){ document.getElementById('ui-nome').value=''; document.getElementById('ui-obs').value=''; document.querySelectorAll('#ui-tam-checks input').forEach(c=>c.checked=false); document.getElementById('ui-tam-extra').innerHTML=''; customTams=[]; } }
   if (id === 'modal-wha') fillFuncSel('whaf');
   if (id === 'modal-vaga') {
-    editingVagaId = null; vagaCandidatos = []; vagaAprovados = [];
-    document.getElementById('vaga-modal-title').textContent = '💼 Nova Vaga';
-    // Reset tab
+    // Só resetar se for nova vaga (editingVagaId é null antes de chamar openModal)
+    var isNewVaga = !editingVagaId;
+    if (isNewVaga) {
+      vagaCandidatos = []; vagaAprovados = [];
+      document.getElementById('vaga-modal-title').textContent = '💼 Nova Vaga';
+    }
+    // Reset tab sempre
     vagaTab('vt-dados', document.querySelector('#vaga-modal-tabs .tab'));
     // Fill empresa select
     var empSel = document.getElementById('vg-emp');
@@ -2490,19 +2494,21 @@ function openModal(id) {
     }
     // Fill dep
     var depSel = document.getElementById('vg-dep');
-    if (depSel) depSel.innerHTML = '<option value="">Selecione</option>';
-    // Reset fields
-    ['titulo','unidade','ch','sal','desc','obs','benef-outros'].forEach(function(f){
-      var el=document.getElementById('vg-'+f); if(el) el.value='';
-    });
-    document.getElementById('vg-qtd').value=1;
-    document.getElementById('vg-status').value='Aberta';
-    document.getElementById('vg-aber').value=td();
-    document.getElementById('vg-prazo').value='';
-    document.getElementById('vg-tipo').value='CLT';
-    document.getElementById('vg-escala').value='';
-    document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){c.checked=false;});
-    renderCandidatos(); renderAprovados();
+    if (depSel && isNewVaga) depSel.innerHTML = '<option value="">Selecione</option>';
+    // Reset fields only for new vaga
+    if (isNewVaga) {
+      ['titulo','unidade','ch','sal','desc','obs','benef-outros'].forEach(function(f){
+        var el=document.getElementById('vg-'+f); if(el) el.value='';
+      });
+      document.getElementById('vg-qtd').value=1;
+      document.getElementById('vg-status').value='Aberta';
+      document.getElementById('vg-aber').value=td();
+      document.getElementById('vg-prazo').value='';
+      document.getElementById('vg-tipo').value='CLT';
+      document.getElementById('vg-escala').value='';
+      document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){c.checked=false;});
+      renderCandidatos(); renderAprovados();
+    }
   }
   if (id === 'modal-trein') { fillFuncSel('tr-parts',true); }
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
@@ -7074,20 +7080,17 @@ async function savVaga() {
 function editVaga(id) {
   var vaga = DB.g('vagas').find(function(x){return x.id===id;});
   if (!vaga) return;
+  // Define editingVagaId ANTES de openModal para que o reset seja pulado
   editingVagaId = id;
   vagaCandidatos = JSON.parse(JSON.stringify(vaga.candidatos||[]));
   vagaAprovados  = JSON.parse(JSON.stringify(vaga.aprovados||[]));
 
   openModal('modal-vaga');
-  document.getElementById('vaga-modal-title').textContent = '✏️ Editar Vaga';
+  document.getElementById('vaga-modal-title').textContent = '✏️ Editar Vaga — ' + vaga.titulo;
 
+  // Preencher campos
   setTimeout(function() {
-    // Fill empresa e departamentos
     var empSel = document.getElementById('vg-emp');
-    DB.g('empresas').forEach(function(e){
-      var o=document.createElement('option'); o.value=e.id; o.textContent=e.razao;
-      if(empSel) empSel.appendChild(o);
-    });
     if (empSel) empSel.value = vaga.emp||'';
     onVagaEmpChange();
     setTimeout(function(){
@@ -7097,10 +7100,11 @@ function editVaga(id) {
       document.getElementById('vg-qtd').value = vaga.qtd||1;
       document.getElementById('vg-dep').value  = vaga.dep||'';
       document.getElementById('vg-benef-outros').value = vaga.benefOutros||'';
-      // Checkboxes
       document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){
         c.checked = (vaga.beneficios||[]).includes(c.value);
       });
+      renderCandidatos();
+      renderAprovados();
     }, 150);
   }, 100);
 }
