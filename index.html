@@ -527,6 +527,31 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- VAGAS -->
+<div class="section-page" id="sec-vagas">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">&#128188; Vagas</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="vaga-filter-status" onchange="rdVagas()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os status</option>
+          <option value="Aberta">Abertas</option>
+          <option value="Em Seleção">Em Seleção</option>
+          <option value="Encerrada">Encerradas</option>
+          <option value="Cancelada">Canceladas</option>
+        </select>
+        <select id="vaga-filter-emp" onchange="rdVagas()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todas as empresas</option>
+        </select>
+        <button class="btn btn-primary" onclick="openModal('modal-vaga')">+ Nova Vaga</button>
+      </div>
+    </div>
+    <div class="stats-grid" id="vaga-stats" style="margin-bottom:16px;"></div>
+    <div id="vaga-list"></div>
+    <div id="vaga-empty" class="alert alert-info" style="display:none;">Nenhuma vaga cadastrada. Clique em <strong>+ Nova Vaga</strong> para começar.</div>
+  </div>
+</div>
+
 <!-- EXPERIÊNCIA -->
 <div class="section-page" id="sec-experiencia">
   <div class="card">
@@ -2112,6 +2137,15 @@ function toast(msg, type) {
 }
 
 // ============================================================
+function hideAllWizards() {
+  ['setup-wizard','token-wizard'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var bar = document.getElementById('drive-bar');
+  if (bar) bar.style.display = 'flex';
+}
+
 // GOOGLE DRIVE AUTH — MODO DRIVE ÚNICO COMPARTILHADO
 // ============================================================
 let tokenClient = null;
@@ -2513,7 +2547,9 @@ function exTab(id, btn) {
 // ============================================================
 function nav(id, el) {
   document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
-  document.getElementById('sec-' + id).classList.add('active');
+  var secEl = document.getElementById('sec-' + id);
+  if (!secEl) { console.warn('Section not found: sec-' + id); return; }
+  secEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
