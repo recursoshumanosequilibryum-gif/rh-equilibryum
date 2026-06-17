@@ -6751,7 +6751,11 @@ function rdVagas() {
     var emSel      = all.filter(function(v){return v.status==='Em Seleção';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
     var encerradas = all.filter(function(v){return v.status==='Encerrada';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
     var totalCands = all.reduce(function(s,v){return s+(v.candidatos?v.candidatos.length:0);},0);
-    var totalAprov = all.reduce(function(s,v){return s+(v.aprovados?v.aprovados.length:0);},0);
+    var totalAprov = all.reduce(function(s,v){
+      var fromForm = (v.aprovados||[]).length;
+      var fromCand = (v.candidatos||[]).filter(function(c){return c.st==='Aprovado na etapa';}).length;
+      return s + Math.max(fromForm, fromCand);
+    },0);
     statsEl.innerHTML = [
       ['🟢 Vagas Abertas', abertas, 'var(--green)'],
       ['🔵 Em Seleção', emSel, 'var(--blue)'],
@@ -6782,7 +6786,11 @@ function rdVagas() {
     var emp = emps.find(function(e){return e.id===vaga.emp;});
     var dep = deps.find(function(d){return d.id===vaga.dep;});
     var nCands = (vaga.candidatos||[]).length;
-    var nAprov = (vaga.aprovados||[]).length;
+    var nAprovForm = (vaga.aprovados||[]).length;
+    var nAprovCand = (vaga.candidatos||[]).filter(function(c){
+      return c.st === 'Aprovado na etapa';
+    }).length;
+    var nAprov = Math.max(nAprovForm, nAprovCand);
     var stBc   = ST_COLORS[vaga.status]||'badge-gray';
     var stCls  = ST_CLS[vaga.status]||'';
     var benefHtml = (vaga.beneficios||[]).map(function(b){
@@ -6946,7 +6954,7 @@ function renderCandidatos() {
       '<input type="text" placeholder="Nome *" value="'+c.nome+'" oninput="vagaCandidatos['+i+'].nome=this.value">'+
       '<input type="text" placeholder="Telefone" value="'+c.tel+'" oninput="vagaCandidatos['+i+'].tel=this.value" style="max-width:140px;">'+
       '<input type="email" placeholder="E-mail" value="'+c.email+'" oninput="vagaCandidatos['+i+'].email=this.value">'+
-      '<select oninput="vagaCandidatos['+i+'].st=this.value" style="max-width:140px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">'+
+      '<select onchange="vagaCandidatos['+i+'].st=this.value;autoSaveCandStatus()" style="max-width:140px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">'+
         ['Em análise','Entrevista agendada','Aprovado na etapa','Reprovado','Desistiu'].map(function(s){
           return '<option'+(c.st===s?' selected':'')+'>'+s+'</option>';
         }).join('')+
@@ -7028,6 +7036,20 @@ function renderAprovados() {
 }
 
 // ── Salvar ─────────────────────────────────────────────────────
+// Salva status do candidato automaticamente sem fechar o modal
+async function autoSaveCandStatus() {
+  if (!editingVagaId) return;
+  var list = DB.g('vagas');
+  var idx = list.findIndex(function(x){return x.id===editingVagaId;});
+  if (idx === -1) return;
+  list[idx].candidatos = vagaCandidatos;
+  DB.s('vagas', list);
+  if (driveReady) await driveSync('vagas');
+  // Atualiza o card na listagem sem fechar o modal
+  rdVagas();
+  toast('Status atualizado ✅');
+}
+
 async function savVaga() {
   var titulo = (document.getElementById('vg-titulo')||{}).value||'';
   if (!titulo.trim()) { alert('Informe o título/cargo da vaga.'); return; }
