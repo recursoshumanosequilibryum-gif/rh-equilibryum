@@ -284,6 +284,25 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .benef-func-card-body tr:hover td{background:var(--gray-50);}
 .benef-tipo-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
 
+
+/* VAGAS */
+.vaga-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1.5px solid var(--gray-100);overflow:hidden;transition:.2s;}
+.vaga-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px);}
+.vaga-card-header{padding:14px 16px;border-left:4px solid var(--green);display:flex;gap:12px;align-items:flex-start;}
+.vaga-card.em-selecao .vaga-card-header{border-left-color:var(--blue);}
+.vaga-card.encerrada .vaga-card-header{border-left-color:var(--gray-400);}
+.vaga-card.cancelada .vaga-card-header{border-left-color:var(--red);}
+.vaga-titulo{font-size:15px;font-weight:700;color:var(--green-dark);}
+.vaga-meta{font-size:12px;color:var(--gray-500);margin-top:3px;display:flex;gap:12px;flex-wrap:wrap;}
+.vaga-meta span{display:flex;align-items:center;gap:4px;}
+.vaga-benef-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.vaga-benef-pill{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--green-pale);color:var(--green-dark);font-weight:600;}
+.vaga-card-footer{padding:10px 16px;background:var(--gray-50);border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.cand-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray-100);}
+.cand-row:last-child{border-bottom:none;}
+.cand-row input{flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;}
+.cand-row select{padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;}
+
 </style>
 </head>
 <body>
@@ -371,6 +390,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Usuários
   </div>
   <div class="nav-section">Gestão</div>
+  <div class="nav-item" onclick="nav('vagas',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>Vagas
+  </div>
   <div class="nav-item" onclick="nav('experiencia',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Período de Experiência
   </div>
@@ -1891,6 +1913,122 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- MODAL VAGA -->
+<div class="modal-bg" id="modal-vaga">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <span class="modal-title" id="vaga-modal-title">&#128188; Nova Vaga</span>
+      <button class="modal-close" onclick="closeModal('modal-vaga')">&#215;</button>
+    </div>
+    <div class="tabs" id="vaga-modal-tabs">
+      <div class="tab active" onclick="vagaTab('vt-dados',this)">&#128203; Dados da Vaga</div>
+      <div class="tab" onclick="vagaTab('vt-cands',this)">&#128101; Candidatos</div>
+      <div class="tab" onclick="vagaTab('vt-aprov',this)">&#9989; Aprovados</div>
+    </div>
+
+    <!-- ABA DADOS -->
+    <div id="vt-dados">
+      <div class="form-grid">
+        <div class="form-group form-full"><label>Título / Cargo da Vaga *</label>
+          <input id="vg-titulo" type="text" placeholder="Ex.: Fisioterapeuta, Recepcionista...">
+        </div>
+        <div class="form-group"><label>Empresa *</label>
+          <select id="vg-emp" onchange="onVagaEmpChange()"><option value="">Selecione</option></select>
+        </div>
+        <div class="form-group"><label>Departamento</label>
+          <select id="vg-dep"><option value="">Selecione</option></select>
+        </div>
+        <div class="form-group"><label>Unidade</label>
+          <input id="vg-unidade" type="text" placeholder="Ex.: TATUAPÉ">
+        </div>
+        <div class="form-group"><label>Carga Horária</label>
+          <input id="vg-ch" type="text" placeholder="Ex.: 44h/semana, 30h/semana">
+        </div>
+        <div class="form-group"><label>Salário (R$)</label>
+          <input id="vg-sal" type="text" placeholder="Ex.: 2.500,00 ou A combinar">
+        </div>
+        <div class="form-group"><label>Escala</label>
+          <select id="vg-escala">
+            <option value="">Selecione</option>
+            <option value="Seg a Sex">Seg a Sex</option>
+            <option value="Seg a Sab">Seg a Sab</option>
+            <option value="Escala 12x36">Escala 12x36</option>
+            <option value="A combinar">A combinar</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tipo de Contrato</label>
+          <select id="vg-tipo">
+            <option value="CLT">CLT</option>
+            <option value="PJ">PJ</option>
+            <option value="Estágio">Estágio</option>
+            <option value="Temporário">Temporário</option>
+            <option value="Aprendiz">Aprendiz</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Vagas Disponíveis</label>
+          <input id="vg-qtd" type="number" min="1" value="1" placeholder="1">
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="vg-status">
+            <option value="Aberta">Aberta</option>
+            <option value="Em Seleção">Em Seleção</option>
+            <option value="Encerrada">Encerrada</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Data de Abertura</label>
+          <input id="vg-aber" type="date">
+        </div>
+        <div class="form-group"><label>Prazo para Candidatura</label>
+          <input id="vg-prazo" type="date">
+        </div>
+        <div class="form-group form-full"><label>Benefícios Oferecidos</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--gray-50);border-radius:var(--radius-sm);border:1.5px solid var(--gray-200);" id="vg-benef-checks">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="VT – Vale Transporte"> 🚌 VT</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="VR – Vale Refeição"> 🍽️ VR</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="VA – Vale Alimentação"> 🛒 VA</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="Combustível"> ⛽ Combustível</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="Assistência Médica"> 🏥 Plano de Saúde</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="Assistência Odontológica"> 🦷 Plano Odonto</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="Bônus"> 💰 Bônus</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="Assiduidade"> ⭐ Assiduidade</label>
+          </div>
+          <input id="vg-benef-outros" type="text" placeholder="Outros benefícios (ex.: Uniforme, Estacionamento...)" style="margin-top:8px;">
+        </div>
+        <div class="form-group form-full"><label>Requisitos / Descrição da Vaga</label>
+          <textarea id="vg-desc" rows="3" placeholder="Descreva os requisitos, experiência necessária, responsabilidades..."></textarea>
+        </div>
+        <div class="form-group form-full"><label>Observações Internas</label>
+          <textarea id="vg-obs" rows="2" placeholder="Observações internas (não visíveis no anúncio)..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA CANDIDATOS -->
+    <div id="vt-cands" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:13px;color:var(--gray-600);">Candidatos em processo seletivo para esta vaga.</div>
+        <button class="btn btn-outline btn-sm" onclick="addCandidato()">+ Adicionar Candidato</button>
+      </div>
+      <div id="vg-cands-list"></div>
+    </div>
+
+    <!-- ABA APROVADOS -->
+    <div id="vt-aprov" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:13px;color:var(--gray-600);">Candidatos aprovados e data prevista de início.</div>
+        <button class="btn btn-primary btn-sm" onclick="addAprovado()">+ Adicionar Aprovado</button>
+      </div>
+      <div id="vg-aprov-list"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-vaga')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savVaga()">&#128190; Salvar Vaga</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="sig-modal-bg">
   <div id="sig-modal">
@@ -2212,7 +2350,7 @@ async function loadDriveJSON(filename) {
 }
 
 async function syncFromDrive() {
-  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
+  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
   let synced = 0;
   for (const k of keys) {
     try {
@@ -2234,7 +2372,7 @@ async function syncFromDrive() {
   const active = document.querySelector('.section-page.active');
   if (active) {
     const id = active.id.replace('sec-','');
-    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc };
+    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc };
     if (rd[id]) rd[id]();
   }
   toast('✅ ' + synced + ' registros carregados do Drive ☁️');
@@ -2295,6 +2433,35 @@ function openModal(id) {
   if (id === 'modal-uni-ajuste') { fillUniItemSel('uaj-item'); document.getElementById('uaj-data').value = td(); }
   if (id === 'modal-uni-item') { if(!editingUniItemId){ document.getElementById('ui-nome').value=''; document.getElementById('ui-obs').value=''; document.querySelectorAll('#ui-tam-checks input').forEach(c=>c.checked=false); document.getElementById('ui-tam-extra').innerHTML=''; customTams=[]; } }
   if (id === 'modal-wha') fillFuncSel('whaf');
+  if (id === 'modal-vaga') {
+    editingVagaId = null; vagaCandidatos = []; vagaAprovados = [];
+    document.getElementById('vaga-modal-title').textContent = '💼 Nova Vaga';
+    // Reset tab
+    vagaTab('vt-dados', document.querySelector('#vaga-modal-tabs .tab'));
+    // Fill empresa select
+    var empSel = document.getElementById('vg-emp');
+    if (empSel) {
+      empSel.innerHTML = '<option value="">Selecione</option>';
+      DB.g('empresas').forEach(function(e){
+        var o=document.createElement('option'); o.value=e.id; o.textContent=e.razao; empSel.appendChild(o);
+      });
+    }
+    // Fill dep
+    var depSel = document.getElementById('vg-dep');
+    if (depSel) depSel.innerHTML = '<option value="">Selecione</option>';
+    // Reset fields
+    ['titulo','unidade','ch','sal','desc','obs','benef-outros'].forEach(function(f){
+      var el=document.getElementById('vg-'+f); if(el) el.value='';
+    });
+    document.getElementById('vg-qtd').value=1;
+    document.getElementById('vg-status').value='Aberta';
+    document.getElementById('vg-aber').value=td();
+    document.getElementById('vg-prazo').value='';
+    document.getElementById('vg-tipo').value='CLT';
+    document.getElementById('vg-escala').value='';
+    document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){c.checked=false;});
+    renderCandidatos(); renderAprovados();
+  }
   if (id === 'modal-trein') { fillFuncSel('tr-parts',true); }
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
@@ -2349,9 +2516,9 @@ function nav(id, el) {
   document.getElementById('sec-' + id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
-  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
+  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
   if (rd[id]) rd[id]();
 }
 
@@ -6504,6 +6671,314 @@ function flashCheckAll(val) {
     var el = document.getElementById('flash-chk-'+k);
     if (el) el.checked = val;
   });
+}
+
+// ============================================================
+// VAGAS
+// ============================================================
+var editingVagaId = null;
+var vagaCandidatos = [];  // [{nome, tel, email, st, obs}]
+var vagaAprovados  = [];  // [{nome, tel, email, dtInicio, obs}]
+
+function rdVagas() {
+  fillVagaFilters();
+  var stF   = (document.getElementById('vaga-filter-status')||{value:''}).value||'';
+  var empF  = (document.getElementById('vaga-filter-emp')||{value:''}).value||'';
+  var list  = DB.g('vagas');
+  if (stF)  list = list.filter(function(v){return v.status===stF;});
+  if (empF) list = list.filter(function(v){return v.emp===empF;});
+  list = [...list].sort(function(a,b){return (b.aber||'').localeCompare(a.aber||'');});
+
+  var emps = DB.g('empresas');
+  var deps = DB.g('departamentos');
+
+  // Stats
+  var all = DB.g('vagas');
+  var statsEl = document.getElementById('vaga-stats');
+  if (statsEl) {
+    var abertas   = all.filter(function(v){return v.status==='Aberta';}).length;
+    var emSel     = all.filter(function(v){return v.status==='Em Seleção';}).length;
+    var encerradas= all.filter(function(v){return v.status==='Encerrada';}).length;
+    var totalCands= all.reduce(function(s,v){return s+(v.candidatos?v.candidatos.length:0);},0);
+    statsEl.innerHTML = [
+      ['🟢 Abertas', abertas, 'var(--green)'],
+      ['🔵 Em Seleção', emSel, 'var(--blue)'],
+      ['⚫ Encerradas', encerradas, 'var(--gray-600)'],
+      ['👥 Total Candidatos', totalCands, 'var(--accent)']
+    ].map(function(r){
+      return '<div style="background:#fff;border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow);border-top:3px solid '+r[2]+';">'+
+        '<div style="font-size:22px;font-weight:700;color:'+r[2]+'">'+r[1]+'</div>'+
+        '<div style="font-size:12px;color:var(--gray-600);">'+r[0]+'</div></div>';
+    }).join('');
+  }
+
+  var listEl  = document.getElementById('vaga-list');
+  var emptyEl = document.getElementById('vaga-empty');
+  listEl.innerHTML = '';
+
+  if (!list.length) {
+    if (emptyEl) emptyEl.style.display='flex';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display='none';
+
+  var ST_COLORS = {Aberta:'badge-green','Em Seleção':'badge-blue',Encerrada:'badge-gray',Cancelada:'badge-red'};
+  var ST_CLS    = {Aberta:'',           'Em Seleção':'em-selecao',Encerrada:'encerrada',  Cancelada:'cancelada'};
+
+  list.forEach(function(vaga) {
+    var emp = emps.find(function(e){return e.id===vaga.emp;});
+    var dep = deps.find(function(d){return d.id===vaga.dep;});
+    var nCands = (vaga.candidatos||[]).length;
+    var nAprov = (vaga.aprovados||[]).length;
+    var stBc   = ST_COLORS[vaga.status]||'badge-gray';
+    var stCls  = ST_CLS[vaga.status]||'';
+    var benefHtml = (vaga.beneficios||[]).map(function(b){
+      return '<span class="vaga-benef-pill">'+b+'</span>';
+    }).join('');
+    if (vaga.benefOutros) benefHtml += '<span class="vaga-benef-pill">'+vaga.benefOutros+'</span>';
+
+    var card = document.createElement('div');
+    card.className = 'vaga-card ' + stCls;
+    card.style.marginBottom = '12px';
+    card.innerHTML =
+      '<div class="vaga-card-header">' +
+        '<div style="flex:1;">' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '<div class="vaga-titulo">'+vaga.titulo+'</div>' +
+            '<span class="badge '+stBc+'">'+vaga.status+'</span>' +
+            (vaga.qtd > 1 ? '<span class="badge badge-blue">'+vaga.qtd+' vagas</span>' : '') +
+          '</div>' +
+          '<div class="vaga-meta">' +
+            (emp?'<span>🏢 '+emp.razao+'</span>':'') +
+            (dep?'<span>📁 '+dep.nome+'</span>':'') +
+            (vaga.unidade?'<span>📍 '+vaga.unidade+'</span>':'') +
+            (vaga.ch?'<span>⏰ '+vaga.ch+'</span>':'') +
+            (vaga.sal?'<span>💰 R$ '+vaga.sal+'</span>':'') +
+            (vaga.tipo?'<span>📋 '+vaga.tipo+'</span>':'') +
+            (vaga.escala?'<span>🗓️ '+vaga.escala+'</span>':'') +
+            (vaga.aber?'<span>📅 Abertura: '+fd(vaga.aber)+'</span>':'') +
+            (vaga.prazo?'<span>⏳ Prazo: '+fd(vaga.prazo)+'</span>':'') +
+          '</div>' +
+          (vaga.desc?'<p style="font-size:12.5px;color:var(--gray-600);margin-top:8px;margin-bottom:4px;">'+vaga.desc+'</p>':'') +
+          (benefHtml?'<div class="vaga-benef-list">'+benefHtml+'</div>':'') +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">' +
+          '<div style="display:flex;gap:6px;">' +
+            '<button class="btn-icon" title="Editar" onclick="editVaga(\''+vaga.id+'\')">✏️</button>' +
+            '<button class="btn-icon danger" title="Excluir" onclick="delVaga(\''+vaga.id+'\')">🗑️</button>' +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--gray-600);text-align:right;">👥 '+nCands+' candidato(s)<br>✅ '+nAprov+' aprovado(s)</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="vaga-card-footer">' +
+        (nCands?'<button class="btn btn-outline btn-sm" onclick="verCandidatos(\''+vaga.id+'\')">👥 Ver Candidatos ('+nCands+')</button>':'') +
+        (nAprov?'<button class="btn btn-primary btn-sm" onclick="verAprovados(\''+vaga.id+'\')">✅ Aprovados ('+nAprov+')</button>':'') +
+        (!nCands&&!nAprov?'<span style="font-size:12px;color:var(--gray-400);">Sem candidatos ainda</span>':'') +
+      '</div>';
+    listEl.appendChild(card);
+  });
+}
+
+function fillVagaFilters() {
+  var empSel = document.getElementById('vaga-filter-emp');
+  if (empSel) {
+    var cur = empSel.value;
+    empSel.innerHTML = '<option value="">Todas as empresas</option>';
+    DB.g('empresas').forEach(function(e){
+      var o=document.createElement('option'); o.value=e.id; o.textContent=e.razao; empSel.appendChild(o);
+    });
+    if (cur) empSel.value = cur;
+  }
+}
+
+function vagaTab(id, btn) {
+  ['vt-dados','vt-cands','vt-aprov'].forEach(function(t){
+    var el=document.getElementById(t); if(el) el.style.display='none';
+  });
+  document.getElementById(id).style.display='block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  if (id==='vt-cands') renderCandidatos();
+  if (id==='vt-aprov') renderAprovados();
+}
+
+function onVagaEmpChange() {
+  var empId = (document.getElementById('vg-emp')||{}).value||'';
+  var depSel = document.getElementById('vg-dep');
+  if (!depSel) return;
+  depSel.innerHTML = '<option value="">Selecione</option>';
+  if (!empId) return;
+  DB.g('departamentos').filter(function(d){return !d.emp||d.emp===empId;}).forEach(function(d){
+    var o=document.createElement('option'); o.value=d.id; o.textContent=d.nome; depSel.appendChild(o);
+  });
+}
+
+// ── Candidatos ────────────────────────────────────────────────
+function addCandidato() {
+  vagaCandidatos.push({id:uid(),nome:'',tel:'',email:'',st:'Em análise',obs:''});
+  renderCandidatos();
+}
+
+function renderCandidatos() {
+  var el = document.getElementById('vg-cands-list'); if(!el) return;
+  if (!vagaCandidatos.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);">Nenhum candidato. Clique em "+ Adicionar Candidato".</div>';
+    return;
+  }
+  el.innerHTML = '';
+  vagaCandidatos.forEach(function(c, i) {
+    var row = document.createElement('div');
+    row.className = 'cand-row';
+    row.innerHTML =
+      '<input type="text" placeholder="Nome *" value="'+c.nome+'" oninput="vagaCandidatos['+i+'].nome=this.value">'+
+      '<input type="text" placeholder="Telefone" value="'+c.tel+'" oninput="vagaCandidatos['+i+'].tel=this.value" style="max-width:140px;">'+
+      '<input type="email" placeholder="E-mail" value="'+c.email+'" oninput="vagaCandidatos['+i+'].email=this.value">'+
+      '<select oninput="vagaCandidatos['+i+'].st=this.value" style="max-width:130px;">'+
+        ['Em análise','Entrevista agendada','Aprovado na etapa','Reprovado','Desistiu'].map(function(s){
+          return '<option'+(c.st===s?' selected':'')+'>'+s+'</option>';
+        }).join('')+
+      '</select>'+
+      '<input type="text" placeholder="Obs." value="'+c.obs+'" oninput="vagaCandidatos['+i+'].obs=this.value">'+
+      '<button class="btn-icon danger" onclick="vagaCandidatos.splice('+i+',1);renderCandidatos()">🗑️</button>';
+    el.appendChild(row);
+  });
+}
+
+// ── Aprovados ──────────────────────────────────────────────────
+function addAprovado() {
+  vagaAprovados.push({id:uid(),nome:'',tel:'',email:'',dtInicio:'',obs:''});
+  renderAprovados();
+}
+
+function renderAprovados() {
+  var el = document.getElementById('vg-aprov-list'); if(!el) return;
+  if (!vagaAprovados.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);">Nenhum aprovado. Clique em "+ Adicionar Aprovado".</div>';
+    return;
+  }
+  el.innerHTML = '';
+  vagaAprovados.forEach(function(a, i) {
+    var row = document.createElement('div');
+    row.className = 'cand-row';
+    row.innerHTML =
+      '<input type="text" placeholder="Nome *" value="'+a.nome+'" oninput="vagaAprovados['+i+'].nome=this.value">'+
+      '<input type="text" placeholder="Telefone" value="'+a.tel+'" oninput="vagaAprovados['+i+'].tel=this.value" style="max-width:140px;">'+
+      '<input type="email" placeholder="E-mail" value="'+a.email+'" oninput="vagaAprovados['+i+'].email=this.value">'+
+      '<div style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;">'+
+        '<label>Início:</label>'+
+        '<input type="date" value="'+a.dtInicio+'" oninput="vagaAprovados['+i+'].dtInicio=this.value" style="font-size:12px;padding:5px 8px;">'+
+      '</div>'+
+      '<input type="text" placeholder="Obs." value="'+a.obs+'" oninput="vagaAprovados['+i+'].obs=this.value">'+
+      '<button class="btn-icon danger" onclick="vagaAprovados.splice('+i+',1);renderAprovados()">🗑️</button>';
+    el.appendChild(row);
+  });
+}
+
+// ── Salvar ─────────────────────────────────────────────────────
+async function savVaga() {
+  var titulo = (document.getElementById('vg-titulo')||{}).value||'';
+  if (!titulo.trim()) { alert('Informe o título/cargo da vaga.'); return; }
+
+  // Coletar benefícios selecionados
+  var benef = [];
+  document.querySelectorAll('#vg-benef-checks input[type=checkbox]:checked').forEach(function(c){
+    benef.push(c.value);
+  });
+
+  var list = DB.g('vagas');
+  var rec = {
+    id:          editingVagaId || uid(),
+    titulo:      titulo.trim(),
+    emp:         v('vg-emp'),
+    dep:         v('vg-dep'),
+    unidade:     v('vg-unidade'),
+    ch:          v('vg-ch'),
+    sal:         v('vg-sal'),
+    escala:      v('vg-escala'),
+    tipo:        v('vg-tipo'),
+    qtd:         parseInt(v('vg-qtd'))||1,
+    status:      v('vg-status'),
+    aber:        v('vg-aber'),
+    prazo:       v('vg-prazo'),
+    beneficios:  benef,
+    benefOutros: v('vg-benef-outros'),
+    desc:        v('vg-desc'),
+    obs:         v('vg-obs'),
+    candidatos:  vagaCandidatos,
+    aprovados:   vagaAprovados
+  };
+
+  if (editingVagaId) {
+    var idx = list.findIndex(function(x){return x.id===editingVagaId;});
+    if (idx !== -1) list[idx] = rec;
+    editingVagaId = null;
+  } else {
+    list.push(rec);
+  }
+
+  DB.s('vagas', list);
+  if (driveReady) await driveSync('vagas');
+  closeModal('modal-vaga');
+  rdVagas();
+  toast('Vaga salva!' + (driveReady?' ☁️':''));
+}
+
+// ── Editar ──────────────────────────────────────────────────────
+function editVaga(id) {
+  var vaga = DB.g('vagas').find(function(x){return x.id===id;});
+  if (!vaga) return;
+  editingVagaId = id;
+  vagaCandidatos = JSON.parse(JSON.stringify(vaga.candidatos||[]));
+  vagaAprovados  = JSON.parse(JSON.stringify(vaga.aprovados||[]));
+
+  openModal('modal-vaga');
+  document.getElementById('vaga-modal-title').textContent = '✏️ Editar Vaga';
+
+  setTimeout(function() {
+    // Fill empresa e departamentos
+    var empSel = document.getElementById('vg-emp');
+    DB.g('empresas').forEach(function(e){
+      var o=document.createElement('option'); o.value=e.id; o.textContent=e.razao;
+      if(empSel) empSel.appendChild(o);
+    });
+    if (empSel) empSel.value = vaga.emp||'';
+    onVagaEmpChange();
+    setTimeout(function(){
+      ['titulo','unidade','ch','sal','status','aber','prazo','escala','tipo','desc','obs'].forEach(function(f){
+        var el=document.getElementById('vg-'+f); if(el) el.value=vaga[f]||'';
+      });
+      document.getElementById('vg-qtd').value = vaga.qtd||1;
+      document.getElementById('vg-dep').value  = vaga.dep||'';
+      document.getElementById('vg-benef-outros').value = vaga.benefOutros||'';
+      // Checkboxes
+      document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){
+        c.checked = (vaga.beneficios||[]).includes(c.value);
+      });
+    }, 150);
+  }, 100);
+}
+
+async function delVaga(id) {
+  if (!confirm('Excluir esta vaga?')) return;
+  DB.s('vagas', DB.g('vagas').filter(function(x){return x.id!==id;}));
+  if (driveReady) await driveSync('vagas');
+  rdVagas();
+}
+
+function verCandidatos(id) {
+  editVaga(id);
+  setTimeout(function(){
+    var tab = document.querySelector('#vaga-modal-tabs .tab:nth-child(2)');
+    if(tab) tab.click();
+  }, 300);
+}
+
+function verAprovados(id) {
+  editVaga(id);
+  setTimeout(function(){
+    var tab = document.querySelector('#vaga-modal-tabs .tab:nth-child(3)');
+    if(tab) tab.click();
+  }, 300);
 }
 
 // ============================================================
