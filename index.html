@@ -7013,11 +7013,59 @@ function addAprovado() {
 
 function renderAprovados() {
   var el = document.getElementById('vg-aprov-list'); if(!el) return;
-  if (!vagaAprovados.length) {
-    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);">Nenhum aprovado. Clique em "+ Adicionar Aprovado".</div>';
+  el.innerHTML = '';
+
+  // Section 1: Candidatos com "Aprovado na etapa"
+  var aprovCands = vagaCandidatos.filter(function(c){ return c.st === 'Aprovado na etapa'; });
+  if (aprovCands.length) {
+    var titulo = document.createElement('div');
+    titulo.style.cssText = 'font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;padding:8px 12px;background:var(--green-pale);border-radius:var(--radius-sm);';
+    titulo.innerHTML = '✅ Aprovados na seleção (' + aprovCands.length + ')';
+    el.appendChild(titulo);
+    aprovCands.forEach(function(c) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:#fff;border:1.5px solid var(--green);border-radius:var(--radius-sm);margin-bottom:8px;flex-wrap:wrap;';
+      row.innerHTML =
+        '<span style="font-size:18px;">✅</span>' +
+        '<div style="flex:1;">' +
+          '<strong style="font-size:13.5px;color:var(--green-dark);">' + c.nome + '</strong>' +
+          (c.tel ? '<br><span style="font-size:12px;color:var(--gray-600);">📱 ' + c.tel + '</span>' : '') +
+          (c.email ? '<span style="font-size:12px;color:var(--gray-600);"> · ✉️ ' + c.email + '</span>' : '') +
+          (c.obs ? '<br><span style="font-size:12px;color:var(--gray-400);">' + c.obs + '</span>' : '') +
+        '</div>' +
+        (c.curriculo && c.curriculo.url ?
+          '<a href="' + c.curriculo.url + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px;">📄 Currículo</a>' :
+          (c.curriculo ? '<span style="font-size:12px;color:var(--gray-600);">📄 ' + c.curriculo.name + '</span>' : '')) +
+        '<span class="badge badge-green">Aprovado na etapa</span>';
+      el.appendChild(row);
+    });
+    var divider = document.createElement('div');
+    divider.style.cssText = 'border-top:1px solid var(--gray-100);margin:16px 0 12px;';
+    el.appendChild(divider);
+  }
+
+  // Section 2: Aprovados formais (com data de início)
+  var tituloFormal = document.createElement('div');
+  tituloFormal.style.cssText = 'font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;';
+  tituloFormal.innerHTML = '<span>📋 Contratações confirmadas (' + vagaAprovados.length + ')</span>';
+  el.appendChild(tituloFormal);
+
+  if (!vagaAprovados.length && !aprovCands.length) {
+    var empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;padding:20px;color:var(--gray-400);';
+    empty.textContent = 'Nenhum aprovado ainda. Mude o status do candidato para "Aprovado na etapa" ou clique em "+ Adicionar Aprovado".';
+    el.appendChild(empty);
     return;
   }
-  el.innerHTML = '';
+
+  if (!vagaAprovados.length) {
+    var emptyF = document.createElement('div');
+    emptyF.style.cssText = 'font-size:12.5px;color:var(--gray-400);padding:8px 0;';
+    emptyF.textContent = 'Nenhuma contratação formal registrada. Use "+ Adicionar Aprovado" para registrar com data de início.';
+    el.appendChild(emptyF);
+    return;
+  }
+
   vagaAprovados.forEach(function(a, i) {
     var row = document.createElement('div');
     row.className = 'cand-row';
@@ -7027,9 +7075,9 @@ function renderAprovados() {
       '<input type="email" placeholder="E-mail" value="'+a.email+'" oninput="vagaAprovados['+i+'].email=this.value">'+
       '<div style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;">'+
         '<label>Início:</label>'+
-        '<input type="date" value="'+a.dtInicio+'" oninput="vagaAprovados['+i+'].dtInicio=this.value" style="font-size:12px;padding:5px 8px;">'+
+        '<input type="date" value="'+(a.dtInicio||'')+'" oninput="vagaAprovados['+i+'].dtInicio=this.value" style="font-size:12px;padding:5px 8px;">'+
       '</div>'+
-      '<input type="text" placeholder="Obs." value="'+a.obs+'" oninput="vagaAprovados['+i+'].obs=this.value">'+
+      '<input type="text" placeholder="Obs." value="'+(a.obs||'')+'" oninput="vagaAprovados['+i+'].obs=this.value">'+
       '<button class="btn-icon danger" onclick="vagaAprovados.splice('+i+',1);renderAprovados()">🗑️</button>';
     el.appendChild(row);
   });
@@ -7141,17 +7189,21 @@ async function delVaga(id) {
 function verCandidatos(id) {
   editVaga(id);
   setTimeout(function(){
-    var tab = document.querySelector('#vaga-modal-tabs .tab:nth-child(2)');
-    if(tab) tab.click();
-  }, 300);
+    var tabs = document.querySelectorAll('#vaga-modal-tabs .tab');
+    var tab = tabs[1]; // 2nd tab = Candidatos
+    if(tab) { tab.click(); }
+    else { vagaTab('vt-cands', document.querySelector('#vaga-modal-tabs .tab')); }
+  }, 500);
 }
 
 function verAprovados(id) {
   editVaga(id);
   setTimeout(function(){
-    var tab = document.querySelector('#vaga-modal-tabs .tab:nth-child(3)');
-    if(tab) tab.click();
-  }, 300);
+    var tabs = document.querySelectorAll('#vaga-modal-tabs .tab');
+    var tab = tabs[2]; // 3rd tab = Aprovados
+    if(tab) { tab.click(); }
+    else { vagaTab('vt-aprov', document.querySelector('#vaga-modal-tabs .tab')); }
+  }, 500);
 }
 
 // ============================================================
