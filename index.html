@@ -2915,38 +2915,138 @@ function funcTab(status, btn) {
 }
 
 function rdFunc() {
-  var campo = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
-  var dir   = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
-  var search= ((document.getElementById('func-search')||{}).value||'').toLowerCase().trim();
+  var campo  = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
+  var dir    = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
+  var search = ((document.getElementById('func-search')||{}).value || '').toLowerCase().trim();
   var rawList = DB.g('funcionarios');
   var deps = DB.g('departamentos');
   var emps = DB.g('empresas');
 
-  // Stats
+  // Stats cards
   var statsEl = document.getElementById('func-stats');
   if (statsEl) {
-    var total    = rawList.length;
-    var ativos   = rawList.filter(function(f){return f.st==='Ativo';}).length;
-    var afastados= rawList.filter(function(f){return f.st==='Afastado';}).length;
-    var ferias   = rawList.filter(function(f){return f.st==='Férias';}).length;
-    var deslig   = rawList.filter(function(f){return f.st==='Desligado';}).length;
-    statsEl.innerHTML = [
-      ['👥 Total',      total,    'var(--green-dark)'],
-      ['🟢 Ativos',     ativos,   'var(--green)'],
-      ['🟡 Afastados',  afastados,'var(--accent)'],
-      ['🏖️ Férias',    ferias,   'var(--blue)'],
-      ['🔴 Desligados', deslig,   'var(--red)']
-    ].map(function(r){
-      var statusKey = r[0].split(' ').slice(1).join(' ');
-      return '<div class="func-stat-card" data-status="' + statusKey + '" style="background:#fff;border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);border-top:3px solid ' + r[2] + ';cursor:pointer;">' +
-        '<div style="font-size:22px;font-weight:700;color:' + r[2] + '">' + r[1] + '</div>' +
-        '<div style="font-size:12px;color:var(--gray-600);">' + r[0] + '</div></div>';
-    }).join('');
-    // Add click handlers after rendering
-    document.querySelectorAll('.func-stat-card').forEach(function(card){
-      card.onclick = function(){ funcTabByStatus(this.dataset.status); };
+    var total     = rawList.length;
+    var ativos    = rawList.filter(function(f){ return f.st === 'Ativo'; }).length;
+    var afastados = rawList.filter(function(f){ return f.st === 'Afastado'; }).length;
+    var ferias    = rawList.filter(function(f){ return f.st === 'Férias'; }).length;
+    var deslig    = rawList.filter(function(f){ return f.st === 'Desligado'; }).length;
+    var statsData = [
+      { label:'👥 Total',      val:total,     color:'var(--green-dark)', status:'todos'     },
+      { label:'🟢 Ativos',     val:ativos,    color:'var(--green)',      status:'Ativo'     },
+      { label:'🟡 Afastados',  val:afastados, color:'var(--accent)',     status:'Afastado'  },
+      { label:'🏖️ Férias',    val:ferias,    color:'var(--blue)',       status:'Férias'    },
+      { label:'🔴 Desligados', val:deslig,    color:'var(--red)',        status:'Desligado' }
+    ];
+    statsEl.innerHTML = '';
+    statsData.forEach(function(s) {
+      var div = document.createElement('div');
+      div.style.cssText = 'background:#fff;border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);border-top:3px solid ' + s.color + ';cursor:pointer;';
+      div.innerHTML = '<div style="font-size:22px;font-weight:700;color:' + s.color + '">' + s.val + '</div>' +
+                      '<div style="font-size:12px;color:var(--gray-600);">' + s.label + '</div>';
+      (function(st){ div.onclick = function(){ funcTabByStatus(st); }; })(s.status);
+      statsEl.appendChild(div);
     });
+    // Update tab counters
+    document.querySelectorAll('#func-status-tabs .tab').forEach(function(tab) {
+      var st    = tab.dataset.status;
+      var count = st==='todos' ? total : st==='Ativo' ? ativos : st==='Afastado' ? afastados : st==='Férias' ? ferias : st==='Desligado' ? deslig : 0;
+      var base  = st==='todos' ? '👥 Todos' : st==='Ativo' ? '🟢 Ativos' : st==='Afastado' ? '🟡 Afastados' : st==='Férias' ? '🏖️ Férias' : '🔴 Desligados';
+      tab.textContent = base + (count > 0 ? ' (' + count + ')' : '');
+    });
+  }
+
+  // Filter by status tab
+  var filtered = (_funcStatusFilter && _funcStatusFilter !== 'todos')
+    ? rawList.filter(function(f){ return (f.st || 'Ativo') === _funcStatusFilter; })
+    : rawList;
+
+  // Search filter
+  if (search) {
+    filtered = filtered.filter(function(f) {
+      return (f.n  || '').toLowerCase().includes(search) ||
+             (f.cpf|| '').toLowerCase().includes(search) ||
+             (f.car|| '').toLowerCase().includes(search);
+    });
+  }
+
+  var list = applySort(filtered, campo, dir, deps, emps, null);
+
+  // Update count label
+  var countEl = document.getElementById('func-count');
+  if (countEl) countEl.textContent = list.length + ' funcionário(s)';
+
+  var tb = document.getElementById('tb-func');
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário encontrado.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = '';
+  list.forEach(function(f) {
+    var dep     = deps.find(function(d){ return d.id === f.dep; });
+    var emp     = emps.find(function(e){ return e.id === f.emp; });
+    var bc      = { Ativo:'badge-green', Afastado:'badge-yellow', 'Férias':'badge-blue', Desligado:'badge-red' }[f.st] || 'badge-gray';
+    var rowCls  = f.st === 'Desligado' ? 'func-row-desligado' : f.st === 'Afastado' ? 'func-row-afastado' : f.st === 'Férias' ? 'func-row-ferias' : '';
+    var hasDocs = f.docs && f.docs.length > 0;
+    var empNome = emp ? emp.razao.split(' ')[0] : '—';
+
+    var tr = document.createElement('tr');
+    if (rowCls) tr.className = rowCls;
+
+    var td1 = document.createElement('td');
+    td1.innerHTML = '<strong>' + f.n + '</strong>' + (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '');
+
+    var td2 = document.createElement('td');
+    td2.style.fontSize = '12px';
+    td2.textContent = f.cpf || '—';
+
+    var td3 = document.createElement('td');
+    td3.textContent = f.car || '—';
+
+    var td4 = document.createElement('td');
+    td4.textContent = dep ? dep.nome : '—';
+
+    var td5 = document.createElement('td');
+    td5.style.fontSize = '12px';
+    td5.textContent = empNome;
+
+    var td6 = document.createElement('td');
+    td6.textContent = fd(f.adm);
+
+    var td7 = document.createElement('td');
+    td7.innerHTML = '<span class="badge ' + bc + '">' + (f.st || 'Ativo') + '</span>';
+
+    var td8 = document.createElement('td');
+    td8.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+
+    if (hasDocs) {
+      var btnD = document.createElement('button');
+      btnD.className = 'btn btn-outline btn-sm';
+      btnD.textContent = '📁 ' + f.docs.length;
+      (function(id){ btnD.onclick = function(){ viewDocs(id); }; })(f.id);
+      td8.appendChild(btnD);
+    }
+    var btnE = document.createElement('button');
+    btnE.className = 'btn-icon'; btnE.title = 'Editar'; btnE.textContent = '✏️';
+    (function(id){ btnE.onclick = function(){ editFunc(id); }; })(f.id);
+
+    var btnW = document.createElement('button');
+    btnW.className = 'btn-icon'; btnW.title = 'WhatsApp'; btnW.textContent = '💬';
+    (function(tel){ btnW.onclick = function(){ wha(tel, ''); }; })(f.tel || '');
+
+    var btnX = document.createElement('button');
+    btnX.className = 'btn-icon danger'; btnX.title = 'Excluir'; btnX.innerHTML = '🗑️';
+    (function(id){ btnX.onclick = function(){ delFunc(id); }; })(f.id);
+
+    td8.appendChild(btnE);
+    td8.appendChild(btnW);
+    td8.appendChild(btnX);
+
+    [td1,td2,td3,td4,td5,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
 }
+
 
 function viewDocs(funcId) {
   const f = DB.g('funcionarios').find(x => x.id === funcId);
