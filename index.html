@@ -5320,8 +5320,8 @@ function rdTrein(){
       return '<div class="trein-card"><div class="tc-header"><div><div class="tc-title">'+t.titulo+'</div>'+
         '<div class="tc-meta">&#128197; '+(t.data?fd(t.data):'—')+' '+(t.hora||'')+' | &#128205; '+(t.local||'—')+' | &#9201; '+(t.ch||'?')+'h | &#128100; '+(t.inst||'—')+'</div></div>'+
         '<div style="display:flex;gap:6px;align-items:center;"><span class="badge '+bcSt+'">'+t.st+'</span>'+
-        '<button class="btn-icon" onclick="editTrein(\''+t.id+'\')">&#9999;&#65039;</button>'+
-        '<button class="btn-icon danger" onclick="delTrein(\''+t.id+'\')">&#128465;</button></div></div>'+
+        '<button class="btn-icon" data-tid="'+t.id+'" onclick="editTrein(this.dataset.tid)">&#9999;&#65039;</button>'+
+        '<button class="btn-icon danger" data-tid="'+t.id+'" onclick="delTrein(this.dataset.tid)">&#128465;</button></div></div>'+
         (t.desc?'<p style="font-size:13px;color:var(--gray-600);margin-bottom:8px">'+t.desc+'</p>':'')+
         (partsNames?'<p style="font-size:12px;color:var(--gray-600)"><strong>Participantes:</strong> '+partsNames+'</p>':'')+
         (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+filesHtml+'</div>':'')+
@@ -5377,7 +5377,7 @@ function rdCamp(){
   el.innerHTML=list.map(function(c){
     var filesHtml=(c.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
     return '<div class="camp-card '+(c.cor||'green')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="cc-title">'+c.titulo+'</div><div class="cc-meta">&#128197; '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+' | &#128100; '+(c.resp||'—')+'</div>'+(c.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+c.desc+'</p>':'')+'</div>'+
-      '<div style="display:flex;gap:6px;"><button class="btn-icon" onclick="editCamp(\''+c.id+'\')">&#9999;&#65039;</button><button class="btn-icon danger" onclick="delCamp(\''+c.id+'\')">&#128465;</button></div></div>'+
+      '<div style="display:flex;gap:6px;"><button class="btn-icon" data-cid="'+c.id+'" onclick="editCamp(this.dataset.cid)">&#9999;&#65039;</button><button class="btn-icon danger" data-cid="'+c.id+'" onclick="delCamp(this.dataset.cid)">&#128465;</button></div></div>'+
       (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+filesHtml+'</div>':'')+
       '</div>';
   }).join('');
@@ -5408,7 +5408,7 @@ function rdPol(){
   el.innerHTML=list.map(function(p){
     var filesHtml=(p.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
     return '<div class="pol-card"><div class="pol-icon">'+(catIcons[p.cat]||'&#128203;')+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="pol-title">'+p.titulo+'</div><div class="pol-desc">'+(p.cat||'')+' | Versão: '+(p.ver||'—')+' | Publicado: '+(p.data?fd(p.data):'—')+'</div>'+(p.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+p.desc+'</p>':'')+'</div>'+
-      '<div style="display:flex;gap:6px;"><button class="btn-icon" onclick="editPol(\''+p.id+'\')">&#9999;&#65039;</button><button class="btn-icon danger" onclick="delPol(\''+p.id+'\')">&#128465;</button></div></div>'+
+      '<div style="display:flex;gap:6px;"><button class="btn-icon" data-pid="'+p.id+'" onclick="editPol(this.dataset.pid)">&#9999;&#65039;</button><button class="btn-icon danger" data-pid="'+p.id+'" onclick="delPol(this.dataset.pid)">&#128465;</button></div></div>'+
       (filesHtml?'<div class="pol-docs">'+filesHtml+'</div>':'')+
       '</div></div>';
   }).join('');
@@ -5521,7 +5521,7 @@ function rdBday() {
                 isSemana ? '<span class="bday-tag semana">Esta semana</span>' :
                 '<span class="bday-tag mes">'+mes+'</span>';
     const idade = hoje.getFullYear() - parseInt(f.nas.split('-')[0]);
-    const whaBtn = f.tel ? '<button class="btn btn-whatsapp btn-sm" onclick="wha(\''+f.tel+'\',\'Parabéns pelo seu aniversário! &#127874; Toda a equipe Equilibryum deseja a você muito saúde e felicidades!\')">&#127881; Parabenizar</button>' : '';
+    var whaBtn = f.tel ? '<button class="btn btn-whatsapp btn-sm" data-tel="'+f.tel+'" onclick="wha(this.dataset.tel,' + "'Parabéns pelo seu aniversário!');" + '">&#127881; Parabenizar</button>' : '';
     return '<div class="bday-card">' +
       '<div class="bday-avatar'+(isHoje?' today':'')+'">'+f.n[0].toUpperCase()+'</div>' +
       '<div class="bday-info"><div class="name">'+f.n+'</div>' +
@@ -7710,8 +7710,8 @@ function rdVagas() {
               '</div>' +
             '</div>' +
             '<div style="display:flex;gap:6px;">' +
-              '<button class="btn btn-outline btn-sm" title="Editar" onclick="editVaga(\''+vaga.id+'\')" style="padding:5px 10px;">✏️ Editar</button>' +
-              '<button class="btn-icon danger" title="Excluir" onclick="delVaga(\''+vaga.id+'\')" style="margin-top:2px;">🗑️</button>' +
+              '<button class="btn btn-outline btn-sm" title="Editar" data-vid="'+vaga.id+'" onclick="editVaga(this.dataset.vid)" style="padding:5px 10px;">✏️ Editar</button>' +
+              '<button class="btn-icon danger" title="Excluir" data-vid="'+vaga.id+'" onclick="delVaga(this.dataset.vid)" style="margin-top:2px;">🗑️</button>' +
             '</div>' +
           '</div>' +
           '<div class="vaga-meta" style="margin-top:10px;">' +
@@ -7745,14 +7745,14 @@ function rdVagas() {
           '</div>' +
           // Actions
           '<div style="display:flex;flex-direction:column;gap:6px;width:100%;">' +
-            (nCands?'<button class="btn btn-outline btn-sm" style="width:100%;font-size:12px;" onclick="verCandidatos(\''+vaga.id+'\')" >👥 Ver Candidatos</button>':'') +
-            (nAprov?'<button class="btn btn-primary btn-sm" style="width:100%;font-size:12px;" onclick="verAprovados(\''+vaga.id+'\')" >✅ Ver Aprovados</button>':'') +
+            (nCands?'<button class="btn btn-outline btn-sm" style="width:100%;font-size:12px;" data-vid="'+vaga.id+'" onclick="verCandidatos(this.dataset.vid)" >👥 Ver Candidatos</button>':'') +
+            (nAprov?'<button class="btn btn-primary btn-sm" style="width:100%;font-size:12px;" data-vid="'+vaga.id+'" onclick="verAprovados(this.dataset.vid)" >✅ Ver Aprovados</button>':'') +
           '</div>' +
         '</div>' +
       '</div>' +
       '<div class="vaga-card-footer">' +
-        (nCands?'<button class="btn btn-outline btn-sm" onclick="verCandidatos(\''+vaga.id+'\')">👥 Ver Candidatos ('+nCands+')</button>':'') +
-        (nAprov?'<button class="btn btn-primary btn-sm" onclick="verAprovados(\''+vaga.id+'\')">✅ Aprovados ('+nAprov+')</button>':'') +
+        (nCands?'<button class="btn btn-outline btn-sm" data-vid="'+vaga.id+'" onclick="verCandidatos(this.dataset.vid)">👥 Ver Candidatos ('+nCands+')</button>':'') +
+        (nAprov?'<button class="btn btn-primary btn-sm" data-vid="'+vaga.id+'" onclick="verAprovados(this.dataset.vid)">✅ Aprovados ('+nAprov+')</button>':'') +
         (!nCands&&!nAprov?'<span style="font-size:12px;color:var(--gray-400);">Sem candidatos ainda</span>':'') +
       '</div>';
     listEl.appendChild(card);
