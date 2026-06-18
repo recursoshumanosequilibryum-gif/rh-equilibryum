@@ -354,6 +354,19 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .agenda-day.vencido{border-left-color:var(--red);}
 .agenda-day.alerta{border-left-color:var(--accent);}
 
+
+/* DOCUMENTOS FUNCIONÁRIO */
+.doc-upload-card{background:#fff;border-radius:var(--radius-sm);border:1.5px solid var(--gray-200);padding:14px;display:flex;flex-direction:column;gap:8px;}
+.doc-upload-title{font-weight:700;font-size:13px;color:var(--green-dark);}
+.doc-upload-list{display:flex;flex-direction:column;gap:5px;min-height:20px;}
+.doc-upload-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--gray-50);border:1.5px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:12.5px;color:var(--gray-600);transition:.15s;font-family:inherit;}
+.doc-upload-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-pale);}
+.doc-upload-btn input{display:none;}
+.doc-pending-item{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--gray-50);border-radius:6px;font-size:12px;}
+.doc-pending-item .doc-name{flex:1;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.doc-pending-item .doc-size{color:var(--gray-400);font-size:11px;white-space:nowrap;}
+.doc-pending-item .doc-del{cursor:pointer;color:var(--red);font-size:14px;flex-shrink:0;background:none;border:none;padding:0 2px;}
+
 </style>
 </head>
 <body>
@@ -1506,17 +1519,90 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       </div>
     </div>
     <div id="ft3" style="display:none">
-      <div id="drive-docs-info" class="alert alert-success" style="margin-bottom:14px">&#128193; Os documentos serão salvos no Google Drive na pasta: <strong>RH Equilibryum / [Nome do Funcionário]</strong></div>
-      <div class="alert alert-warning" id="drive-docs-warn" style="display:none">&#9888;&#65039; Drive não conectado. Os arquivos serão listados mas salvos apenas localmente.</div>
-      <div class="form-group form-full">
-        <div class="upload-area" id="upload-area">
-          <input type="file" multiple id="fdocs" onchange="handleDocs(this)">
-          <div style="font-size:36px;margin-bottom:8px">&#128196;</div>
-          <p><strong>Clique ou arraste arquivos aqui</strong></p>
-          <p style="font-size:12px;color:var(--gray-400);margin-top:4px">RG, CPF, CNH, Comprovante de residência, Certidões, Foto 3x4...</p>
-        </div>
-        <div id="docs-list" style="margin-top:10px"></div>
+      <div id="drive-docs-info" class="alert alert-success" style="margin-bottom:10px;">
+        &#128193; Documentos salvos no Drive em: <strong>RH Equilibryum / [Nome do Funcionário]</strong>
       </div>
+      <div class="alert alert-warning" id="drive-docs-warn" style="display:none;">
+        &#9888;&#65039; Drive não conectado — arquivos serão salvos localmente.
+      </div>
+
+      <!-- Upload por categoria -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:16px;">
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">🪪 Documentos Pessoais</div>
+          <div class="doc-upload-list" id="docs-list-pessoal"></div>
+          <label class="doc-upload-btn">
+            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="addDocsCategoria(this,'pessoal','🪪 Doc. Pessoal')">
+            + Adicionar (RG, CPF, CNH, Certidão...)
+          </label>
+        </div>
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">🏠 Comprovante de Residência</div>
+          <div class="doc-upload-list" id="docs-list-residencia"></div>
+          <label class="doc-upload-btn">
+            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="addDocsCategoria(this,'residencia','🏠 Comprov. Residência')">
+            + Adicionar
+          </label>
+        </div>
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">📋 Contrato de Trabalho</div>
+          <div class="doc-upload-list" id="docs-list-contrato"></div>
+          <label class="doc-upload-btn">
+            <input type="file" multiple accept=".pdf,.doc,.docx" onchange="addDocsCategoria(this,'contrato','📋 Contrato')">
+            + Adicionar
+          </label>
+        </div>
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">🩺 Exame Médico / ASO</div>
+          <div class="doc-upload-list" id="docs-list-aso"></div>
+          <label class="doc-upload-btn">
+            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="addDocsCategoria(this,'aso','🩺 ASO')">
+            + Adicionar
+          </label>
+        </div>
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">🎓 Certificados / Diplomas</div>
+          <div class="doc-upload-list" id="docs-list-cert"></div>
+          <label class="doc-upload-btn">
+            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onchange="addDocsCategoria(this,'cert','🎓 Certificado')">
+            + Adicionar
+          </label>
+        </div>
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">📁 Pasta Completa</div>
+          <div class="doc-upload-list" id="docs-list-pasta"></div>
+          <label class="doc-upload-btn" style="background:var(--green-pale);border-color:var(--green);color:var(--green-dark);">
+            <input type="file" multiple webkitdirectory onchange="addDocsCategoria(this,'pasta','📁 Pasta')">
+            📂 Selecionar pasta inteira
+          </label>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Selecione uma pasta para enviar todos os arquivos de uma vez</div>
+        </div>
+
+        <div class="doc-upload-card">
+          <div class="doc-upload-title">📎 Outros Documentos</div>
+          <div class="doc-upload-list" id="docs-list-outros"></div>
+          <label class="doc-upload-btn">
+            <input type="file" multiple onchange="addDocsCategoria(this,'outros','📎 Outro')">
+            + Adicionar qualquer arquivo
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Documentos já salvos no Drive -->
+      <div id="docs-salvos-titulo" style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:8px;display:none;">
+        ☁️ Documentos já salvos no Drive:
+      </div>
+      <div id="docs-list" style="margin-top:0;"></div>
+
+      <!-- Resumo de pendentes -->
+      <div id="docs-pendentes-resumo" style="margin-top:10px;font-size:12px;color:var(--gray-600);"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-func')">Cancelar</button>
@@ -2466,9 +2552,15 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="sig-modal-bg">
   <div id="sig-modal">
-    <h3>✍️ Assinatura Digital</h3>
-    <p>Assine no campo abaixo usando o dedo (celular) ou o mouse. A assinatura será inserida no documento.</p>
-    <canvas id="sig-canvas-doc" width="580" height="130"></canvas>
+    <h3>✍️ Assinatura da Empresa</h3>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px;">
+      Assine abaixo como <strong>representante da empresa</strong>. A assinatura será inserida no rodapé do documento como assinatura institucional.
+    </p>
+    <div style="background:var(--green-pale);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;font-size:12.5px;color:var(--green-dark);display:flex;align-items:center;gap:8px;">
+      <span>🏢</span>
+      <span><strong>Assinante:</strong> MÔNICA SANTOS — Coordenadora de Recursos Humanos</span>
+    </div>
+    <canvas id="sig-canvas-doc" width="580" height="120"></canvas>
     <div class="sig-toolbar">
       <div style="display:flex;gap:6px;">
         <div class="sig-color active" style="background:#000;" data-color="#000000" onclick="sigSetColor(this)" title="Preto"></div>
@@ -2488,8 +2580,8 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;">
       <button class="btn btn-outline" onclick="sigCancelar()">Cancelar</button>
-      <button class="btn btn-outline btn-sm" onclick="sigSemAssinatura()">Continuar sem assinatura</button>
-      <button class="btn btn-primary" onclick="sigConfirmar()">✅ Confirmar e Gerar Documento</button>
+      <button class="btn btn-outline btn-sm" onclick="sigSemAssinatura()">Gerar sem assinatura</button>
+      <button class="btn btn-primary" onclick="sigConfirmar()">✅ Assinar e Gerar Documento</button>
     </div>
   </div>
 </div>
@@ -2991,16 +3083,76 @@ function nav(id, el) {
 // DOCS UPLOAD
 // ============================================================
 let pendingFiles = [];
-function handleDocs(inp) {
-  pendingFiles = Array.from(inp.files);
-  const list = document.getElementById('docs-list');
-  list.innerHTML = '';
-  pendingFiles.forEach(f => {
-    const d = document.createElement('div');
-    d.className = 'doc-item';
-    d.innerHTML = '<span>📎 ' + f.name + ' <span style="color:var(--gray-400);font-size:11px">(' + Math.round(f.size/1024) + ' KB)</span></span>' + (driveReady ? '<span style="font-size:11px;color:var(--green)">⬆️ Aguardando save</span>' : '<span style="font-size:11px;color:var(--gray-400)">💾 Local</span>');
-    list.appendChild(d);
+// Sistema de docs por categoria
+var pendingDocsCat = {}; // {categoria: [{file, label}]}
+
+function addDocsCategoria(inp, cat, label) {
+  var files = Array.from(inp.files);
+  if (!files.length) return;
+  if (!pendingDocsCat[cat]) pendingDocsCat[cat] = [];
+  files.forEach(function(f) {
+    pendingDocsCat[cat].push({ file: f, label: label, id: uid() });
   });
+  renderDocsCat(cat);
+  atualizarResumoDocsPendentes();
+  inp.value = '';
+}
+
+function renderDocsCat(cat) {
+  var listEl = document.getElementById('docs-list-' + cat);
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  (pendingDocsCat[cat] || []).forEach(function(item) {
+    var div = document.createElement('div');
+    div.className = 'doc-pending-item';
+    div.innerHTML =
+      '<span class="doc-name" title="'+item.file.name+'">📎 '+item.file.name+'</span>' +
+      '<span class="doc-size">'+Math.round(item.file.size/1024)+' KB</span>';
+    var del = document.createElement('button');
+    del.className = 'doc-del'; del.textContent = '✕'; del.title = 'Remover';
+    (function(c, id) {
+      del.onclick = function() {
+        pendingDocsCat[c] = (pendingDocsCat[c]||[]).filter(function(x){return x.id!==id;});
+        renderDocsCat(c);
+        atualizarResumoDocsPendentes();
+      };
+    })(cat, item.id);
+    div.appendChild(del);
+    listEl.appendChild(div);
+  });
+}
+
+function atualizarResumoDocsPendentes() {
+  var total = 0;
+  Object.values(pendingDocsCat).forEach(function(arr){ total += arr.length; });
+  var el = document.getElementById('docs-pendentes-resumo');
+  if (el) el.textContent = total > 0 ?
+    total + ' arquivo(s) aguardando envio ao Drive ao salvar o funcionário.' : '';
+}
+
+function getAllPendingFiles() {
+  var all = [];
+  Object.entries(pendingDocsCat).forEach(function(entry) {
+    var cat = entry[0], items = entry[1];
+    items.forEach(function(item) {
+      all.push({ file: item.file, label: item.label });
+    });
+  });
+  return all;
+}
+
+function resetDocsCat() {
+  pendingDocsCat = {};
+  ['pessoal','residencia','contrato','aso','cert','pasta','outros'].forEach(function(cat) {
+    var el = document.getElementById('docs-list-' + cat);
+    if (el) el.innerHTML = '';
+  });
+  atualizarResumoDocsPendentes();
+}
+
+// Compat — old single upload (kept for safety)
+function handleDocs(inp) {
+  addDocsCategoria(inp, 'outros', '📎 Outro');
 }
 
 // ============================================================
@@ -3054,10 +3206,11 @@ function editFunc(id) {
     const el = document.createElement('div');
     el.className = 'doc-item';
     el.innerHTML = d.url
-      ? '<a href="' + d.url + '" target="_blank">📎 ' + d.name + '</a><span class="badge badge-green">☁️ Drive</span>'
+      ? '<a href="' + d.url + '" target="_blank">' + (d.label||'📎') + ' ' + d.name + '</a><span class="badge badge-green">☁️ Drive</span>'
       : '<span>📎 ' + d.name + '</span><span class="badge badge-gray">Local</span>';
     docsList.appendChild(el);
   });
+  if (typeof resetDocsCat === 'function') resetDocsCat();
   pendingFiles = [];
   checkDriveDocs();
   document.getElementById('modal-func').classList.add('open');
@@ -5525,21 +5678,40 @@ async function _abrirDocFinal(docHTML, filename, f, sigDataURL) {
   finalHTML = finalHTML.replace('</body>', compSig + '</body>');
 
   if (sigDataURL) {
-    // Inserir bloco de assinatura digital do funcionário antes do rodapé da empresa
-    var sigBlock = '<div style="page-break-inside:avoid;margin-top:20px;border-top:2px solid #1f5c44;padding-top:12px;">' +
-      '<div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;">' +
-      '<div>' +
-        '<div style="font-size:10pt;color:#555;margin-bottom:4px;font-weight:600;">ASSINATURA DIGITAL DO FUNCIONÁRIO</div>' +
-        '<img src="' + sigDataURL + '" style="max-height:70px;max-width:220px;border-bottom:1px solid #333;display:block;">' +
-        '<div style="font-size:9pt;color:#333;margin-top:4px;font-weight:600;">' + (f ? f.n : '') + '</div>' +
-        '<div style="font-size:8.5pt;color:#777;">CPF: ' + (f ? f.cpf : '') + '</div>' +
-      '</div>' +
-      '<div>' +
-        '<div style="font-size:10pt;color:#555;margin-bottom:4px;font-weight:600;">DATA</div>' +
-        '<div style="font-size:11pt;font-weight:700;color:#1f5c44;">' + fd(td()) + '</div>' +
-        '<div style="font-size:8.5pt;color:#777;">Assinado digitalmente</div>' +
-      '</div>' +
-      '</div>' +
+    // Assinatura da EMPRESA (não do funcionário) — inserida no rodapé da empresa
+    var isEq2 = docEmpresa !== 'longhi';
+    var nomeEmp2 = isEq2 ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
+                         : 'Longhi Serviços de Terceirização a Empresas Ltda';
+    var cnpjEmp2 = isEq2 ? '05.441.897/0001-02' : '54.188.772/0001-28';
+    var sigBlock =
+      '<div style="page-break-inside:avoid;margin-top:24px;border-top:2px solid #1f5c44;padding-top:16px;">' +
+        '<div style="display:flex;align-items:flex-end;gap:40px;flex-wrap:wrap;">' +
+          // Assinatura da empresa
+          '<div style="text-align:center;min-width:220px;">' +
+            '<img src="' + sigDataURL + '" style="max-height:65px;max-width:220px;display:block;margin:0 auto;">' +
+            '<div style="border-top:1.5px solid #333;margin-top:4px;padding-top:5px;">' +
+              '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>' +
+              '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>' +
+              '<div style="font-size:8.5pt;color:#777;">' + nomeEmp2 + '</div>' +
+              '<div style="font-size:8pt;color:#aaa;">CNPJ: ' + cnpjEmp2 + '</div>' +
+            '</div>' +
+          '</div>' +
+          // Espaço para assinatura do funcionário (linha em branco)
+          '<div style="text-align:center;min-width:200px;">' +
+            '<div style="height:50px;"></div>' +
+            '<div style="border-top:1.5px solid #333;padding-top:5px;">' +
+              '<div style="font-size:10pt;font-weight:700;color:#333;">' + (f ? f.n : 'Funcionário') + '</div>' +
+              '<div style="font-size:9pt;color:#555;">' + (f ? f.car||'' : '') + '</div>' +
+              '<div style="font-size:8.5pt;color:#777;">CPF: ' + (f ? f.cpf||'' : '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          // Data
+          '<div style="min-width:120px;">' +
+            '<div style="font-size:9pt;color:#555;font-weight:600;">DATA</div>' +
+            '<div style="font-size:11pt;font-weight:700;color:#1f5c44;margin-top:4px;">' + fd(td()) + '</div>' +
+            '<div style="font-size:8pt;color:#aaa;">Assinado digitalmente</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     finalHTML = finalHTML.replace('</body>', sigBlock + '</body>');
   }
