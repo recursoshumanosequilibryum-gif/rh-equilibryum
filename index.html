@@ -340,6 +340,20 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .func-row-afastado td{background:#fff8e1 !important;}
 .func-row-ferias td{background:#e3f2fd !important;}
 
+
+/* PAGAMENTOS RH */
+.pag-card{background:#fff;border-radius:var(--radius-sm);padding:14px 16px;border-left:4px solid var(--green);box-shadow:var(--shadow);margin-bottom:10px;}
+.pag-card.vencido{border-left-color:var(--red);background:#fff5f5;}
+.pag-card.alerta{border-left-color:var(--accent);background:#fffde7;}
+.pag-card.pago{border-left-color:var(--gray-300);opacity:.75;}
+.pag-alerta-box{background:#fff8e1;border:1.5px solid var(--accent);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;}
+.pag-alerta-box.urgente{background:#ffebee;border-color:var(--red);}
+.pag-dia-badge{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;font-size:14px;font-weight:700;color:#fff;background:var(--green);flex-shrink:0;}
+.agenda-day{background:#fff;border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;border-left:3px solid var(--green);box-shadow:var(--shadow);}
+.agenda-day.hoje{border-left-color:var(--blue);background:#e8f4ff;}
+.agenda-day.vencido{border-left-color:var(--red);}
+.agenda-day.alerta{border-left-color:var(--accent);}
+
 </style>
 </head>
 <body>
@@ -450,6 +464,10 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
   <div class="nav-item" onclick="nav('documentos',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Gerar Documentos
+  </div>
+  <div class="nav-section">Financeiro</div>
+  <div class="nav-item" onclick="nav('pagamentos',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Pagamentos RH
   </div>
   <div class="nav-section">Relatórios</div>
   <div class="nav-item" onclick="nav('relatorios',this)">
@@ -1186,6 +1204,78 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
     <div class="alert alert-info" style="margin-top:20px;">
       &#128196; Os documentos abrem em nova aba prontos para <strong>imprimir ou salvar como PDF</strong>. Se o Drive estiver conectado, o documento também é salvo automaticamente na pasta do funcionário.
+    </div>
+  </div>
+</div>
+
+<!-- PAGAMENTOS RH -->
+<div class="section-page" id="sec-pagamentos">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">💳 Pagamentos RH</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="pag-filter-mes" onchange="rdPagamentos()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os meses</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="pag-filter-status" onchange="rdPagamentos()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os status</option>
+          <option value="pendente">⏳ Pendentes</option>
+          <option value="pago">✅ Pagos</option>
+          <option value="vencido">🔴 Vencidos</option>
+          <option value="alerta">⚠️ Vencem em 2 dias</option>
+        </select>
+        <button class="btn btn-primary" onclick="openModal('modal-pag')">+ Nova Conta</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="pag-stats" style="margin-bottom:16px;"></div>
+
+    <!-- Alertas do dia -->
+    <div id="pag-alertas" style="margin-bottom:16px;"></div>
+
+    <!-- Abas -->
+    <div class="tabs" id="pag-tabs">
+      <div class="tab active" onclick="pagTab('pag-lista',this)">📋 Lista</div>
+      <div class="tab" onclick="pagTab('pag-agenda',this)">📅 Agenda do Mês</div>
+      <div class="tab" onclick="pagTab('pag-resumo',this)">📊 Resumo Anual</div>
+    </div>
+
+    <!-- LISTA -->
+    <div id="pag-lista">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fornecedor</th>
+              <th>Referência</th>
+              <th>Vencimento</th>
+              <th>Forma Pgto</th>
+              <th>Valor</th>
+              <th>Recorrente</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tb-pag"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AGENDA DO MÊS -->
+    <div id="pag-agenda" style="display:none;">
+      <div id="pag-agenda-content"></div>
+    </div>
+
+    <!-- RESUMO ANUAL -->
+    <div id="pag-resumo" style="display:none;">
+      <div id="pag-resumo-content"></div>
     </div>
   </div>
 </div>
@@ -2211,6 +2301,128 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- MODAL PAGAMENTO -->
+<div class="modal-bg" id="modal-pag">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title" id="pag-modal-title">💳 Nova Conta a Pagar</span>
+      <button class="modal-close" onclick="closeModal('modal-pag')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Fornecedor *</label>
+        <input id="pg-forn" type="text" placeholder="Ex.: Flash, Catho, Solides...">
+      </div>
+      <div class="form-group"><label>Referência / Descrição *</label>
+        <input id="pg-ref" type="text" placeholder="Ex.: VT, VA, Salários, Ponto Eletrônico...">
+      </div>
+      <div class="form-group"><label>Tipo de Conta</label>
+        <select id="pg-tipo">
+          <option value="">Selecione</option>
+          <option>Benefícios</option>
+          <option>Salários / Folha</option>
+          <option>Encargos</option>
+          <option>Sindicato</option>
+          <option>Convênio Médico</option>
+          <option>Convênio Odonto</option>
+          <option>Sistema / Software</option>
+          <option>Recrutamento</option>
+          <option>Seguro de Vida</option>
+          <option>Outros</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Forma de Pagamento</label>
+        <select id="pg-forma">
+          <option>BOLETO</option>
+          <option>BPO</option>
+          <option>NF</option>
+          <option>DEPÓSITO</option>
+          <option>PIX</option>
+          <option>BOLETO - EMAIL</option>
+          <option>PROD E SERV</option>
+          <option>Flash</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Dia do Vencimento *</label>
+        <input id="pg-dia" type="number" min="1" max="31" placeholder="Ex.: 5, 10, 15, 20...">
+      </div>
+      <div class="form-group"><label>Tipo de Dia</label>
+        <select id="pg-tipo-dia">
+          <option value="fixo">Dia fixo do mês</option>
+          <option value="util">Dia útil do mês</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Valor Estimado (R$)</label>
+        <input id="pg-valor" type="text" placeholder="0,00 (opcional)">
+      </div>
+      <div class="form-group"><label>Responsável</label>
+        <input id="pg-resp" type="text" placeholder="Ex.: MÔNICA, FABIO...">
+      </div>
+      <div class="form-group"><label>É Recorrente?</label>
+        <select id="pg-recorrente">
+          <option value="sim">Sim — todo mês</option>
+          <option value="nao">Não — pagamento único</option>
+          <option value="eventual">Eventual — alguns meses</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Meses de Ocorrência</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--gray-50);border-radius:var(--radius-sm);border:1.5px solid var(--gray-200);" id="pg-meses-checks">
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="1" checked> Jan</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="2" checked> Fev</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="3" checked> Mar</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="4" checked> Abr</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="5" checked> Mai</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="6" checked> Jun</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="7" checked> Jul</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="8" checked> Ago</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="9" checked> Set</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="10" checked> Out</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="11" checked> Nov</label>
+          <label style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="checkbox" value="12" checked> Dez</label>
+        </div>
+      </div>
+      <div class="form-group"><label>Alerta (dias antes)</label>
+        <select id="pg-alerta">
+          <option value="2">2 dias antes</option>
+          <option value="3">3 dias antes</option>
+          <option value="5">5 dias antes</option>
+          <option value="1">1 dia antes</option>
+          <option value="0">Sem alerta</option>
+        </select>
+      </div>
+      <div class="form-group form-full"><label>Observações</label>
+        <textarea id="pg-obs" rows="2" placeholder="Observações, instruções de pagamento..."></textarea>
+      </div>
+    </div>
+    <!-- Registro de pagamento -->
+    <div style="background:var(--green-pale);border-radius:var(--radius-sm);padding:12px 16px;margin-top:8px;">
+      <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:8px;">✅ Registrar Pagamento (mês atual)</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="margin:0;flex:1;">
+          <label>Data do pagamento</label>
+          <input id="pg-dt-pag" type="date">
+        </div>
+        <div class="form-group" style="margin:0;flex:1;">
+          <label>Valor pago (R$)</label>
+          <input id="pg-val-pag" type="text" placeholder="0,00">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Status</label>
+          <select id="pg-status-pag">
+            <option value="pendente">⏳ Pendente</option>
+            <option value="pago">✅ Pago</option>
+            <option value="cancelado">❌ Cancelado</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-pag')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savPagamento()">&#128190; Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="sig-modal-bg">
   <div id="sig-modal">
@@ -2541,7 +2753,7 @@ async function loadDriveJSON(filename) {
 }
 
 async function syncFromDrive() {
-  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
+  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
   let synced = 0;
   for (const k of keys) {
     try {
@@ -2563,7 +2775,7 @@ async function syncFromDrive() {
   const active = document.querySelector('.section-page.active');
   if (active) {
     const id = active.id.replace('sec-','');
-    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc };
+    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc };
     if (rd[id]) rd[id]();
   }
   toast('✅ ' + synced + ' registros carregados do Drive ☁️');
@@ -2624,6 +2836,20 @@ function openModal(id) {
   if (id === 'modal-uni-ajuste') { fillUniItemSel('uaj-item'); document.getElementById('uaj-data').value = td(); }
   if (id === 'modal-uni-item') { if(!editingUniItemId){ document.getElementById('ui-nome').value=''; document.getElementById('ui-obs').value=''; document.querySelectorAll('#ui-tam-checks input').forEach(c=>c.checked=false); document.getElementById('ui-tam-extra').innerHTML=''; customTams=[]; } }
   if (id === 'modal-wha') fillFuncSel('whaf');
+  if (id === 'modal-pag') {
+    editingPagId = null;
+    document.getElementById('pag-modal-title').textContent = '💳 Nova Conta a Pagar';
+    ['pg-forn','pg-ref','pg-dia','pg-valor','pg-resp','pg-obs','pg-dt-pag','pg-val-pag'].forEach(function(f){
+      var el=document.getElementById(f); if(el) el.value='';
+    });
+    document.getElementById('pg-tipo').value='';
+    document.getElementById('pg-forma').value='BOLETO';
+    document.getElementById('pg-tipo-dia').value='fixo';
+    document.getElementById('pg-recorrente').value='sim';
+    document.getElementById('pg-alerta').value='2';
+    document.getElementById('pg-status-pag').value='pendente';
+    document.querySelectorAll('#pg-meses-checks input').forEach(function(c){c.checked=true;});
+  }
   if (id === 'modal-vaga') {
     // Só resetar se for nova vaga (editingVagaId é null antes de chamar openModal)
     var isNewVaga = !editingVagaId;
@@ -2715,9 +2941,9 @@ function nav(id, el) {
   secEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
-  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
+  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
   if (rd[id]) rd[id]();
 }
 
@@ -4097,6 +4323,7 @@ function updDash() {
   document.getElementById('s-fer').textContent = DB.g('ferias').filter(r => r.st === 'Em andamento').length;
   document.getElementById('s-ex').textContent = DB.g('exames').filter(function(e){ return !e.res; }).length;
   if(typeof updExmAlerts === 'function') updExmAlerts();
+  if(typeof renderPagAlertas === 'function') renderPagAlertas();
   const alerts = [];
   funcs.forEach(f => {
     if (!f.adm || f.st === 'Desligado') return;
@@ -7685,6 +7912,386 @@ async function savUniQuick() {
   closeModal('modal-uni-quick');
   rdFunc();
   toast('Tamanhos salvos para ' + list[idx].n.split(' ')[0] + '!' + (driveReady?' ☁️':''));
+}
+
+// ============================================================
+// PAGAMENTOS RH
+// ============================================================
+var editingPagId = null;
+var MESES_NOMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var MESES_ABR   = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function pagTab(id, btn) {
+  ['pag-lista','pag-agenda','pag-resumo'].forEach(function(t){
+    var el=document.getElementById(t); if(el) el.style.display='none';
+  });
+  document.getElementById(id).style.display='block';
+  btn.closest('.tabs').querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  if (id==='pag-agenda') renderPagAgenda();
+  if (id==='pag-resumo') renderPagResumo();
+}
+
+// ── Calcular próximo vencimento ───────────────────────────────
+function calcVencimento(pag, mes, ano) {
+  var dia = parseInt(pag.dia)||1;
+  // Dia útil simplificado: considera fins de semana (simplificação prática)
+  if (pag.tipoDia === 'util') {
+    var dt = new Date(ano, mes-1, dia);
+    while (dt.getDay() === 0 || dt.getDay() === 6) dt.setDate(dt.getDate()+1);
+    return dt;
+  }
+  return new Date(ano, mes-1, Math.min(dia, new Date(ano,mes,0).getDate()));
+}
+
+function diasAteVencer(pag, mes, ano) {
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var venc = calcVencimento(pag, mes, ano);
+  return Math.round((venc - hoje) / 86400000);
+}
+
+function getPagStatus(pag, mes, ano) {
+  // Check if already paid this month
+  var key = ano + '-' + String(mes).padStart(2,'0');
+  if (pag.pagamentos && pag.pagamentos[key] && pag.pagamentos[key].status === 'pago') return 'pago';
+  if (pag.pagamentos && pag.pagamentos[key] && pag.pagamentos[key].status === 'cancelado') return 'cancelado';
+  var diff = diasAteVencer(pag, mes, ano);
+  if (diff < 0)  return 'vencido';
+  if (diff <= parseInt(pag.alerta||2)) return 'alerta';
+  return 'pendente';
+}
+
+function getMesesPag(pag) {
+  return (pag.meses || [1,2,3,4,5,6,7,8,9,10,11,12]).map(Number);
+}
+
+// ── Alertas do dia ────────────────────────────────────────────
+function renderPagAlertas() {
+  var hoje  = new Date(); hoje.setHours(0,0,0,0);
+  var mesAt = hoje.getMonth()+1;
+  var anoAt = hoje.getFullYear();
+  var list  = DB.g('pagamentos');
+  var alertas = [], vencidos = [];
+
+  list.forEach(function(pag) {
+    if (!getMesesPag(pag).includes(mesAt)) return;
+    var status = getPagStatus(pag, mesAt, anoAt);
+    var diff   = diasAteVencer(pag, mesAt, anoAt);
+    if (status === 'vencido') vencidos.push({pag:pag, diff:Math.abs(diff)});
+    else if (status === 'alerta') alertas.push({pag:pag, diff:diff});
+  });
+
+  var el = document.getElementById('pag-alertas'); if (!el) return;
+  var html = '';
+  if (vencidos.length) {
+    html += '<div class="pag-alerta-box urgente">🔴 <strong>'+vencidos.length+' conta(s) VENCIDA(s):</strong> ' +
+      vencidos.map(function(x){ return x.pag.fornecedor + ' – ' + x.pag.ref + ' ('+x.diff+' dia(s) atrasado)'; }).join(' | ') + '</div>';
+  }
+  if (alertas.length) {
+    html += '<div class="pag-alerta-box">⚠️ <strong>'+alertas.length+' conta(s) vencem em breve:</strong> ' +
+      alertas.map(function(x){ return x.pag.fornecedor + ' – ' + x.pag.ref + ' (em '+x.diff+' dia(s))'; }).join(' | ') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── rdPagamentos ──────────────────────────────────────────────
+function rdPagamentos() {
+  var mesF  = parseInt((document.getElementById('pag-filter-mes')||{value:''}).value)||0;
+  var stF   = (document.getElementById('pag-filter-status')||{value:''}).value||'';
+  var hoje  = new Date(); hoje.setHours(0,0,0,0);
+  var mesAt = hoje.getMonth()+1;
+  var anoAt = hoje.getFullYear();
+  var mes   = mesF || mesAt;
+  var list  = DB.g('pagamentos');
+
+  // Set month filter to current if empty
+  var selMes = document.getElementById('pag-filter-mes');
+  if (selMes && !selMes.value) selMes.value = mesAt;
+
+  renderPagAlertas();
+
+  // Stats
+  var statsEl = document.getElementById('pag-stats');
+  if (statsEl) {
+    var total    = list.filter(function(p){ return getMesesPag(p).includes(mes); }).length;
+    var pagos    = list.filter(function(p){ return getMesesPag(p).includes(mes) && getPagStatus(p,mes,anoAt)==='pago'; }).length;
+    var pend     = list.filter(function(p){ return getMesesPag(p).includes(mes) && getPagStatus(p,mes,anoAt)==='pendente'; }).length;
+    var venc     = list.filter(function(p){ return getMesesPag(p).includes(mes) && getPagStatus(p,mes,anoAt)==='vencido'; }).length;
+    var alert2   = list.filter(function(p){ return getMesesPag(p).includes(mes) && getPagStatus(p,mes,anoAt)==='alerta'; }).length;
+    statsEl.innerHTML = [
+      ['💳 Total no mês', total, 'var(--green-dark)'],
+      ['✅ Pagos', pagos, 'var(--green)'],
+      ['⏳ Pendentes', pend, 'var(--blue)'],
+      ['⚠️ Alerta', alert2, 'var(--accent)'],
+      ['🔴 Vencidos', venc, 'var(--red)']
+    ].map(function(r){
+      return '<div style="background:#fff;border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);border-top:3px solid '+r[2]+';">'+
+        '<div style="font-size:22px;font-weight:700;color:'+r[2]+'">'+r[1]+'</div>'+
+        '<div style="font-size:12px;color:var(--gray-600);">'+r[0]+'</div></div>';
+    }).join('');
+  }
+
+  // Filter list
+  var filtered = list.filter(function(p){ return getMesesPag(p).includes(mes); });
+  if (stF) filtered = filtered.filter(function(p){ return getPagStatus(p,mes,anoAt)===stF; });
+  filtered.sort(function(a,b){ return parseInt(a.dia||0)-parseInt(b.dia||0); });
+
+  var tb = document.getElementById('tb-pag'); if(!tb) return;
+  tb.innerHTML = '';
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--gray-400)">Nenhuma conta encontrada. Clique em <strong>+ Nova Conta</strong> para começar.</td></tr>';
+    return;
+  }
+
+  var STATUS_LABEL = { pendente:'⏳ Pendente', pago:'✅ Pago', vencido:'🔴 Vencido', alerta:'⚠️ Vence em breve', cancelado:'❌ Cancelado' };
+  var STATUS_BC    = { pendente:'badge-blue', pago:'badge-green', vencido:'badge-red', alerta:'badge-yellow', cancelado:'badge-gray' };
+
+  filtered.forEach(function(pag) {
+    var status = getPagStatus(pag, mes, anoAt);
+    var diff   = diasAteVencer(pag, mes, anoAt);
+    var bc     = STATUS_BC[status]  || 'badge-gray';
+    var lbl    = STATUS_LABEL[status] || status;
+    if (status === 'alerta') lbl = '⚠️ em ' + diff + 'd';
+    if (status === 'vencido') lbl = '🔴 ' + Math.abs(diff) + 'd atraso';
+
+    var diaStr = pag.tipoDia==='util' ? pag.dia+'° útil' : 'Dia ' + pag.dia;
+    var key    = anoAt+'-'+String(mes).padStart(2,'0');
+    var pagMes = pag.pagamentos && pag.pagamentos[key];
+    var valorStr = pagMes && pagMes.valor ? 'R$ '+pagMes.valor : (pag.valor ? 'R$ '+pag.valor : '—');
+
+    var tr = document.createElement('tr');
+    if (status==='vencido') tr.style.background='#fff5f5';
+    if (status==='alerta')  tr.style.background='#fffde7';
+    if (status==='pago')    tr.style.opacity='0.7';
+
+    tr.innerHTML =
+      '<td><strong>'+pag.fornecedor+'</strong>'+(pag.resp?'<br><small style="color:var(--gray-400);">👤 '+pag.resp+'</small>':'')+'</td>'+
+      '<td>'+pag.ref+'<br><small style="color:var(--gray-500);font-size:11px;">'+( pag.tipo||'')+'</small></td>'+
+      '<td><strong>'+diaStr+'</strong></td>'+
+      '<td><span class="badge badge-gray" style="font-size:11px;">'+pag.forma+'</span></td>'+
+      '<td><strong>'+valorStr+'</strong></td>'+
+      '<td>'+(pag.recorrente==='sim'?'<span class="badge badge-green" style="font-size:11px;">🔁 Mensal</span>':pag.recorrente==='eventual'?'<span class="badge badge-yellow" style="font-size:11px;">📅 Eventual</span>':'<span class="badge badge-gray" style="font-size:11px;">1x</span>')+'</td>'+
+      '<td><span class="badge '+bc+'" style="font-size:11px;">'+lbl+'</span></td>'+
+      '<td style="display:flex;gap:5px;flex-wrap:wrap;"></td>';
+
+    var btns = tr.querySelector('td:last-child');
+
+    // Mark as paid button
+    if (status !== 'pago' && status !== 'cancelado') {
+      var btnP = document.createElement('button');
+      btnP.className='btn btn-outline btn-sm'; btnP.style.fontSize='11px'; btnP.textContent='✅ Pago';
+      (function(id,m,y){ btnP.onclick=function(){ marcarPago(id,m,y); }; })(pag.id,mes,anoAt);
+      btns.appendChild(btnP);
+    }
+    var btnE = document.createElement('button');
+    btnE.className='btn-icon'; btnE.title='Editar'; btnE.textContent='✏️';
+    (function(id){ btnE.onclick=function(){ editPagamento(id); }; })(pag.id);
+    var btnD = document.createElement('button');
+    btnD.className='btn-icon danger'; btnD.title='Excluir'; btnD.innerHTML='🗑️';
+    (function(id){ btnD.onclick=function(){ delPagamento(id); }; })(pag.id);
+    btns.appendChild(btnE); btns.appendChild(btnD);
+    tb.appendChild(tr);
+  });
+}
+
+// ── Marcar como pago ──────────────────────────────────────────
+async function marcarPago(id, mes, ano) {
+  var list = DB.g('pagamentos');
+  var idx  = list.findIndex(function(x){ return x.id===id; });
+  if (idx===-1) return;
+  if (!list[idx].pagamentos) list[idx].pagamentos = {};
+  var key = ano+'-'+String(mes).padStart(2,'0');
+  list[idx].pagamentos[key] = { status:'pago', data:td(), valor:'' };
+  DB.s('pagamentos', list);
+  if (driveReady) await driveSync('pagamentos');
+  rdPagamentos();
+  toast('Marcado como pago ✅');
+}
+
+// ── Salvar conta ──────────────────────────────────────────────
+async function savPagamento() {
+  var forn = (document.getElementById('pg-forn')||{}).value.trim();
+  var ref  = (document.getElementById('pg-ref') ||{}).value.trim();
+  var dia  = (document.getElementById('pg-dia') ||{}).value;
+  if (!forn||!ref||!dia) { alert('Fornecedor, Referência e Dia do vencimento são obrigatórios.'); return; }
+
+  var meses = [];
+  document.querySelectorAll('#pg-meses-checks input:checked').forEach(function(c){ meses.push(parseInt(c.value)); });
+
+  var list = DB.g('pagamentos');
+  var rec = {
+    id:         editingPagId || uid(),
+    fornecedor: forn,
+    ref:        ref,
+    tipo:       (document.getElementById('pg-tipo')||{}).value||'',
+    forma:      (document.getElementById('pg-forma')||{}).value||'BOLETO',
+    dia:        dia,
+    tipoDia:    (document.getElementById('pg-tipo-dia')||{}).value||'fixo',
+    valor:      (document.getElementById('pg-valor')||{}).value||'',
+    resp:       (document.getElementById('pg-resp')||{}).value||'',
+    recorrente: (document.getElementById('pg-recorrente')||{}).value||'sim',
+    meses:      meses,
+    alerta:     (document.getElementById('pg-alerta')||{}).value||'2',
+    obs:        (document.getElementById('pg-obs')||{}).value||''
+  };
+
+  // Register current month payment if filled
+  var dtPag  = (document.getElementById('pg-dt-pag')||{}).value||'';
+  var valPag = (document.getElementById('pg-val-pag')||{}).value||'';
+  var stPag  = (document.getElementById('pg-status-pag')||{}).value||'pendente';
+  if (dtPag || stPag !== 'pendente') {
+    var hoje = new Date();
+    var key  = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+    if (!rec.pagamentos) {
+      if (editingPagId) {
+        var existing = list.find(function(x){return x.id===editingPagId;});
+        rec.pagamentos = (existing && existing.pagamentos) ? Object.assign({}, existing.pagamentos) : {};
+      } else rec.pagamentos = {};
+    }
+    rec.pagamentos[key] = { status:stPag, data:dtPag, valor:valPag };
+  } else {
+    if (editingPagId) {
+      var ex2 = list.find(function(x){return x.id===editingPagId;});
+      rec.pagamentos = (ex2 && ex2.pagamentos) ? ex2.pagamentos : {};
+    } else rec.pagamentos = {};
+  }
+
+  if (editingPagId) {
+    var i2 = list.findIndex(function(x){return x.id===editingPagId;});
+    if (i2!==-1) list[i2]=rec;
+    editingPagId=null;
+  } else {
+    list.push(rec);
+  }
+  DB.s('pagamentos', list);
+  if (driveReady) await driveSync('pagamentos');
+  closeModal('modal-pag');
+  rdPagamentos();
+  toast('Conta salva!'+(driveReady?' ☁️':''));
+}
+
+function editPagamento(id) {
+  var pag = DB.g('pagamentos').find(function(x){return x.id===id;}); if(!pag) return;
+  editingPagId = id;
+  document.getElementById('pag-modal-title').textContent = '✏️ Editar Conta — '+pag.fornecedor;
+  openModal('modal-pag');
+  setTimeout(function(){
+    document.getElementById('pg-forn').value      = pag.fornecedor||'';
+    document.getElementById('pg-ref').value       = pag.ref||'';
+    document.getElementById('pg-tipo').value      = pag.tipo||'';
+    document.getElementById('pg-forma').value     = pag.forma||'BOLETO';
+    document.getElementById('pg-dia').value       = pag.dia||'';
+    document.getElementById('pg-tipo-dia').value  = pag.tipoDia||'fixo';
+    document.getElementById('pg-valor').value     = pag.valor||'';
+    document.getElementById('pg-resp').value      = pag.resp||'';
+    document.getElementById('pg-recorrente').value= pag.recorrente||'sim';
+    document.getElementById('pg-alerta').value    = pag.alerta||'2';
+    document.getElementById('pg-obs').value       = pag.obs||'';
+    document.querySelectorAll('#pg-meses-checks input').forEach(function(c){
+      c.checked = (pag.meses||[1,2,3,4,5,6,7,8,9,10,11,12]).map(Number).includes(parseInt(c.value));
+    });
+    var hoje = new Date();
+    var key  = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+    var pagMes = pag.pagamentos && pag.pagamentos[key];
+    if (pagMes) {
+      document.getElementById('pg-dt-pag').value    = pagMes.data||'';
+      document.getElementById('pg-val-pag').value   = pagMes.valor||'';
+      document.getElementById('pg-status-pag').value= pagMes.status||'pendente';
+    }
+  }, 100);
+}
+
+async function delPagamento(id) {
+  if (!confirm('Excluir esta conta?')) return;
+  DB.s('pagamentos', DB.g('pagamentos').filter(function(x){return x.id!==id;}));
+  if (driveReady) await driveSync('pagamentos');
+  rdPagamentos();
+}
+
+// ── Agenda do mês ─────────────────────────────────────────────
+function renderPagAgenda() {
+  var selMes = document.getElementById('pag-filter-mes');
+  var mes    = parseInt(selMes && selMes.value ? selMes.value : (new Date().getMonth()+1));
+  var ano    = new Date().getFullYear();
+  var hoje   = new Date(); hoje.setHours(0,0,0,0);
+  var list   = DB.g('pagamentos').filter(function(p){ return getMesesPag(p).includes(mes); });
+  list.sort(function(a,b){ return parseInt(a.dia||0)-parseInt(b.dia||0); });
+
+  var el = document.getElementById('pag-agenda-content'); if(!el) return;
+  if (!list.length) { el.innerHTML='<div class="alert alert-info">Nenhuma conta para este mês.</div>'; return; }
+
+  // Group by day
+  var byDay = {};
+  list.forEach(function(p) {
+    var d = parseInt(p.dia)||1;
+    if (!byDay[d]) byDay[d]=[];
+    byDay[d].push(p);
+  });
+
+  var html = '<div style="font-size:13px;font-weight:700;color:var(--green-dark);margin-bottom:12px;">'+MESES_NOMES[mes]+' '+ano+'</div>';
+  Object.keys(byDay).sort(function(a,b){return a-b;}).forEach(function(dia) {
+    var items = byDay[dia];
+    var venc  = calcVencimento({dia:dia, tipoDia:items[0].tipoDia}, mes, ano);
+    var diff  = Math.round((venc-hoje)/86400000);
+    var cls   = diff < 0 ? 'vencido' : diff===0 ? 'hoje' : diff<=2 ? 'alerta' : '';
+    var label = diff < 0 ? '🔴 '+Math.abs(diff)+'d atrasado' : diff===0 ? '🔵 HOJE' : diff<=2 ? '⚠️ em '+diff+'d' : '📅 em '+diff+'d';
+    html += '<div class="agenda-day '+cls+'">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    html += '<strong>Dia '+dia+(items[0].tipoDia==='util'?'° útil':'')+' — '+venc.toLocaleDateString("pt-BR")+'</strong>';
+    html += '<span class="badge '+(diff<0?'badge-red':diff===0?'badge-blue':diff<=2?'badge-yellow':'badge-green')+'">'+label+'</span>';
+    html += '</div>';
+    items.forEach(function(p) {
+      var status = getPagStatus(p, mes, ano);
+      var stIcon = status==='pago'?'✅':status==='vencido'?'🔴':status==='alerta'?'⚠️':'⏳';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid rgba(0,0,0,.06);">';
+      html += '<span>'+stIcon+' <strong>'+p.fornecedor+'</strong> — '+p.ref+'</span>';
+      html += '<span style="font-size:12px;color:var(--gray-600);">'+p.forma+(p.valor?' · R$ '+p.valor:'')+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── Resumo Anual ──────────────────────────────────────────────
+function renderPagResumo() {
+  var ano  = new Date().getFullYear();
+  var list = DB.g('pagamentos');
+  var el   = document.getElementById('pag-resumo-content'); if(!el) return;
+
+  var html = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html += '<thead><tr><th style="padding:8px;background:var(--green);color:#fff;text-align:left;border:1px solid #ddd;min-width:140px;">Fornecedor / Ref.</th>';
+  for (var m=1; m<=12; m++) {
+    html += '<th style="padding:8px;background:var(--green);color:#fff;text-align:center;border:1px solid #ddd;min-width:55px;">'+MESES_ABR[m]+'</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  list.forEach(function(pag) {
+    html += '<tr>';
+    html += '<td style="padding:7px 10px;border:1px solid #ddd;"><strong>'+pag.fornecedor+'</strong><br><small style="color:var(--gray-500);">'+pag.ref+'</small></td>';
+    for (var m2=1; m2<=12; m2++) {
+      var inMes = getMesesPag(pag).includes(m2);
+      if (!inMes) { html += '<td style="border:1px solid #ddd;background:#f9f9f9;text-align:center;color:#ccc;">—</td>'; continue; }
+      var key   = ano+'-'+String(m2).padStart(2,'0');
+      var pagM  = pag.pagamentos && pag.pagamentos[key];
+      var hoje2 = new Date(); hoje2.setHours(0,0,0,0);
+      var venc2 = calcVencimento(pag, m2, ano);
+      var diff2 = Math.round((venc2-hoje2)/86400000);
+      var cell, bg;
+      if (pagM && pagM.status==='pago')      { cell='✅'; bg='#e8f5ee'; }
+      else if (pagM && pagM.status==='cancelado') { cell='❌'; bg='#f5f5f5'; }
+      else if (diff2 < 0)                   { cell='🔴'; bg='#ffebee'; }
+      else if (diff2 <= 2 && m2===hoje2.getMonth()+1) { cell='⚠️'; bg='#fff8e1'; }
+      else                                  { cell='⏳'; bg='#fff'; }
+      html += '<td style="border:1px solid #ddd;text-align:center;background:'+bg+';font-size:14px;" title="'+MESES_NOMES[m2]+'">'+cell+'</td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;">'+
+    '<span>✅ Pago</span><span>⏳ Pendente</span><span>⚠️ Alerta</span><span>🔴 Vencido</span><span>❌ Cancelado</span><span>— Não ocorre</span></div>';
+  el.innerHTML = html;
 }
 
 // ============================================================
