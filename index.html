@@ -329,6 +329,17 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .sync-dot-big.err{background:var(--red);}
 .sync-spinner{width:36px;height:36px;border:3px solid var(--gray-100);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:16px auto;}
 
+
+/* FUNCIONÁRIOS — ABAS POR STATUS */
+#func-status-tabs .tab[data-status="Ativo"].active{background:var(--green);color:#fff;border-color:var(--green);}
+#func-status-tabs .tab[data-status="Afastado"].active{background:var(--accent);color:#fff;border-color:var(--accent);}
+#func-status-tabs .tab[data-status="Férias"].active{background:var(--blue);color:#fff;border-color:var(--blue);}
+#func-status-tabs .tab[data-status="Desligado"].active{background:var(--red);color:#fff;border-color:var(--red);}
+#func-status-tabs .tab[data-status="todos"].active{background:var(--green-dark);color:#fff;border-color:var(--green-dark);}
+.func-row-desligado td{opacity:.65;}
+.func-row-afastado td{background:#fff8e1 !important;}
+.func-row-ferias td{background:#e3f2fd !important;}
+
 </style>
 </head>
 <body>
@@ -498,9 +509,29 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="card">
     <div class="card-header">
       <span class="card-title">&#128101; Funcionários</span>
-      <button class="btn btn-primary" onclick="openModal('modal-func')">+ Novo Funcionário</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="openModal('modal-func')">+ Novo Funcionário</button>
+      </div>
     </div>
-    <div class="sort-bar">
+
+    <!-- Estatísticas rápidas -->
+    <div class="stats-grid" id="func-stats" style="margin-bottom:16px;"></div>
+
+    <!-- Abas por status -->
+    <div class="tabs" id="func-status-tabs">
+      <div class="tab active" data-status="todos" onclick="funcTab('todos',this)">👥 Todos</div>
+      <div class="tab" data-status="Ativo" onclick="funcTab('Ativo',this)">🟢 Ativos</div>
+      <div class="tab" data-status="Afastado" onclick="funcTab('Afastado',this)">🟡 Afastados</div>
+      <div class="tab" data-status="Férias" onclick="funcTab('Férias',this)">🏖️ Férias</div>
+      <div class="tab" data-status="Desligado" onclick="funcTab('Desligado',this)">🔴 Desligados</div>
+    </div>
+
+    <!-- Busca + ordenação -->
+    <div class="sort-bar" style="margin-bottom:12px;">
+      <input type="text" id="func-search" placeholder="🔍 Buscar por nome, CPF ou cargo..." 
+        oninput="rdFunc()" 
+        style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:220px;outline:none;"
+        onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--gray-200)'">
       <label>Ordenar por:</label>
       <select class="sort-sel" id="func-sort-campo" onchange="rdFunc()">
         <option value="nome">Nome (A-Z)</option>
@@ -512,10 +543,13 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <option value="asc">↑ Crescente</option>
         <option value="desc">↓ Decrescente</option>
       </select>
+      <span id="func-count" style="font-size:12px;color:var(--gray-500);margin-left:auto;white-space:nowrap;"></span>
     </div>
+
+    <!-- Tabela -->
     <div class="table-wrap"><table>
-      <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Departamento</th><th>Admissão</th><th>Status</th><th>Drive</th><th>Ações</th></tr></thead>
-      <tbody id="tb-func"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário cadastrado.</td></tr></tbody>
+      <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Departamento</th><th>Empresa</th><th>Admissão</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody id="tb-func"></tbody>
     </table></div>
   </div>
 </div>
@@ -2865,24 +2899,92 @@ function applySort(list, campo, dir, deps, emps, funcs) {
   });
 }
 
+var _funcStatusFilter = 'todos';
+
+function funcTabByStatus(status) {
+  var tab = document.querySelector('#func-status-tabs .tab[data-status="'+status+'"]');
+  if (!tab) tab = document.querySelector('#func-status-tabs .tab[data-status="todos"]');
+  if (tab) { _funcStatusFilter = tab.dataset.status; document.querySelectorAll('#func-status-tabs .tab').forEach(function(t){t.classList.remove('active');}); tab.classList.add('active'); rdFunc(); }
+}
+
+function funcTab(status, btn) {
+  _funcStatusFilter = status;
+  document.querySelectorAll('#func-status-tabs .tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  rdFunc();
+}
+
 function rdFunc() {
   var campo = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
   var dir   = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
+  var search= ((document.getElementById('func-search')||{}).value||'').toLowerCase().trim();
   var rawList = DB.g('funcionarios');
   var deps = DB.g('departamentos');
   var emps = DB.g('empresas');
-  var list = applySort(rawList, campo, dir, deps, emps, null);
+
+  // Stats
+  var statsEl = document.getElementById('func-stats');
+  if (statsEl) {
+    var total    = rawList.length;
+    var ativos   = rawList.filter(function(f){return f.st==='Ativo';}).length;
+    var afastados= rawList.filter(function(f){return f.st==='Afastado';}).length;
+    var ferias   = rawList.filter(function(f){return f.st==='Férias';}).length;
+    var deslig   = rawList.filter(function(f){return f.st==='Desligado';}).length;
+    statsEl.innerHTML = [
+      ['👥 Total',      total,    'var(--green-dark)'],
+      ['🟢 Ativos',     ativos,   'var(--green)'],
+      ['🟡 Afastados',  afastados,'var(--accent)'],
+      ['🏖️ Férias',    ferias,   'var(--blue)'],
+      ['🔴 Desligados', deslig,   'var(--red)']
+    ].map(function(r){
+      return '<div style="background:#fff;border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);border-top:3px solid '+r[2]+';cursor:pointer;" onclick="funcTabByStatus(''+r[0].split(' ')[1]+'')">'+
+        '<div style="font-size:22px;font-weight:700;color:'+r[2]+'">'+r[1]+'</div>'+
+        '<div style="font-size:12px;color:var(--gray-600);">'+r[0]+'</div></div>';
+    });
+    // Update tab counts
+    document.querySelectorAll('#func-status-tabs .tab').forEach(function(tab){
+      var st = tab.dataset.status;
+      var count = st==='todos' ? total : st==='Ativo' ? ativos : st==='Afastado' ? afastados : st==='Férias' ? ferias : st==='Desligado' ? deslig : 0;
+      var base = st==='todos'?'👥 Todos':st==='Ativo'?'🟢 Ativos':st==='Afastado'?'🟡 Afastados':st==='Férias'?'🏖️ Férias':'🔴 Desligados';
+      tab.innerHTML = base + (count > 0 ? ' <span style="background:rgba(255,255,255,.3);border-radius:20px;padding:0 6px;font-size:11px;font-weight:700;">'+count+'</span>' : '');
+    });
+  }
+
+  // Filter by status tab
+  var filtered = rawList;
+  if (_funcStatusFilter !== 'todos') {
+    filtered = rawList.filter(function(f){ return (f.st||'Ativo') === _funcStatusFilter; });
+  }
+
+  // Search filter
+  if (search) {
+    filtered = filtered.filter(function(f){
+      return (f.n||'').toLowerCase().includes(search) ||
+             (f.cpf||'').toLowerCase().includes(search) ||
+             (f.car||'').toLowerCase().includes(search);
+    });
+  }
+
+  var list = applySort(filtered, campo, dir, deps, emps, null);
+
+  // Update count
+  var countEl = document.getElementById('func-count');
+  if (countEl) countEl.textContent = list.length + ' funcionário(s)';
+
   const tb = document.getElementById('tb-func');
   if (!list.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário cadastrado.</td></tr>'; return; }
   tb.innerHTML = list.map(f => {
     const dep = deps.find(d => d.id === f.dep);
+    const emp = emps.find(e => e.id === f.emp);
     const bc = { Ativo:'badge-green', Afastado:'badge-yellow', Férias:'badge-blue', Desligado:'badge-red' }[f.st] || 'badge-gray';
+    const rowCls = f.st==='Desligado'?'func-row-desligado':f.st==='Afastado'?'func-row-afastado':f.st==='Férias'?'func-row-ferias':'';
     const hasDocs = f.docs && f.docs.length > 0;
-    return `<tr>
-      <td><strong>${f.n}</strong></td>
-      <td>${f.cpf}</td>
+    return `<tr class="${rowCls}">
+      <td><strong>${f.n}</strong>${f.tel?`<br><small style="color:var(--gray-400);font-size:11px;">📱 ${f.tel}</small>`:''}</td>
+      <td style="font-size:12px;">${f.cpf||'—'}</td>
       <td>${f.car || '—'}</td>
       <td>${dep ? dep.nome : '—'}</td>
+      <td style="font-size:12px;">${emp ? emp.razao.split(' ')[0] : '—'}</td>
       <td>${fd(f.adm)}</td>
       <td><span class="badge ${bc}">${f.st || 'Ativo'}</span></td>
       <td>${hasDocs ? '<button class="btn btn-outline btn-sm" onclick="viewDocs(\'' + f.id + '\')">&#128193; ' + f.docs.length + ' doc(s)</button>' : '<span style="color:var(--gray-400);font-size:12px">—</span>'}</td>
