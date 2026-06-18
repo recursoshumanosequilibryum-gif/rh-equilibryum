@@ -2826,7 +2826,10 @@ async function savFunc() {
       pis: v('fpis'), ctps: v('fctps'),
       emp: v('femp'), dep: v('fdep'), car: v('fcar'), sal: v('fsal'),
       adm: v('fadm'), tip: v('ftip'), ges: v('fges'), geswha: v('fgeswha'),
-      st: v('fst'), docs: []
+      st: v('fst'), escala: v('fescala'),
+      tamCamisa: v('ftam-camisa'), tamCalca: v('ftam-calca'),
+      tamCalcado: v('ftam-calcado'), tamJaleco: v('ftam-jaleco'),
+      docs: []
     };
     // Upload docs to Drive
     if (driveReady && pendingFiles.length > 0) {
@@ -2994,7 +2997,15 @@ function rdFunc() {
     if (rowCls) tr.className = rowCls;
 
     var td1 = document.createElement('td');
-    td1.innerHTML = '<strong>' + f.n + '</strong>' + (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '');
+    var uniInfo = '';
+    if (f.tamCamisa || f.tamCalca || f.tamCalcado) {
+      uniInfo = '<br><small style="color:var(--gray-400);font-size:10px;">' +
+        (f.tamCamisa ? '👕'+f.tamCamisa : '') +
+        (f.tamCalca ? ' 👖'+f.tamCalca : '') +
+        (f.tamCalcado ? ' 👟'+f.tamCalcado : '') +
+        '</small>';
+    }
+    td1.innerHTML = '<strong>' + f.n + '</strong>' + (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '') + uniInfo;
 
     var td2 = document.createElement('td');
     td2.style.fontSize = '12px';
@@ -7537,9 +7548,34 @@ function init() {
   updDash(); rdUni();
   initRelFilters(); rdRel();
   rdBenef();
+
+  // ── Reconexão automática ─────────────────────────────────
+  // 1. Renovar token a cada 45 min (token dura 1h)
   setInterval(function() {
-    if(driveReady && CLIENT_ID) silentReconnect();
-  }, 50 * 60 * 1000);
+    if (CLIENT_ID) { silentReconnect(); }
+  }, 45 * 60 * 1000);
+
+  // 2. Checar token a cada 10 min silenciosamente
+  setInterval(function() {
+    if (!driveToken || !CLIENT_ID) return;
+    fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+      headers: { 'Authorization': 'Bearer ' + driveToken }
+    }).then(function(r) {
+      if (!r.ok) { driveReady=false; updDriveStatus(false); silentReconnect(); }
+    }).catch(function(){});
+  }, 10 * 60 * 1000);
+
+  // 3. Reconectar quando usuário volta à aba
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && CLIENT_ID) {
+      if (!driveToken) { silentReconnect(); return; }
+      fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+        headers: { 'Authorization': 'Bearer ' + driveToken }
+      }).then(function(r) {
+        if (!r.ok) { driveReady=false; updDriveStatus(false); silentReconnect(); }
+      }).catch(function(){ silentReconnect(); });
+    }
+  });
 }
 
 window.addEventListener('load', () => {
