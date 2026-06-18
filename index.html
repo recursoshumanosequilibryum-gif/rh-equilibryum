@@ -2156,6 +2156,61 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- MODAL EDIÇÃO RÁPIDA UNIFORME -->
+<div class="modal-bg" id="modal-uni-quick">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <span class="modal-title" id="uni-quick-title">👕 Tamanhos de Uniforme</span>
+      <button class="modal-close" onclick="closeModal('modal-uni-quick')">&#215;</button>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:14px;font-size:13px;">
+      Preencha os tamanhos para <strong id="uni-quick-nome"></strong>. Deixe em branco o que não se aplica.
+    </div>
+    <input type="hidden" id="uni-quick-fid">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>👕 Camiseta / Blusa</label>
+        <select id="uq-camisa">
+          <option value="">Não definido</option>
+          <option>PP</option><option>P</option><option>M</option>
+          <option>G</option><option>GG</option><option>XGG</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🥼 Jaleco / Avental</label>
+        <select id="uq-jaleco">
+          <option value="">Não definido</option>
+          <option>PP</option><option>P</option><option>M</option>
+          <option>G</option><option>GG</option><option>XGG</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>👖 Calça</label>
+        <select id="uq-calca">
+          <option value="">Não definido</option>
+          <option>34</option><option>36</option><option>38</option><option>40</option>
+          <option>42</option><option>44</option><option>46</option><option>48</option>
+          <option>50</option><option>52</option><option>54</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>👟 Calçado (número)</label>
+        <select id="uq-calcado">
+          <option value="">Não definido</option>
+          <option>33</option><option>34</option><option>35</option><option>36</option>
+          <option>37</option><option>38</option><option>39</option><option>40</option>
+          <option>41</option><option>42</option><option>43</option><option>44</option>
+          <option>45</option><option>46</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-uni-quick')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savUniQuick()">&#128190; Salvar Tamanhos</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="sig-modal-bg">
   <div id="sig-modal">
@@ -2717,7 +2772,12 @@ function editFunc(id) {
   document.getElementById('ftip').value  = f.tip  || 'CLT';
   document.getElementById('fges').value  = f.ges  || '';
   document.getElementById('fgeswha').value = f.geswha || '';
-  document.getElementById('fst').value   = f.st   || 'Ativo';
+  document.getElementById('fst').value         = f.st          || 'Ativo';
+  document.getElementById('fescala').value      = f.escala       || '';
+  document.getElementById('ftam-camisa').value  = f.tamCamisa    || '';
+  document.getElementById('ftam-calca').value   = f.tamCalca     || '';
+  document.getElementById('ftam-calcado').value = f.tamCalcado   || '';
+  document.getElementById('ftam-jaleco').value  = f.tamJaleco    || '';
   // Update modal title and button
   document.querySelector('#modal-func .modal-title').textContent = '✏️ Editar Funcionário';
   document.getElementById('btn-save-func').innerHTML = '&#128190; Atualizar Funcionário';
@@ -3000,12 +3060,17 @@ function rdFunc() {
     var uniInfo = '';
     if (f.tamCamisa || f.tamCalca || f.tamCalcado) {
       uniInfo = '<br><small style="color:var(--gray-400);font-size:10px;">' +
-        (f.tamCamisa ? '👕'+f.tamCamisa : '') +
-        (f.tamCalca ? ' 👖'+f.tamCalca : '') +
-        (f.tamCalcado ? ' 👟'+f.tamCalcado : '') +
+        (f.tamCamisa  ? '👕 ' + f.tamCamisa + ' ' : '') +
+        (f.tamCalca   ? '👖 ' + f.tamCalca  + ' ' : '') +
+        (f.tamCalcado ? '👟 ' + f.tamCalcado         : '') +
+        (f.tamJaleco  ? ' 🥼 ' + f.tamJaleco         : '') +
         '</small>';
+    } else {
+      uniInfo = '<br><small style="color:var(--gray-200);font-size:10px;font-style:italic;">Tamanhos não definidos</small>';
     }
-    td1.innerHTML = '<strong>' + f.n + '</strong>' + (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '') + uniInfo;
+    td1.innerHTML = '<strong>' + f.n + '</strong>' +
+      (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '') +
+      uniInfo;
 
     var td2 = document.createElement('td');
     td2.style.fontSize = '12px';
@@ -3041,6 +3106,10 @@ function rdFunc() {
     btnE.className = 'btn-icon'; btnE.title = 'Editar'; btnE.textContent = '✏️';
     (function(id){ btnE.onclick = function(){ editFunc(id); }; })(f.id);
 
+    var btnU = document.createElement('button');
+    btnU.className = 'btn-icon'; btnU.title = 'Tamanhos de uniforme'; btnU.textContent = '👕';
+    (function(id){ btnU.onclick = function(){ openUniQuick(id); }; })(f.id);
+
     var btnW = document.createElement('button');
     btnW.className = 'btn-icon'; btnW.title = 'WhatsApp'; btnW.textContent = '💬';
     (function(tel){ btnW.onclick = function(){ wha(tel, ''); }; })(f.tel || '');
@@ -3050,6 +3119,7 @@ function rdFunc() {
     (function(id){ btnX.onclick = function(){ delFunc(id); }; })(f.id);
 
     td8.appendChild(btnE);
+    td8.appendChild(btnU);
     td8.appendChild(btnW);
     td8.appendChild(btnX);
 
@@ -7585,6 +7655,36 @@ function gerarAssinaturaEmpresa(empresa) {
       'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum' +
     '</div>' +
   '</div>';
+}
+
+// ── Edição rápida de tamanhos de uniforme ─────────────────────
+function openUniQuick(fid) {
+  var f = DB.g('funcionarios').find(function(x){ return x.id===fid; });
+  if (!f) return;
+  document.getElementById('uni-quick-fid').value  = fid;
+  document.getElementById('uni-quick-nome').textContent = f.n;
+  document.getElementById('uni-quick-title').textContent = '👕 Tamanhos — ' + f.n.split(' ')[0];
+  document.getElementById('uq-camisa').value   = f.tamCamisa  || '';
+  document.getElementById('uq-jaleco').value   = f.tamJaleco  || '';
+  document.getElementById('uq-calca').value    = f.tamCalca   || '';
+  document.getElementById('uq-calcado').value  = f.tamCalcado || '';
+  document.getElementById('modal-uni-quick').classList.add('open');
+}
+
+async function savUniQuick() {
+  var fid = document.getElementById('uni-quick-fid').value;
+  var list = DB.g('funcionarios');
+  var idx  = list.findIndex(function(x){ return x.id===fid; });
+  if (idx === -1) return;
+  list[idx].tamCamisa  = document.getElementById('uq-camisa').value;
+  list[idx].tamJaleco  = document.getElementById('uq-jaleco').value;
+  list[idx].tamCalca   = document.getElementById('uq-calca').value;
+  list[idx].tamCalcado = document.getElementById('uq-calcado').value;
+  DB.s('funcionarios', list);
+  if (driveReady) await driveSync('funcionarios');
+  closeModal('modal-uni-quick');
+  rdFunc();
+  toast('Tamanhos salvos para ' + list[idx].n.split(' ')[0] + '!' + (driveReady?' ☁️':''));
 }
 
 // ============================================================
