@@ -4935,25 +4935,51 @@ function rdBenefFunc() {
     // Header
     var header = document.createElement('div');
     header.className = 'benef-func-card-header';
-    header.innerHTML =
-      '<div class="bfc-avatar">' + f.n[0].toUpperCase() + '</div>' +
-      '<div class="bfc-info">' +
-        '<div class="bfc-name">' + f.n + '</div>' +
-        '<div class="bfc-meta">' + (f.car||'—') + (emp?' &nbsp;·&nbsp; '+emp.razao:'') + '</div>' +
-        '<div class="bfc-badges">' +
-          badgesAtivos.map(function(a){
-            var tipo = a.tipoBase||a.tipo||'';
-            var c = TIPO_COLORS[tipo] || {bg:'var(--gray-100)',color:'var(--gray-600)'};
-            var icon = TIPO_ICON[tipo] || '📌';
-            return '<span class="benef-tipo-pill" style="background:'+c.bg+';color:'+c.color+'">'+icon+' '+tipo.split(' ')[0]+'</span>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
-      '<div class="bfc-total">' + (totalMes > 0 ? 'R$ '+totalMes.toFixed(2).replace('.',',') : '—') + '</div>' +
-      '<div style="display:flex;gap:6px;align-items:center;">' +
-        '<button class="btn btn-primary btn-sm" title="Editar benefícios" onclick="event.stopPropagation();abrirEditarBenef(\'' + fid + '\')">✏️ Editar</button>' +
-      '</div>' +
-      '<div class="bfc-toggle">▼</div>';
+    // Build header using DOM to avoid string escaping issues
+    header.innerHTML = '';
+    var avatarEl = document.createElement('div');
+    avatarEl.className = 'bfc-avatar';
+    avatarEl.textContent = f.n[0].toUpperCase();
+
+    var infoEl = document.createElement('div');
+    infoEl.className = 'bfc-info';
+    infoEl.innerHTML =
+      '<div class="bfc-name">' + f.n + '</div>' +
+      '<div class="bfc-meta">' + (f.car||'—') + (emp?' &nbsp;·&nbsp; '+emp.razao:'') + '</div>' +
+      '<div class="bfc-badges">' +
+        badgesAtivos.map(function(a){
+          var tipo = a.tipoBase||a.tipo||'';
+          var c = TIPO_COLORS[tipo] || {bg:'var(--gray-100)',color:'var(--gray-600)'};
+          var icon = TIPO_ICON[tipo] || '📌';
+          return '<span class="benef-tipo-pill" style="background:'+c.bg+';color:'+c.color+'">'+icon+' '+tipo.split(' ')[0]+'</span>';
+        }).join('') +
+      '</div>';
+
+    var totalEl = document.createElement('div');
+    totalEl.className = 'bfc-total';
+    totalEl.textContent = totalMes > 0 ? 'R$ '+totalMes.toFixed(2).replace('.',',') : '—';
+
+    var actionsEl = document.createElement('div');
+    actionsEl.style.cssText = 'display:flex;gap:6px;align-items:center;';
+    var editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-primary btn-sm';
+    editBtn.title = 'Editar benefícios';
+    editBtn.textContent = '✏️ Editar';
+    editBtn.onclick = function(e) {
+      e.stopPropagation();
+      abrirEditarBenef(fid);
+    };
+    actionsEl.appendChild(editBtn);
+
+    var toggleEl = document.createElement('div');
+    toggleEl.className = 'bfc-toggle';
+    toggleEl.textContent = '▼';
+
+    header.appendChild(avatarEl);
+    header.appendChild(infoEl);
+    header.appendChild(totalEl);
+    header.appendChild(actionsEl);
+    header.appendChild(toggleEl)
     header.onclick = function() { toggleBenefCard(fid); };
 
     // Body — tabela de benefícios
