@@ -2845,7 +2845,7 @@ async function findOrCreateFolder(name, parentId) {
 async function ensureRHFolder() {
   try {
     rhFolderId = await findOrCreateFolder('RH Equilibryum', null);
-    toast('Pasta "RH Equilibryum" pronta no Drive ☁️');
+    toast("Pasta RH Equilibryum pronta no Drive ☁️");
   } catch(e) {
     console.error('Folder error:', e);
     toast('Não foi possível acessar o Drive. Modo local ativado.', 'warn');
@@ -3712,9 +3712,9 @@ function renderViewDocs(funcId) {
 async function delDocFunc(funcId, encodedName, encodedCat) {
   var name = decodeURIComponent(encodedName);
   var cat  = decodeURIComponent(encodedCat);
-  if (!confirm('Remover o documento "' + name + '" da lista?
+  if (!confirm('Remover o documento "' + name + '" da lista?\n\n⚠️ O arquivo no Drive NÃO será excluído — apenas o vínculo no sistema.')) return;
 
-⚠️ O arquivo no Drive NÃO será excluído — apenas o vínculo no sistema.')) return;
+
 
   var list = DB.g('funcionarios');
   var idx  = list.findIndex(function(x){ return x.id===funcId; });
@@ -8287,38 +8287,43 @@ function clearSavedSignature() {
 
 function gerarAssinaturaEmpresa(empresa) {
   var isEq = !empresa || empresa === 'equilibryum';
-  var nomeEmp  = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
-                      : 'Longhi Serviços de Terceirização a Empresas Ltda';
-  var cnpjEmp  = isEq ? 'CNPJ: 05.441.897/0001-02' : 'CNPJ: 54.188.772/0001-28';
-  var endEmp   = isEq ? 'Rua Dr Costa Júnior, 365 – Perdizes – São Paulo – SP'
-                      : 'Rua Dr Germaine Burchard, 324 – Perdizes – São Paulo – SP';
+  var nomeEmp = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
+                     : 'Longhi Serviços de Terceirização a Empresas Ltda';
+  var cnpjEmp = isEq ? 'CNPJ: 05.441.897/0001-02' : 'CNPJ: 54.188.772/0001-28';
+  var endEmp  = isEq ? 'Rua Dr Costa Júnior, 365 – Perdizes – São Paulo – SP'
+                     : 'Rua Dr Germaine Burchard, 324 – Perdizes – São Paulo – SP';
 
-  // Use saved signature if available, otherwise show blank line
   var sigHtml = _savedSignature
     ? '<img src="' + _savedSignature + '" style="max-height:60px;max-width:200px;display:block;margin:0 auto 4px;">'
     : '<div style="height:50px;border-bottom:1.5px solid #333;width:200px;margin:0 auto 4px;"></div>';
 
-  return '<div style="page-break-inside:avoid;margin-top:30px;border-top:2px solid #1f5c44;padding-top:14px;">' +
-    '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;">' +
-      '<div style="flex:1;">' +
-        '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:200px;object-fit:contain;display:block;margin-bottom:8px;">' +
-        '<div style="font-size:9pt;color:#333;font-weight:600;">' + nomeEmp + '</div>' +
-        '<div style="font-size:8.5pt;color:#666;">' + cnpjEmp + '</div>' +
-        '<div style="font-size:8.5pt;color:#666;">' + endEmp + '</div>' +
-      '</div>' +
-      '<div style="text-align:center;min-width:220px;">' +
-        sigHtml +
-        '<div style="border-top:1.5px solid #333;padding-top:5px;">' +
-          '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>' +
-          '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>' +
-          '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    '<div style="text-align:center;font-size:8pt;color:#aaa;margin-top:12px;border-top:1px solid #eee;padding-top:6px;">' +
-      'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum' +
-    '</div>' +
-  '</div>';
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:200px;object-fit:contain;display:block;margin-bottom:8px;">'
+    : '';
+
+  return [
+    '<div style="page-break-inside:avoid;margin-top:30px;border-top:2px solid #1f5c44;padding-top:14px;">',
+      '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;">',
+        '<div style="flex:1;">',
+          logoHtml,
+          '<div style="font-size:9pt;color:#333;font-weight:600;">' + nomeEmp + '</div>',
+          '<div style="font-size:8.5pt;color:#666;">' + cnpjEmp + '</div>',
+          '<div style="font-size:8.5pt;color:#666;">' + endEmp + '</div>',
+        '</div>',
+        '<div style="text-align:center;min-width:220px;">',
+          sigHtml,
+          '<div style="border-top:1.5px solid #333;padding-top:5px;">',
+            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>',
+            '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>',
+            '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+          '</div>',
+        '</div>',
+      '</div>',
+      '<div style="text-align:center;font-size:8pt;color:#aaa;margin-top:12px;border-top:1px solid #eee;padding-top:6px;">',
+        'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum',
+      '</div>',
+    '</div>'
+  ].join('');
 }
 
 // ── Edição rápida de tamanhos de uniforme ─────────────────────
