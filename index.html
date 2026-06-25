@@ -367,6 +367,16 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .doc-pending-item .doc-size{color:var(--gray-400);font-size:11px;white-space:nowrap;}
 .doc-pending-item .doc-del{cursor:pointer;color:var(--red);font-size:14px;flex-shrink:0;background:none;border:none;padding:0 2px;}
 
+
+/* REQUISIÇÃO UNIFORME */
+.req-item-row{display:grid;grid-template-columns:180px 80px 120px 120px 100px;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--gray-100);}
+.req-item-row:last-child{border-bottom:none;}
+.req-item-nome{font-size:13px;color:var(--gray-700);}
+.req-item-qtd{padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;width:100%;text-align:center;}
+.req-item-qtd:focus{border-color:var(--green);outline:none;background:#fffde7;}
+.req-item-qtd:not(:placeholder-shown){background:#e8f5ee;border-color:var(--green);font-weight:700;}
+.req-item-field{padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;width:100%;}
+
 </style>
 </head>
 <body>
@@ -1212,6 +1222,20 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         </div>
         <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Declaração de recebimento do Regulamento Interno da Clínica Equilibryum.</p>
         <button class="btn btn-primary btn-sm" style="background:#bf360c;" onclick="gerarReciboRegulamento()">&#128196; Gerar Documento</button>
+      </div>
+
+      <!-- Requisição de Uniforme -->
+      <div class="trein-card" style="border-left:4px solid #4a148c;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#128248; Requisição de Uniforme</div>
+            <div class="tc-meta">Equilibryum – Autorização de retirada de peças</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">
+          Documento de requisição de uniformes com campos de quantidade editáveis. Gerado com dados do funcionário selecionado.
+        </p>
+        <button class="btn btn-primary btn-sm" style="background:#4a148c;" onclick="abrirModalRequisicao()">&#128248; Gerar Requisição de Uniforme</button>
       </div>
 
     </div>
@@ -2555,6 +2579,62 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- MODAL REQUISIÇÃO UNIFORME -->
+<div class="modal-bg" id="modal-requisicao">
+  <div class="modal" style="max-width:700px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header">
+      <span class="modal-title">&#128248; Requisição de Uniforme</span>
+      <button class="modal-close" onclick="closeModal('modal-requisicao')">&#215;</button>
+    </div>
+
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group form-full">
+        <label>Funcionário *</label>
+        <select id="req-func"><option value="">Selecione</option></select>
+      </div>
+      <div class="form-group">
+        <label>Data da Requisição</label>
+        <input type="date" id="req-data">
+      </div>
+      <div class="form-group">
+        <label>Autorização válida até</label>
+        <input type="date" id="req-validade">
+      </div>
+      <div class="form-group">
+        <label>Número da Requisição</label>
+        <input type="text" id="req-num" placeholder="Ex.: 001/2026">
+      </div>
+    </div>
+
+    <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:12px;">
+      ✏️ Preencha as quantidades desejadas (deixe em branco o que não se aplica):
+    </div>
+
+    <!-- MASCULINO -->
+    <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:12.5px;color:#1565c0;margin-bottom:8px;border-bottom:2px solid #1565c0;padding-bottom:4px;">👔 MASCULINO</div>
+      <div id="req-masc-items"></div>
+    </div>
+
+    <!-- FEMININO -->
+    <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:12.5px;color:#880e4f;margin-bottom:8px;border-bottom:2px solid #880e4f;padding-bottom:4px;">👗 FEMININO</div>
+      <div id="req-fem-items"></div>
+    </div>
+
+    <!-- OPERACIONAL -->
+    <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:12.5px;color:#e65100;margin-bottom:8px;border-bottom:2px solid #e65100;padding-bottom:4px;">🔧 OPERACIONAL</div>
+      <div id="req-op-items"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-requisicao')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#4a148c;" onclick="gerarRequisicaoUniforme()">&#128196; Gerar Documento</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="sig-modal-bg">
   <div id="sig-modal">
@@ -3395,7 +3475,7 @@ function applySort(list, campo, dir, deps, emps, funcs) {
 var _funcStatusFilter = 'todos';
 
 function funcTabByStatus(status) {
-  var tab = document.querySelector('#func-status-tabs .tab[data-status="'+status+'"]');
+  var tab = document.querySelector('#func-status-tabs .tab[data-status="' + status + '"]');
   if (!tab) tab = document.querySelector('#func-status-tabs .tab[data-status="todos"]');
   if (tab) { _funcStatusFilter = tab.dataset.status; document.querySelectorAll('#func-status-tabs .tab').forEach(function(t){t.classList.remove('active');}); tab.classList.add('active'); rdFunc(); }
 }
@@ -8734,6 +8814,266 @@ function renderPagResumo() {
   html += '<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;">'+
     '<span>✅ Pago</span><span>⏳ Pendente</span><span>⚠️ Alerta</span><span>🔴 Vencido</span><span>❌ Cancelado</span><span>— Não ocorre</span></div>';
   el.innerHTML = html;
+}
+
+// ============================================================
+// REQUISIÇÃO DE UNIFORME
+// ============================================================
+
+var REQ_ITENS = {
+  masc: [
+    { nome: 'Paletó',                            cor: '',       bordado: ''    },
+    { nome: 'Calça',                             cor: '',       bordado: ''    },
+    { nome: 'Terno Microfibra',                  cor: '',       bordado: ''    },
+    { nome: 'Camisa Manga Longa',                cor: '',       bordado: ''    },
+    { nome: 'Camisa Manga Curta Gola Estruturada Cinza/Gelo', cor:'', bordado:'' },
+    { nome: 'Camisa Polo Cinza',                 cor: 'Cinza',  bordado: ''    },
+    { nome: 'Jaqueta Nylon Preta',               cor: 'Preta',  bordado: ''    },
+    { nome: 'Gravata',                           cor: '',       bordado: ''    },
+    { nome: 'Cinto',                             cor: '',       bordado: ''    },
+    { nome: 'Meia',                              cor: '',       bordado: ''    },
+    { nome: 'Sapato',                            cor: '',       bordado: ''    },
+  ],
+  fem: [
+    { nome: 'Blazer',                            cor: '',       bordado: 'SIM' },
+    { nome: 'Calça',                             cor: '',       bordado: ''    },
+    { nome: 'Camisa Manga Longa',                cor: '',       bordado: ''    },
+    { nome: 'Camisa Manga Curta',                cor: '',       bordado: ''    },
+    { nome: 'Camisa Manga 3/4',                  cor: '',       bordado: ''    },
+    { nome: 'Camisa Polo',                       cor: '',       bordado: ''    },
+    { nome: 'Colete',                            cor: '',       bordado: ''    },
+    { nome: 'Saia',                              cor: '',       bordado: ''    },
+    { nome: 'Vestido com Manga Curta',           cor: '',       bordado: ''    },
+    { nome: 'Vestido sem Manga',                 cor: '',       bordado: ''    },
+    { nome: 'Blusa de Lã',                       cor: '',       bordado: ''    },
+    { nome: 'Echarpe',                           cor: '',       bordado: ''    },
+    { nome: 'Meia',                              cor: '',       bordado: ''    },
+    { nome: 'Sapato com Salto',                  cor: '',       bordado: ''    },
+    { nome: 'Sapato sem Salto',                  cor: '',       bordado: ''    },
+  ],
+  op: [
+    { nome: 'Conjunto Oxford ASG/Limpeza/Copeira', cor: 'Preto',  bordado: '' },
+    { nome: 'Camisa Brim Manutenção',             cor: 'Cinza',  bordado: ''  },
+    { nome: 'Calça Brim Manutenção',              cor: 'Cinza',  bordado: ''  },
+    { nome: 'Sapato Soft Work',                   cor: 'Branco', bordado: ''  },
+  ]
+};
+
+function abrirModalRequisicao() {
+  // Fill funcionarios
+  var sel = document.getElementById('req-func');
+  sel.innerHTML = '<option value="">Selecione</option>';
+  DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+    .sort(function(a,b){ return a.n.localeCompare(b.n); })
+    .forEach(function(f) {
+      var o = document.createElement('option');
+      o.value = f.id; o.textContent = f.n;
+      sel.appendChild(o);
+    });
+
+  // Dates
+  var hoje = new Date();
+  document.getElementById('req-data').value = hoje.toISOString().split('T')[0];
+  var validade = new Date(hoje); validade.setDate(validade.getDate()+9);
+  document.getElementById('req-validade').value = validade.toISOString().split('T')[0];
+
+  // Build item rows
+  function buildItems(containerId, items, prefix) {
+    var el = document.getElementById(containerId);
+    el.innerHTML = '';
+
+    // Header
+    var hdr = document.createElement('div');
+    hdr.className = 'req-item-row';
+    hdr.style.cssText = 'font-weight:700;font-size:11.5px;color:var(--gray-500);border-bottom:2px solid var(--gray-200);';
+    hdr.innerHTML = '<div>Item</div><div style="text-align:center;">Qtde</div><div>Cor</div><div>Tamanho</div><div>Bordado</div>';
+    el.appendChild(hdr);
+
+    items.forEach(function(item, idx) {
+      var row = document.createElement('div');
+      row.className = 'req-item-row';
+
+      var nome = document.createElement('div');
+      nome.className = 'req-item-nome';
+      nome.textContent = item.nome;
+
+      var qtd = document.createElement('input');
+      qtd.type = 'number'; qtd.min = '0'; qtd.placeholder = '—';
+      qtd.className = 'req-item-qtd';
+      qtd.id = prefix + '-qtd-' + idx;
+
+      var cor = document.createElement('input');
+      cor.type = 'text'; cor.placeholder = item.cor || '—';
+      cor.className = 'req-item-field';
+      cor.id = prefix + '-cor-' + idx;
+      if (item.cor) cor.value = item.cor;
+
+      var tam = document.createElement('input');
+      tam.type = 'text'; tam.placeholder = '—';
+      tam.className = 'req-item-field';
+      tam.id = prefix + '-tam-' + idx;
+
+      var bord = document.createElement('input');
+      bord.type = 'text'; bord.placeholder = item.bordado || '—';
+      bord.className = 'req-item-field';
+      bord.id = prefix + '-bord-' + idx;
+      if (item.bordado) bord.value = item.bordado;
+
+      row.appendChild(nome);
+      row.appendChild(qtd);
+      row.appendChild(cor);
+      row.appendChild(tam);
+      row.appendChild(bord);
+      el.appendChild(row);
+    });
+  }
+
+  buildItems('req-masc-items', REQ_ITENS.masc, 'masc');
+  buildItems('req-fem-items',  REQ_ITENS.fem,  'fem');
+  buildItems('req-op-items',   REQ_ITENS.op,   'op');
+
+  openModal('modal-requisicao');
+}
+
+function gerarRequisicaoUniforme() {
+  var fid  = (document.getElementById('req-func')||{}).value;
+  var data = (document.getElementById('req-data')||{}).value;
+  var val  = (document.getElementById('req-validade')||{}).value;
+  var num  = (document.getElementById('req-num')||{}).value;
+
+  if (!fid) { alert('Selecione um funcionário.'); return; }
+
+  var f    = DB.g('funcionarios').find(function(x){ return x.id===fid; });
+  var emps = DB.g('empresas');
+  var deps = DB.g('departamentos');
+  var emp  = emps.find(function(e){ return e.id===f.emp; });
+  var dep  = deps.find(function(d){ return d.id===f.dep; });
+
+  function getRows(prefix, items) {
+    var rows = '';
+    items.forEach(function(item, idx) {
+      var qtd  = (document.getElementById(prefix+'-qtd-'+idx)||{}).value||'';
+      var cor  = (document.getElementById(prefix+'-cor-'+idx)||{}).value||item.cor||'';
+      var tam  = (document.getElementById(prefix+'-tam-'+idx)||{}).value||'';
+      var bord = (document.getElementById(prefix+'-bord-'+idx)||{}).value||item.bordado||'';
+      rows += '<tr style="background:' + (idx%2===0?'#fff':'#f9f9f9') + ';">' +
+        '<td style="padding:5px 8px;font-size:10pt;">' + qtd + '</td>' +
+        '<td style="padding:5px 8px;font-size:10pt;">' + item.nome + '</td>' +
+        '<td style="padding:5px 8px;font-size:10pt;">' + cor + '</td>' +
+        '<td style="padding:5px 8px;font-size:10pt;">' + tam + '</td>' +
+        '<td style="padding:5px 8px;font-size:10pt;">' + bord + '</td>' +
+        '</tr>';
+    });
+    return rows;
+  }
+
+  function sectionHtml(title, color, prefix, items) {
+    return '<tr><td colspan="5" style="background:' + color + ';color:#fff;font-weight:700;font-size:10.5pt;padding:6px 8px;">' + title + '</td></tr>' +
+           getRows(prefix, items);
+  }
+
+  var sigHtml = _savedSignature
+    ? '<img src="' + _savedSignature + '" style="max-height:50px;display:block;">'
+    : '<div style="height:40px;border-bottom:1.5px solid #333;width:180px;"></div>';
+
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:50px;max-width:160px;object-fit:contain;">'
+    : '<strong>EQUILIBRYUM</strong>';
+
+  var dataFmt = data ? data.split('-').reverse().join('/') : '';
+  var valFmt  = val  ? val.split('-').reverse().join('/')  : '';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Requisição de Uniforme – ' + f.n + '</title>' +
+    '<style>' +
+      'body{font-family:Arial,sans-serif;margin:20px;font-size:10pt;color:#222;}' +
+      'table{border-collapse:collapse;width:100%;}' +
+      'th{background:#4a148c;color:#fff;padding:6px 8px;font-size:10pt;text-align:left;}' +
+      '.header-box{border:1.5px solid #4a148c;border-radius:6px;padding:12px 16px;margin-bottom:14px;}' +
+      '.header-row{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:8px;}' +
+      '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;font-size:9.5pt;}' +
+      '.info-label{color:#666;font-size:9pt;}' +
+      '.footer-box{margin-top:20px;padding-top:12px;border-top:2px solid #4a148c;}' +
+      '.sig-row{display:flex;gap:40px;justify-content:space-between;flex-wrap:wrap;margin-top:16px;}' +
+      '.sig-block{text-align:center;}' +
+      '.sig-line{border-top:1.5px solid #333;padding-top:5px;margin-top:4px;min-width:180px;}' +
+      '.alert-box{background:#f3e5f5;border:1px solid #ce93d8;border-radius:6px;padding:8px 12px;font-size:9pt;margin-top:12px;}' +
+      '@media print{body{margin:10px;}}' +
+    '</style></head><body>' +
+
+    // HEADER
+    '<div class="header-box">' +
+      '<div class="header-row">' +
+        '<div>' + logoHtml + '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-size:14pt;font-weight:700;color:#4a148c;">REQUISIÇÃO DE UNIFORME</div>' +
+          (num ? '<div style="font-size:9.5pt;color:#666;">Nº ' + num + '</div>' : '') +
+          '<div style="font-size:9.5pt;color:#666;">Data: ' + dataFmt + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="info-grid">' +
+        '<div><span class="info-label">RAZÃO SOCIAL: </span><strong>' + (emp ? emp.razao : 'EQUILIBRYUM REAB CONSULT EM SAUDE S S LT') + '</strong></div>' +
+        '<div><span class="info-label">CNPJ: </span><strong>' + (emp ? emp.cnpj||'' : '05.441.897/0001-02') + '</strong></div>' +
+        '<div><span class="info-label">NOME: </span><strong>' + f.n + '</strong></div>' +
+        '<div><span class="info-label">RG: </span><strong>' + (f.rg||'') + '</strong></div>' +
+        '<div><span class="info-label">POSTO: </span><strong>' + (dep ? dep.nome : '') + '</strong></div>' +
+        '<div><span class="info-label">CPF: </span><strong>' + (f.cpf||'') + '</strong></div>' +
+        '<div><span class="info-label">FUNÇÃO: </span><strong>' + (f.car||'') + '</strong></div>' +
+        '<div><span class="info-label">TAMANHO: </span><strong>' +
+          (f.tamCamisa ? 'Camisa: '+f.tamCamisa : '') +
+          (f.tamCalca  ? '  Calça: '+f.tamCalca   : '') +
+          (f.tamCalcado? '  Calçado: '+f.tamCalcado: '') +
+        '</strong></div>' +
+      '</div>' +
+    '</div>' +
+
+    // TABELA
+    '<table>' +
+      '<thead><tr>' +
+        '<th style="width:60px;">QTDE</th>' +
+        '<th>DESCRIÇÃO</th>' +
+        '<th style="width:80px;">COR</th>' +
+        '<th style="width:80px;">TAMANHO</th>' +
+        '<th style="width:80px;">BORDADO</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+        sectionHtml('👔 MASCULINO',   '#1565c0', 'masc', REQ_ITENS.masc) +
+        sectionHtml('👗 FEMININO',    '#880e4f', 'fem',  REQ_ITENS.fem)  +
+        sectionHtml('🔧 OPERACIONAL', '#e65100', 'op',   REQ_ITENS.op)   +
+      '</tbody>' +
+    '</table>' +
+
+    // FOOTER
+    '<div class="footer-box">' +
+      '<div style="font-size:9.5pt;color:#666;">Autorização válida até o dia: <strong>' + valFmt + '</strong></div>' +
+      '<div class="sig-row">' +
+        '<div class="sig-block">' +
+          sigHtml +
+          '<div class="sig-line">' +
+            '<strong>MÔNICA SANTOS</strong><br>' +
+            '<span style="font-size:9pt;color:#555;">Responsável/Compradora</span><br>' +
+            '<span style="font-size:8.5pt;color:#777;">Contato: +55 11 96333-2165</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sig-block">' +
+          '<div style="height:50px;"></div>' +
+          '<div class="sig-line">' +
+            '<strong>' + f.n + '</strong><br>' +
+            '<span style="font-size:9pt;color:#555;">Assinatura do Funcionário</span><br>' +
+            '<span style="font-size:8.5pt;color:#777;">RG: ' + (f.rg||'_________________') + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="alert-box">' +
+        '⚠️ <strong>Atenção:</strong> A requisição deverá estar assinada pelo responsável no ato da retirada do uniforme pelo funcionário. ' +
+        'Em caso de dúvida, requisição vencida ou rasurada nossa atendente entrará em contato para esclarecimentos.' +
+      '</div>' +
+    '</div>' +
+
+    '</body></html>';
+
+  closeModal('modal-requisicao');
+  abrirEImprimirDoc(doc, 'Requisicao_Uniforme_' + f.n.replace(/ /g,'_'), f);
 }
 
 // ============================================================
