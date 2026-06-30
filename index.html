@@ -3015,6 +3015,7 @@ async function syncFromDrive() {
     const uniEst = await loadDriveJSON('eq_uni-est.json');
     if (uniEst !== null) DB.so('uni-est', uniEst);
   } catch(e) {}
+  await loadFotoStoreFromDrive();
   // Reload all UI with fresh data from Drive
   updDash();
   rdUni();
@@ -3308,7 +3309,7 @@ function editFunc(id) {
   document.getElementById('ftip').value  = f.tip  || 'CLT';
   document.getElementById('fges').value  = f.ges  || '';
   document.getElementById('fgeswha').value = f.geswha || '';
-  var existingFoto = f.foto || null;
+  var existingFoto = fotoStoreGet(f.id);
   _funcFotoDataURL = undefined; // undefined = não mudou; null = removeu; string = nova foto
   loadFuncFotoPreview(f.foto || null);
   document.getElementById('fst').value         = f.st          || 'Ativo';
@@ -3430,7 +3431,6 @@ async function savFunc() {
       st: v('fst'), escala: v('fescala'),
       tamCamisa: v('ftam-camisa'), tamCalca: v('ftam-calca'),
       tamCalcado: v('ftam-calcado'), tamJaleco: v('ftam-jaleco'),
-      foto: _funcFotoDataURL || null,
       docs: []
     };
     // Upload docs to Drive
@@ -3606,9 +3606,10 @@ function rdFunc() {
     // Foto ou avatar
     var fotoEl = document.createElement('div');
     fotoEl.style.cssText = 'width:38px;height:38px;border-radius:50%;flex-shrink:0;overflow:hidden;border:2px solid var(--green);background:var(--green);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;';
-    if (f.foto) {
+    var fSrc = fotoStoreGet(f.id);
+    if (fSrc) {
       var fotoImg = document.createElement('img');
-      fotoImg.src = f.foto; fotoImg.style.cssText='width:100%;height:100%;object-fit:cover;';
+      fotoImg.src = fSrc; fotoImg.style.cssText='width:100%;height:100%;object-fit:cover;';
       fotoEl.appendChild(fotoImg);
     } else {
       fotoEl.textContent = f.n[0].toUpperCase();
@@ -5778,9 +5779,10 @@ function rdBday() {
     // Avatar com foto
     var avatarEl = document.createElement('div');
     avatarEl.className = 'bday-avatar' + (isHoje ? ' today' : '');
-    if (f.foto) {
+    var fBdaySrc = fotoStoreGet(f.id);
+    if (fBdaySrc) {
       var img = document.createElement('img');
-      img.src = f.foto;
+      img.src = fBdaySrc;
       img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
       img.onerror = function(){ this.remove(); avatarEl.textContent = f.n[0].toUpperCase(); };
       avatarEl.appendChild(img);
@@ -5833,8 +5835,9 @@ function gerarTemplateAniversariantes(mes) {
     var idade = ano - parseInt(f.nas.split('-')[0]);
     var primeiroNome = f.n.split(' ')[0];
     var sobrenome    = f.n.split(' ').slice(1).join(' ');
-    var fotoHtml = f.foto
-      ? '<img src="'+f.foto+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.8);display:block;margin:0 auto 10px;">'
+    var fotoSrcTpl = fotoStoreGet(f.id);
+    var fotoHtml = fotoSrcTpl
+      ? '<img src="'+fotoSrcTpl+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.8);display:block;margin:0 auto 10px;">'
       : '<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">'+f.n[0].toUpperCase()+'</div>';
     return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:155px;border:1px solid rgba(255,255,255,0.2);">' +
       fotoHtml +
@@ -9343,6 +9346,48 @@ function loadFuncFotoPreview(fotoURL) {
   _funcFotoDataURL = fotoURL || null;
 }
 
+// ── Foto Store — armazena fotos separado de funcionarios ──────────────
+var _fotoStore = {};
+
+function fotoStoreLoad() {
+  try { _fotoStore = JSON.parse(localStorage.getItem('eq_fotos_func') || '{}'); }
+  catch(e) { _fotoStore = {}; }
+}
+
+function fotoStoreSave() {
+  try { localStorage.setItem('eq_fotos_func', JSON.stringify(_fotoStore)); }
+  catch(e) {
+    // Quota excedida — limpar fotos de funcs deletados
+    var ids = DB.g('funcionarios').map(function(f){ return f.id; });
+    Object.keys(_fotoStore).forEach(function(id){ if (ids.indexOf(id) < 0) delete _fotoStore[id]; });
+    try { localStorage.setItem('eq_fotos_func', JSON.stringify(_fotoStore)); } catch(e2) {}
+  }
+}
+
+function fotoStoreGet(funcId) {
+  return (_fotoStore && _fotoStore[funcId]) || null;
+}
+
+function fotoStoreSet(funcId, base64) {
+  if (!_fotoStore) _fotoStore = {};
+  if (base64) _fotoStore[funcId] = base64;
+  else delete _fotoStore[funcId];
+  fotoStoreSave();
+}
+
+async function syncFotoStoreToDrive() {
+  if (!driveReady || !rhFolderId) return;
+  try { await saveDriveJSON('eq_fotos_func.json', _fotoStore); }
+  catch(e) { console.warn('[FotoStore] Erro ao salvar no Drive:', e); }
+}
+
+async function loadFotoStoreFromDrive() {
+  try {
+    var data = await loadDriveJSON('eq_fotos_func.json');
+    if (data && typeof data === 'object') { _fotoStore = data; fotoStoreSave(); }
+  } catch(e) {}
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -9415,7 +9460,8 @@ function init() {
   // Configura os watchers de reconexão APENAS uma vez (evita loop)
   setupDriveReconnectWatchers();
 
-  // Carregar assinatura salva
+  // Carregar foto store e assinatura salva
+  fotoStoreLoad();
   loadSavedSignature();
   if (_savedSignature) {
     var btnSig = document.getElementById('btn-clear-sig');
