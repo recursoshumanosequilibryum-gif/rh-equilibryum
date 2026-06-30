@@ -377,6 +377,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .req-item-qtd:not(:placeholder-shown){background:#e8f5ee;border-color:var(--green);font-weight:700;}
 .req-item-field{padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12px;font-family:inherit;width:100%;}
 
+
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.6;} }
+
 </style>
 </head>
 <body>
@@ -5568,11 +5571,16 @@ async function testAndConnect() {
   }
 }
 
+var _reconnectAttempts = 0;
+var _reconnectInProgress = false;
+
 function silentReconnect() {
   init();
   updDriveStatus(false);
   if (!CLIENT_ID) return;
-  toast('Reconectando ao Drive...', 'warn');
+  if (_reconnectInProgress) return;
+  _reconnectInProgress = true;
+
   gapi.load('client', async () => {
     try {
       await gapi.client.init({});
@@ -5581,14 +5589,24 @@ function silentReconnect() {
         scope: SCOPES,
         ux_mode: 'popup',
         callback: async (tokenResponse) => {
+          _reconnectInProgress = false;
           if (!tokenResponse || tokenResponse.error) {
-            toast('Reconexão falhou. Clique em Reconectar.', 'warn');
+            _reconnectAttempts++;
+            console.warn('[Drive] Silent reconnect failed, attempt ' + _reconnectAttempts);
+            // Retry automatically up to 3 times with backoff, then show manual button
+            if (_reconnectAttempts < 3) {
+              setTimeout(silentReconnect, 5000 * _reconnectAttempts);
+            } else {
+              showReconnectButton();
+            }
             return;
           }
+          _reconnectAttempts = 0;
           driveToken = tokenResponse.access_token;
           driveReady = true;
           localStorage.setItem('eq_drive_token', driveToken);
           localStorage.setItem('eq_drive_token_time', Date.now().toString());
+          hideReconnectButton();
           try {
             const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { 'Authorization': 'Bearer ' + driveToken }
@@ -5602,15 +5620,57 @@ function silentReconnect() {
           } catch(e) { updDriveStatus(true, ''); }
           await ensureRHFolder();
           await syncFromDrive();
-          toast('Drive reconectado! ✅');
+          toast('Drive conectado! ☁️✅');
         },
-        error_callback: (err) => { console.warn('Silent reconnect error:', err); }
+        error_callback: (err) => {
+          _reconnectInProgress = false;
+          console.warn('[Drive] Silent reconnect error:', err);
+          _reconnectAttempts++;
+          if (_reconnectAttempts < 3) {
+            setTimeout(silentReconnect, 5000 * _reconnectAttempts);
+          } else {
+            showReconnectButton();
+          }
+        }
       });
-      tokenClient.requestAccessToken({ prompt: '' });
+      // prompt:'none' = tenta renovar sem mostrar nenhuma tela ao usuário (silencioso de verdade)
+      // Se falhar (sessão expirada), cai automaticamente no popup mode acima
+      tokenClient.requestAccessToken({ prompt: 'none' });
     } catch(e) {
-      console.warn('Silent reconnect failed:', e);
+      _reconnectInProgress = false;
+      console.warn('[Drive] Silent reconnect setup failed:', e);
+      _reconnectAttempts++;
+      if (_reconnectAttempts < 3) {
+        setTimeout(silentReconnect, 5000 * _reconnectAttempts);
+      } else {
+        showReconnectButton();
+      }
     }
   });
+}
+
+function showReconnectButton() {
+  var bar = document.getElementById('drive-bar');
+  if (bar) {
+    bar.style.display = 'flex';
+    bar.classList.add('disconnected');
+  }
+  updDriveStatus(false);
+  var btn = document.getElementById('btn-sync');
+  if (btn) {
+    btn.classList.add('btn-primary');
+    btn.style.cssText = 'font-size:12px;background:var(--red);color:#fff;border-color:var(--red);animation:pulse 1.5s infinite;';
+    btn.innerHTML = '⚠️ Reconectar Drive';
+  }
+}
+
+function hideReconnectButton() {
+  var btn = document.getElementById('btn-sync');
+  if (btn) {
+    btn.className = 'btn btn-outline btn-sm';
+    btn.style.cssText = 'font-size:12px;';
+    btn.innerHTML = '🔄 Sincronizar / Iniciar';
+  }
 }
 
 // ANIVERSARIANTES
@@ -8956,118 +9016,127 @@ function gerarRequisicaoUniforme() {
       var cor  = (document.getElementById(prefix+'-cor-'+idx)||{}).value||item.cor||'';
       var tam  = (document.getElementById(prefix+'-tam-'+idx)||{}).value||'';
       var bord = (document.getElementById(prefix+'-bord-'+idx)||{}).value||item.bordado||'';
-      rows += '<tr style="background:' + (idx%2===0?'#fff':'#f9f9f9') + ';">' +
-        '<td style="padding:5px 8px;font-size:10pt;">' + qtd + '</td>' +
-        '<td style="padding:5px 8px;font-size:10pt;">' + item.nome + '</td>' +
-        '<td style="padding:5px 8px;font-size:10pt;">' + cor + '</td>' +
-        '<td style="padding:5px 8px;font-size:10pt;">' + tam + '</td>' +
-        '<td style="padding:5px 8px;font-size:10pt;">' + bord + '</td>' +
+      rows +=
+        '<tr>' +
+          '<td class="cQ">' + qtd + '</td>' +
+          '<td class="cN">' + item.nome + '</td>' +
+          '<td class="cC">' + cor + '</td>' +
+          '<td class="cT">' + tam + '</td>' +
+          '<td class="cB">' + bord + '</td>' +
         '</tr>';
     });
     return rows;
   }
 
-  function sectionHtml(title, color, prefix, items) {
-    return '<tr><td colspan="5" style="background:' + color + ';color:#fff;font-weight:700;font-size:10.5pt;padding:6px 8px;">' + title + '</td></tr>' +
+  function sectionHtml(title, prefix, items) {
+    return '<tr class="secRow"><td colspan="6">' + title + '</td></tr>' +
            getRows(prefix, items);
   }
 
   var sigHtml = _savedSignature
-    ? '<img src="' + _savedSignature + '" style="max-height:50px;display:block;">'
-    : '<div style="height:40px;border-bottom:1.5px solid #333;width:180px;"></div>';
-
-  var logoHtml = LOGO_EMP_B64
-    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:50px;max-width:160px;object-fit:contain;">'
-    : '<strong>EQUILIBRYUM</strong>';
+    ? '<img src="' + _savedSignature + '" style="max-height:42px;display:block;margin:0 auto;">'
+    : '';
 
   var dataFmt = data ? data.split('-').reverse().join('/') : '';
   var valFmt  = val  ? val.split('-').reverse().join('/')  : '';
 
+  var cnpjStr = emp ? (emp.cnpj||'05.441.897/0001-02') : '05.441.897/0001-02';
+  var razaoStr = emp ? emp.razao : 'EQUILIBRYUM REAB CONSULT EM SAUDE S S LT';
+
+  var tamanhosStr = '';
+  if (f.tamCamisa)  tamanhosStr += 'Camisa: '+f.tamCamisa+'  ';
+  if (f.tamCalca)   tamanhosStr += 'Calça: '+f.tamCalca+'  ';
+  if (f.tamCalcado) tamanhosStr += 'Calçado: '+f.tamCalcado;
+
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
-    '<title>Requisição de Uniforme – ' + f.n + '</title>' +
+    '<title>Requisição – ' + f.n + '</title>' +
     '<style>' +
-      'body{font-family:Arial,sans-serif;margin:20px;font-size:10pt;color:#222;}' +
-      'table{border-collapse:collapse;width:100%;}' +
-      'th{background:#4a148c;color:#fff;padding:6px 8px;font-size:10pt;text-align:left;}' +
-      '.header-box{border:1.5px solid #4a148c;border-radius:6px;padding:12px 16px;margin-bottom:14px;}' +
-      '.header-row{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:8px;}' +
-      '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;font-size:9.5pt;}' +
-      '.info-label{color:#666;font-size:9pt;}' +
-      '.footer-box{margin-top:20px;padding-top:12px;border-top:2px solid #4a148c;}' +
-      '.sig-row{display:flex;gap:40px;justify-content:space-between;flex-wrap:wrap;margin-top:16px;}' +
-      '.sig-block{text-align:center;}' +
-      '.sig-line{border-top:1.5px solid #333;padding-top:5px;margin-top:4px;min-width:180px;}' +
-      '.alert-box{background:#f3e5f5;border:1px solid #ce93d8;border-radius:6px;padding:8px 12px;font-size:9pt;margin-top:12px;}' +
-      '@media print{body{margin:10px;}}' +
+      '*{box-sizing:border-box;}' +
+      'body{font-family:Calibri,Arial,sans-serif;margin:18px 24px;font-size:11pt;color:#000;}' +
+      'table{border-collapse:collapse;width:100%;margin-top:6px;}' +
+      'td,th{border:1px solid #999;padding:3px 6px;font-size:9.5pt;vertical-align:middle;}' +
+      '.topRow{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px;}' +
+      '.logoBox{width:170px;flex-shrink:0;}' +
+      '.logoBox img{max-width:160px;max-height:75px;object-fit:contain;}' +
+      '.infoBox{flex:1;border:1px solid #999;}' +
+      '.infoRow{display:flex;border-bottom:1px solid #999;}' +
+      '.infoRow:last-child{border-bottom:none;}' +
+      '.infoLabel{background:#f2f2f2;padding:3px 8px;font-size:9.5pt;min-width:110px;border-right:1px solid #999;}' +
+      '.infoVal{padding:3px 8px;font-size:9.5pt;flex:1;}' +
+      '.dataNum{display:flex;justify-content:flex-end;gap:24px;font-size:9.5pt;margin-bottom:6px;}' +
+      'thead td{background:#f2f2f2;font-weight:700;text-align:center;font-size:9pt;}' +
+      '.secRow td{background:#f2f2f2;font-weight:700;font-size:9.5pt;padding:4px 8px;}' +
+      '.cQ{width:50px;text-align:center;}' +
+      '.cN{width:auto;}' +
+      '.cC{width:90px;}' +
+      '.cT{width:80px;}' +
+      '.cB{width:80px;text-align:center;}' +
+      '.validade{margin-top:14px;font-size:10pt;font-weight:600;}' +
+      '.sigArea{display:flex;justify-content:space-between;margin-top:36px;gap:30px;}' +
+      '.sigCol{flex:1;text-align:center;}' +
+      '.sigLine{border-top:1px solid #000;padding-top:4px;margin-top:4px;}' +
+      '.sigLabel{font-size:9pt;font-weight:700;text-transform:uppercase;margin-top:2px;}' +
+      '.contatoRow{margin-top:8px;font-size:9pt;}' +
+      '.atencaoBox{margin-top:18px;font-size:8.5pt;color:#333;line-height:1.5;border-top:1px solid #ccc;padding-top:10px;}' +
+      '@media print{body{margin:10px 16px;}}' +
     '</style></head><body>' +
 
-    // HEADER
-    '<div class="header-box">' +
-      '<div class="header-row">' +
-        '<div>' + logoHtml + '</div>' +
-        '<div style="text-align:right;">' +
-          '<div style="font-size:14pt;font-weight:700;color:#4a148c;">REQUISIÇÃO DE UNIFORME</div>' +
-          (num ? '<div style="font-size:9.5pt;color:#666;">Nº ' + num + '</div>' : '') +
-          '<div style="font-size:9.5pt;color:#666;">Data: ' + dataFmt + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="info-grid">' +
-        '<div><span class="info-label">RAZÃO SOCIAL: </span><strong>' + (emp ? emp.razao : 'EQUILIBRYUM REAB CONSULT EM SAUDE S S LT') + '</strong></div>' +
-        '<div><span class="info-label">CNPJ: </span><strong>' + (emp ? emp.cnpj||'' : '05.441.897/0001-02') + '</strong></div>' +
-        '<div><span class="info-label">NOME: </span><strong>' + f.n + '</strong></div>' +
-        '<div><span class="info-label">RG: </span><strong>' + (f.rg||'') + '</strong></div>' +
-        '<div><span class="info-label">POSTO: </span><strong>' + (dep ? dep.nome : '') + '</strong></div>' +
-        '<div><span class="info-label">CPF: </span><strong>' + (f.cpf||'') + '</strong></div>' +
-        '<div><span class="info-label">FUNÇÃO: </span><strong>' + (f.car||'') + '</strong></div>' +
-        '<div><span class="info-label">TAMANHO: </span><strong>' +
-          (f.tamCamisa ? 'Camisa: '+f.tamCamisa : '') +
-          (f.tamCalca  ? '  Calça: '+f.tamCalca   : '') +
-          (f.tamCalcado? '  Calçado: '+f.tamCalcado: '') +
-        '</strong></div>' +
+    '<div class="topRow">' +
+      '<div class="logoBox">' + (LOGO_EMP_B64 ? '<img src="'+LOGO_EMP_B64+'">' : '<strong>EQUILIBRYUM</strong>') + '</div>' +
+      '<div class="infoBox">' +
+        '<div class="infoRow"><div class="infoLabel">RAZÃO SOCIAL</div><div class="infoVal">' + razaoStr + '</div></div>' +
+        '<div class="infoRow"><div class="infoLabel">CNPJ</div><div class="infoVal">' + cnpjStr + '</div></div>' +
+        '<div class="infoRow"><div class="infoLabel">NOME</div><div class="infoVal">' + f.n + '</div></div>' +
+        '<div class="infoRow"><div class="infoLabel">POSTO</div><div class="infoVal">' + (dep ? dep.nome : '') + '</div></div>' +
+        '<div class="infoRow"><div class="infoLabel">FUNÇÃO</div><div class="infoVal">' + (f.car||'') + '</div></div>' +
       '</div>' +
     '</div>' +
 
-    // TABELA
+    '<div class="dataNum">' +
+      '<div>DATA: <strong>' + dataFmt + '</strong></div>' +
+      (num ? '<div>Nº <strong>' + num + '</strong></div>' : '<div>Nº ____________</div>') +
+    '</div>' +
+
     '<table>' +
       '<thead><tr>' +
-        '<th style="width:60px;">QTDE</th>' +
-        '<th>DESCRIÇÃO</th>' +
-        '<th style="width:80px;">COR</th>' +
-        '<th style="width:80px;">TAMANHO</th>' +
-        '<th style="width:80px;">BORDADO</th>' +
+        '<td class="cQ">QTDE</td>' +
+        '<td class="cN"></td>' +
+        '<td class="cC">COR</td>' +
+        '<td class="cT">TAMANHO</td>' +
+        '<td class="cB">BORDADO</td>' +
       '</tr></thead>' +
       '<tbody>' +
-        sectionHtml('👔 MASCULINO',   '#1565c0', 'masc', REQ_ITENS.masc) +
-        sectionHtml('👗 FEMININO',    '#880e4f', 'fem',  REQ_ITENS.fem)  +
-        sectionHtml('🔧 OPERACIONAL', '#e65100', 'op',   REQ_ITENS.op)   +
+        sectionHtml('MASCULINO', 'masc', REQ_ITENS.masc) +
+        sectionHtml('FEMININO',  'fem',  REQ_ITENS.fem)  +
+        sectionHtml('OPERACIONAL', 'op', REQ_ITENS.op)   +
       '</tbody>' +
     '</table>' +
 
-    // FOOTER
-    '<div class="footer-box">' +
-      '<div style="font-size:9.5pt;color:#666;">Autorização válida até o dia: <strong>' + valFmt + '</strong></div>' +
-      '<div class="sig-row">' +
-        '<div class="sig-block">' +
-          sigHtml +
-          '<div class="sig-line">' +
-            '<strong>MÔNICA SANTOS</strong><br>' +
-            '<span style="font-size:9pt;color:#555;">Responsável/Compradora</span><br>' +
-            '<span style="font-size:8.5pt;color:#777;">Contato: +55 11 96333-2165</span>' +
-          '</div>' +
+    '<div class="validade">Autorização válida até o dia: ' + valFmt + '</div>' +
+
+    '<div class="sigArea">' +
+      '<div class="sigCol">' +
+        sigHtml +
+        '<div class="sigLine">' +
+          '<div class="sigLabel">Mônica Santos</div>' +
         '</div>' +
-        '<div class="sig-block">' +
-          '<div style="height:50px;"></div>' +
-          '<div class="sig-line">' +
-            '<strong>' + f.n + '</strong><br>' +
-            '<span style="font-size:9pt;color:#555;">Assinatura do Funcionário</span><br>' +
-            '<span style="font-size:8.5pt;color:#777;">RG: ' + (f.rg||'_________________') + '</span>' +
-          '</div>' +
+        '<div style="font-size:8.5pt;margin-top:2px;">RESPONSÁVEL/COMPRADOR</div>' +
+        '<div class="contatoRow">CONTATO: +55 11 96333-2165</div>' +
+      '</div>' +
+      '<div class="sigCol">' +
+        '<div style="height:42px;"></div>' +
+        '<div class="sigLine">' +
+          '<div class="sigLabel">' + f.n + '</div>' +
         '</div>' +
+        '<div style="font-size:8.5pt;margin-top:2px;">ASSINATURA DO FUNCIONÁRIO</div>' +
+        '<div class="contatoRow">RG: ' + (f.rg||'') + '</div>' +
       '</div>' +
-      '<div class="alert-box">' +
-        '⚠️ <strong>Atenção:</strong> A requisição deverá estar assinada pelo responsável no ato da retirada do uniforme pelo funcionário. ' +
-        'Em caso de dúvida, requisição vencida ou rasurada nossa atendente entrará em contato para esclarecimentos.' +
-      '</div>' +
+    '</div>' +
+
+    '<div class="atencaoBox">' +
+      '<strong>Atenção:</strong><br>' +
+      'A requisição deverá estar assinada pelo responsável no ato da retirada do uniforme pelo funcionário.<br>' +
+      'Em caso de dúvida, requisição vencida ou rasurada nossa atendente entrará em contato para esclarecimentos.' +
     '</div>' +
 
     '</body></html>';
@@ -9084,23 +9153,32 @@ function init() {
   initRelFilters(); rdRel();
   rdBenef();
 
-  // ── Reconexão automática ─────────────────────────────────
-  // 1. Renovar token a cada 45 min (token dura 1h)
-  setInterval(function() {
-    if (CLIENT_ID) { silentReconnect(); }
-  }, 45 * 60 * 1000);
+  // ── Reconexão automática (4 camadas) ─────────────────────
 
-  // 2. Checar token a cada 10 min silenciosamente
-  setInterval(function() {
-    if (!driveToken || !CLIENT_ID) return;
+  // 1. Renovar token preventivamente a cada 40 min (token dura ~60 min)
+  if (window._eqReconnectInterval1) clearInterval(window._eqReconnectInterval1);
+  window._eqReconnectInterval1 = setInterval(function() {
+    if (CLIENT_ID) { console.log('[Drive] Renovação preventiva (40min)'); silentReconnect(); }
+  }, 40 * 60 * 1000);
+
+  // 2. Checar validade do token a cada 5 min
+  if (window._eqReconnectInterval2) clearInterval(window._eqReconnectInterval2);
+  window._eqReconnectInterval2 = setInterval(function() {
+    if (!CLIENT_ID) return;
+    if (!driveToken) { silentReconnect(); return; }
     fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
       headers: { 'Authorization': 'Bearer ' + driveToken }
     }).then(function(r) {
-      if (!r.ok) { driveReady=false; updDriveStatus(false); silentReconnect(); }
-    }).catch(function(){});
-  }, 10 * 60 * 1000);
+      if (!r.ok) {
+        console.log('[Drive] Token inválido na checagem periódica, reconectando...');
+        driveReady=false; updDriveStatus(false); silentReconnect();
+      }
+    }).catch(function(){
+      console.log('[Drive] Erro de rede na checagem, tentará novamente');
+    });
+  }, 5 * 60 * 1000);
 
-  // 3. Reconectar quando usuário volta à aba
+  // 3. Reconectar quando usuário volta à aba (troca de aba/minimizar)
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible' && CLIENT_ID) {
       if (!driveToken) { silentReconnect(); return; }
@@ -9109,6 +9187,21 @@ function init() {
       }).then(function(r) {
         if (!r.ok) { driveReady=false; updDriveStatus(false); silentReconnect(); }
       }).catch(function(){ silentReconnect(); });
+    }
+  });
+
+  // 4. Reconectar quando o computador "acorda" do modo de espera (online event)
+  window.addEventListener('online', function() {
+    if (CLIENT_ID && !driveReady) {
+      console.log('[Drive] Conexão de rede restaurada, reconectando...');
+      silentReconnect();
+    }
+  });
+
+  // 5. Reconectar quando a janela ganha foco (clique de volta no app)
+  window.addEventListener('focus', function() {
+    if (CLIENT_ID && !driveReady) {
+      silentReconnect();
     }
   });
 
