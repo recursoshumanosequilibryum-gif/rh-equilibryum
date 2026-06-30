@@ -5575,10 +5575,12 @@ var _reconnectAttempts = 0;
 var _reconnectInProgress = false;
 
 function silentReconnect() {
-  init();
   updDriveStatus(false);
   if (!CLIENT_ID) return;
-  if (_reconnectInProgress) return;
+  if (_reconnectInProgress) {
+    console.log('[Drive] Reconexão já em andamento, ignorando chamada duplicada');
+    return;
+  }
   _reconnectInProgress = true;
 
   gapi.load('client', async () => {
@@ -9148,76 +9150,90 @@ function gerarRequisicaoUniforme() {
 // ============================================================
 // INIT
 // ============================================================
-function init() {
-  updDash(); rdUni();
-  initRelFilters(); rdRel();
-  rdBenef();
+var _eqReconnectSetupDone = false;
 
-  // ── Reconexão automática (4 camadas) ─────────────────────
+function setupDriveReconnectWatchers() {
+  // Garante que isso roda apenas UMA vez, não toda vez que init() é chamado
+  if (_eqReconnectSetupDone) return;
+  _eqReconnectSetupDone = true;
 
   // 1. Renovar token preventivamente a cada 40 min (token dura ~60 min)
-  if (window._eqReconnectInterval1) clearInterval(window._eqReconnectInterval1);
-  window._eqReconnectInterval1 = setInterval(function() {
-    if (CLIENT_ID) { console.log('[Drive] Renovação preventiva (40min)'); silentReconnect(); }
+  setInterval(function() {
+    if (CLIENT_ID && !_reconnectInProgress) {
+      console.log('[Drive] Renovação preventiva (40min)');
+      silentReconnect();
+    }
   }, 40 * 60 * 1000);
 
-  // 2. Checar validade do token a cada 5 min
-  if (window._eqReconnectInterval2) clearInterval(window._eqReconnectInterval2);
-  window._eqReconnectInterval2 = setInterval(function() {
-    if (!CLIENT_ID) return;
+  // 2. Checar validade do token a cada 8 min (silenciosa, sem reconectar à toa)
+  setInterval(function() {
+    if (!CLIENT_ID || !driveToken || _reconnectInProgress) return;
+    fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+      headers: { 'Authorization': 'Bearer ' + driveToken }
+    }).then(function(r) {
+      if (!r.ok && r.status === 401) {
+        console.log('[Drive] Token expirado (401), reconectando...');
+        driveReady = false; updDriveStatus(false); silentReconnect();
+      }
+      // Outros erros (403, 500, etc) não disparam reconexão — podem ser temporários
+    }).catch(function(){
+      // Erro de rede — não faz nada, só loga. Não força reconexão a cada falha de rede.
+      console.log('[Drive] Erro de rede na checagem periódica (ignorado)');
+    });
+  }, 8 * 60 * 1000);
+
+  // 3. Reconectar quando usuário volta à aba (só se token realmente inválido)
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState !== 'visible' || !CLIENT_ID || _reconnectInProgress) return;
     if (!driveToken) { silentReconnect(); return; }
     fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
       headers: { 'Authorization': 'Bearer ' + driveToken }
     }).then(function(r) {
-      if (!r.ok) {
-        console.log('[Drive] Token inválido na checagem periódica, reconectando...');
-        driveReady=false; updDriveStatus(false); silentReconnect();
+      if (!r.ok && r.status === 401) {
+        driveReady = false; updDriveStatus(false); silentReconnect();
       }
-    }).catch(function(){
-      console.log('[Drive] Erro de rede na checagem, tentará novamente');
-    });
-  }, 5 * 60 * 1000);
-
-  // 3. Reconectar quando usuário volta à aba (troca de aba/minimizar)
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && CLIENT_ID) {
-      if (!driveToken) { silentReconnect(); return; }
-      fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
-        headers: { 'Authorization': 'Bearer ' + driveToken }
-      }).then(function(r) {
-        if (!r.ok) { driveReady=false; updDriveStatus(false); silentReconnect(); }
-      }).catch(function(){ silentReconnect(); });
-    }
+    }).catch(function(){});
   });
 
-  // 4. Reconectar quando o computador "acorda" do modo de espera (online event)
+  // 4. Reconectar quando a internet volta (só se realmente desconectado)
   window.addEventListener('online', function() {
-    if (CLIENT_ID && !driveReady) {
+    if (CLIENT_ID && !driveReady && !_reconnectInProgress) {
       console.log('[Drive] Conexão de rede restaurada, reconectando...');
       silentReconnect();
     }
   });
 
-  // 5. Reconectar quando a janela ganha foco (clique de volta no app)
+  // 5. Reconectar ao focar a janela (só se realmente desconectado)
   window.addEventListener('focus', function() {
-    if (CLIENT_ID && !driveReady) {
+    if (CLIENT_ID && !driveReady && !_reconnectInProgress) {
       silentReconnect();
     }
   });
+}
+
+function init() {
+  updDash(); rdUni();
+  initRelFilters(); rdRel();
+  rdBenef();
+
+  // Configura os watchers de reconexão APENAS uma vez (evita loop)
+  setupDriveReconnectWatchers();
 
   // Carregar assinatura salva
   loadSavedSignature();
-  // Mostrar botão de limpar se tiver assinatura salva
   if (_savedSignature) {
     var btnSig = document.getElementById('btn-clear-sig');
     if (btnSig) btnSig.style.display = 'inline-block';
   }
 
-  // 4. Mostrar tela de sincronização ao iniciar
-  setTimeout(function() {
-    var skip = localStorage.getItem('eq_skip_drive');
-    if (!skip) showSyncOverlay();
-  }, 800);
+  // Mostrar tela de sincronização ao iniciar (apenas na primeira vez)
+  if (!window._eqSyncOverlayShown) {
+    window._eqSyncOverlayShown = true;
+    setTimeout(function() {
+      var skip = localStorage.getItem('eq_skip_drive');
+      if (!skip) showSyncOverlay();
+    }, 800);
+  }
 }
 
 window.addEventListener('load', () => {
