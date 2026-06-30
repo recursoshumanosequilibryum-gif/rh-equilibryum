@@ -380,6 +380,11 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.6;} }
 
+
+/* FOTO FUNCIONÁRIO */
+.bday-card-foto{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2.5px solid var(--green);flex-shrink:0;}
+.bday-avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+
 </style>
 </head>
 <body>
@@ -1472,6 +1477,25 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div class="modal-header"><span class="modal-title">Cadastro de Funcionário</span><button class="modal-close" onclick="closeModal('modal-func')">&#215;</button></div>
     <div class="tabs"><div class="tab active" onclick="fTab('ft1',this)">Dados Pessoais</div><div class="tab" onclick="fTab('ft2',this)">Contrato</div><div class="tab" onclick="fTab('ft3',this)">Documentos</div></div>
     <div id="ft1">
+      <!-- Foto do funcionário -->
+      <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:16px;padding:14px;background:var(--gray-50);border-radius:var(--radius-sm);">
+        <div style="flex-shrink:0;text-align:center;">
+          <div id="func-foto-preview" style="width:90px;height:90px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:700;overflow:hidden;border:3px solid var(--green);">
+            <span id="func-foto-inicial">👤</span>
+            <img id="func-foto-img" style="display:none;width:100%;height:100%;object-fit:cover;" src="">
+          </div>
+          <label style="display:inline-block;margin-top:8px;padding:5px 10px;background:var(--green-pale);border:1.5px solid var(--green);border-radius:6px;cursor:pointer;font-size:12px;color:var(--green-dark);">
+            📷 Alterar foto
+            <input type="file" id="ffoto" accept="image/*" style="display:none;" onchange="previewFuncFoto(this)">
+          </label>
+        </div>
+        <div style="flex:1;font-size:12.5px;color:var(--gray-600);">
+          <strong style="color:var(--green-dark);">Foto do Funcionário</strong><br>
+          A foto aparecerá no card de aniversariantes e no perfil.<br>
+          Formatos aceitos: JPG, PNG, WEBP<br>
+          <span style="font-size:11px;color:var(--gray-400);">A foto é salva no Drive automaticamente.</span>
+        </div>
+      </div>
       <div class="form-grid">
         <div class="form-group form-full"><label>Nome Completo *</label><input id="fn" type="text" placeholder="Nome completo"></div>
         <div class="form-group"><label>CPF *</label><input id="fcpf" type="text" placeholder="000.000.000-00" oninput="mCPF(this)"></div>
@@ -3284,6 +3308,9 @@ function editFunc(id) {
   document.getElementById('ftip').value  = f.tip  || 'CLT';
   document.getElementById('fges').value  = f.ges  || '';
   document.getElementById('fgeswha').value = f.geswha || '';
+  var existingFoto = f.foto || null;
+  _funcFotoDataURL = undefined; // undefined = não mudou; null = removeu; string = nova foto
+  loadFuncFotoPreview(f.foto || null);
   document.getElementById('fst').value         = f.st          || 'Ativo';
   document.getElementById('fescala').value      = f.escala       || '';
   document.getElementById('ftam-camisa').value  = f.tamCamisa    || '';
@@ -3306,6 +3333,7 @@ function editFunc(id) {
   });
   if (typeof resetDocsCat === 'function') resetDocsCat();
   pendingFiles = [];
+  resetFuncFoto();
   checkDriveDocs();
   document.getElementById('modal-func').classList.add('open');
 }
@@ -3402,6 +3430,7 @@ async function savFunc() {
       st: v('fst'), escala: v('fescala'),
       tamCamisa: v('ftam-camisa'), tamCalca: v('ftam-calca'),
       tamCalcado: v('ftam-calcado'), tamJaleco: v('ftam-jaleco'),
+      foto: _funcFotoDataURL || null,
       docs: []
     };
     // Upload docs to Drive
@@ -3570,20 +3599,35 @@ function rdFunc() {
     if (rowCls) tr.className = rowCls;
 
     var td1 = document.createElement('td');
+    td1.style.display = 'flex';
+    td1.style.alignItems = 'center';
+    td1.style.gap = '10px';
+    td1.style.border = 'none';
+    // Foto ou avatar
+    var fotoEl = document.createElement('div');
+    fotoEl.style.cssText = 'width:38px;height:38px;border-radius:50%;flex-shrink:0;overflow:hidden;border:2px solid var(--green);background:var(--green);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;';
+    if (f.foto) {
+      var fotoImg = document.createElement('img');
+      fotoImg.src = f.foto; fotoImg.style.cssText='width:100%;height:100%;object-fit:cover;';
+      fotoEl.appendChild(fotoImg);
+    } else {
+      fotoEl.textContent = f.n[0].toUpperCase();
+    }
+    var infoEl = document.createElement('div');
     var uniInfo = '';
     if (f.tamCamisa || f.tamCalca || f.tamCalcado) {
       uniInfo = '<br><small style="color:var(--gray-400);font-size:10px;">' +
         (f.tamCamisa  ? '👕 ' + f.tamCamisa + ' ' : '') +
         (f.tamCalca   ? '👖 ' + f.tamCalca  + ' ' : '') +
-        (f.tamCalcado ? '👟 ' + f.tamCalcado         : '') +
-        (f.tamJaleco  ? ' 🥼 ' + f.tamJaleco         : '') +
+        (f.tamCalcado ? '👟 ' + f.tamCalcado : '') +
+        (f.tamJaleco  ? ' 🥼 ' + f.tamJaleco : '') +
         '</small>';
-    } else {
-      uniInfo = '<br><small style="color:var(--gray-200);font-size:10px;font-style:italic;">Tamanhos não definidos</small>';
     }
-    td1.innerHTML = '<strong>' + f.n + '</strong>' +
+    infoEl.innerHTML = '<strong>' + f.n + '</strong>' +
       (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '') +
       uniInfo;
+    td1.appendChild(fotoEl);
+    td1.appendChild(infoEl);
 
     var td2 = document.createElement('td');
     td2.style.fontSize = '12px';
@@ -5677,45 +5721,158 @@ function hideReconnectButton() {
 
 // ANIVERSARIANTES
 function rdBday() {
-  const filter = (document.getElementById('bday-filter') || {value:'mes'}).value;
-  const hoje = new Date(); const hm = hoje.getMonth()+1; const hd = hoje.getDate();
-  const funcs = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
-  let lista = funcs.map(function(f){
-    const parts = f.nas.split('-').map(Number);
+  var filter = (document.getElementById('bday-filter') || {value:'mes'}).value;
+  var hoje = new Date(); var hm = hoje.getMonth()+1; var hd = hoje.getDate();
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
+  var lista = funcs.map(function(f){
+    var parts = f.nas.split('-').map(Number);
     return Object.assign({}, f, {bm: parts[1], bd: parts[2]});
   });
   if (filter === 'mes') lista = lista.filter(function(f){ return f.bm === hm; });
   else if (filter === 'semana') {
-    const ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
-    const fim = new Date(ini); fim.setDate(ini.getDate()+6);
+    var ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
+    var fim = new Date(ini); fim.setDate(ini.getDate()+6);
     lista = lista.filter(function(f){
-      const dt = new Date(hoje.getFullYear(), f.bm-1, f.bd);
+      var dt = new Date(hoje.getFullYear(), f.bm-1, f.bd);
       return dt >= ini && dt <= fim;
     });
   }
   lista.sort(function(a,b){ return a.bm !== b.bm ? a.bm-b.bm : a.bd-b.bd; });
-  const el = document.getElementById('bday-list');
-  if (!lista.length) { el.innerHTML = '<div class="alert alert-info">&#127874; Nenhum aniversariante neste período.</div>'; return; }
-  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  el.innerHTML = lista.map(function(f) {
-    const isHoje = f.bm === hm && f.bd === hd;
-    const ini2 = new Date(hoje); ini2.setDate(hd - hoje.getDay());
-    const fim2 = new Date(ini2); fim2.setDate(ini2.getDate()+6);
-    const dt2 = new Date(hoje.getFullYear(), f.bm-1, f.bd);
-    const isSemana = dt2 >= ini2 && dt2 <= fim2 && !isHoje;
-    const mes = meses[f.bm-1];
-    const tag = isHoje ? '<span class="bday-tag hoje">&#127874; Hoje!</span>' :
-                isSemana ? '<span class="bday-tag semana">Esta semana</span>' :
-                '<span class="bday-tag mes">'+mes+'</span>';
-    const idade = hoje.getFullYear() - parseInt(f.nas.split('-')[0]);
-    var whaBtn = f.tel ? "<button class='btn btn-whatsapp btn-sm' data-tel='" + f.tel + "' onclick='wha(this.dataset.tel, \"Parabéns!\");'>&#127881; Parabenizar</button>" : '';
-    return '<div class="bday-card">' +
-      '<div class="bday-avatar'+(isHoje?' today':'')+'">'+f.n[0].toUpperCase()+'</div>' +
-      '<div class="bday-info"><div class="name">'+f.n+'</div>' +
-      '<div class="detail">'+(f.car||'—')+' · '+String(f.bd).padStart(2,'0')+'/'+mes+' · '+idade+' anos</div></div>' +
-      tag + whaBtn + '</div>';
-  }).join('');
+
+  var el = document.getElementById('bday-list');
+  if (!lista.length) {
+    el.innerHTML = '<div class="alert alert-info">&#127874; Nenhum aniversariante neste período.</div>';
+    return;
+  }
+
+  var MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var MESES_ABR  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  el.innerHTML = '';
+
+  // Botão de gerar template (só no filtro de mês)
+  if (filter === 'mes') {
+    var btnDiv = document.createElement('div');
+    btnDiv.style.cssText = 'margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);';
+    var btnTpl = document.createElement('button');
+    btnTpl.className = 'btn btn-primary';
+    btnTpl.innerHTML = '&#127873; Gerar Template — ' + MESES_NOME[hm-1];
+    (function(m){ btnTpl.onclick = function(){ gerarTemplateAniversariantes(m); }; })(hm);
+    var info = document.createElement('span');
+    info.style.cssText = 'font-size:12px;color:var(--green-dark);';
+    info.textContent = 'Gera uma página visual com foto e dados dos aniversariantes para imprimir ou compartilhar';
+    btnDiv.appendChild(btnTpl);
+    btnDiv.appendChild(info);
+    el.appendChild(btnDiv);
+  }
+
+  lista.forEach(function(f) {
+    var isHoje = f.bm === hm && f.bd === hd;
+    var mes    = MESES_ABR[f.bm-1];
+    var idade  = hoje.getFullYear() - parseInt(f.nas.split('-')[0]);
+
+    var card = document.createElement('div');
+    card.className = 'bday-card';
+    if (isHoje) card.style.cssText = 'background:linear-gradient(135deg,#e8f5ee,#fff8e1);border:2px solid var(--green);';
+
+    // Avatar com foto
+    var avatarEl = document.createElement('div');
+    avatarEl.className = 'bday-avatar' + (isHoje ? ' today' : '');
+    if (f.foto) {
+      var img = document.createElement('img');
+      img.src = f.foto;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+      img.onerror = function(){ this.remove(); avatarEl.textContent = f.n[0].toUpperCase(); };
+      avatarEl.appendChild(img);
+    } else {
+      avatarEl.textContent = f.n[0].toUpperCase();
+    }
+
+    var infoEl = document.createElement('div');
+    infoEl.className = 'bday-info';
+    infoEl.innerHTML =
+      '<div class="name">' + f.n + (isHoje ? ' &#127874;' : '') + '</div>' +
+      '<div class="detail">'+(f.car||'—')+' &middot; '+String(f.bd).padStart(2,'0')+'/'+mes+' &middot; '+idade+' anos</div>';
+
+    var tagEl = document.createElement('span');
+    tagEl.className = 'bday-tag ' + (isHoje ? 'hoje' : 'mes');
+    tagEl.innerHTML = isHoje ? '&#127874; Hoje!' : mes;
+
+    card.appendChild(avatarEl);
+    card.appendChild(infoEl);
+    card.appendChild(tagEl);
+
+    if (f.tel) {
+      var whaBtn = document.createElement('button');
+      whaBtn.className = 'btn btn-whatsapp btn-sm';
+      whaBtn.innerHTML = '&#127881; Parabenizar';
+      whaBtn.dataset.tel = f.tel;
+      whaBtn.onclick = function() {
+        wha(this.dataset.tel, 'Parabéns pelo seu aniversário! 🎉 Toda a equipe Equilibryum deseja a você muito saúde e felicidades!');
+      };
+      card.appendChild(whaBtn);
+    }
+
+    el.appendChild(card);
+  });
 }
+
+function gerarTemplateAniversariantes(mes) {
+  var ano   = new Date().getFullYear();
+  var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var funcs = DB.g('funcionarios').filter(function(f){
+    if (!f.nas || f.st === 'Desligado') return false;
+    return parseInt(f.nas.split('-')[1]) === mes;
+  }).sort(function(a,b){
+    return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
+  });
+  if (!funcs.length) { alert('Nenhum aniversariante em ' + MESES[mes-1] + '.'); return; }
+
+  var cardsHtml = funcs.map(function(f) {
+    var dia   = parseInt(f.nas.split('-')[2]);
+    var idade = ano - parseInt(f.nas.split('-')[0]);
+    var primeiroNome = f.n.split(' ')[0];
+    var sobrenome    = f.n.split(' ').slice(1).join(' ');
+    var fotoHtml = f.foto
+      ? '<img src="'+f.foto+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.8);display:block;margin:0 auto 10px;">'
+      : '<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">'+f.n[0].toUpperCase()+'</div>';
+    return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:155px;border:1px solid rgba(255,255,255,0.2);">' +
+      fotoHtml +
+      '<div style="font-weight:700;font-size:13.5pt;color:#fff;line-height:1.2;">'+primeiroNome+'</div>' +
+      (sobrenome ? '<div style="font-size:10pt;color:rgba(255,255,255,0.75);margin-bottom:6px;">'+sobrenome+'</div>' : '<div style="margin-bottom:6px;"></div>') +
+      '<div style="font-size:12pt;color:#ffe082;font-weight:700;">&#127874; Dia '+dia+'</div>' +
+      '<div style="font-size:9.5pt;color:rgba(255,255,255,0.65);margin-top:3px;">'+idade+' anos</div>' +
+      '<div style="font-size:9pt;color:rgba(255,255,255,0.55);">'+(f.car||'')+'</div>' +
+      '</div>';
+  }).join('');
+
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="'+LOGO_EMP_B64+'" style="max-height:55px;max-width:180px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:10px;">'
+    : '';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Aniversariantes '+MESES[mes-1]+' '+ano+'</title>' +
+    '<style>*{box-sizing:border-box;}body{margin:0;font-family:Calibri,Arial,sans-serif;}' +
+    '.pg{min-height:100vh;background:linear-gradient(135deg,#0d3b26 0%,#1a6b47 35%,#0d4a8a 100%);' +
+    'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;position:relative;}' +
+    '.hdr{text-align:center;margin-bottom:30px;}' +
+    '.title{font-size:26pt;font-weight:700;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.4);margin:0;}' +
+    '.sub{font-size:13pt;color:rgba(255,255,255,.75);margin-top:6px;}' +
+    '.cards{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:980px;}' +
+    '.ftr{margin-top:28px;color:rgba(255,255,255,.35);font-size:9pt;text-align:center;}' +
+    '@media print{.pg{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}</style></head><body>' +
+    '<div class="pg">' +
+      '<div class="hdr">' + logoHtml +
+        '<div class="title">&#127873; Parabéns, Aniversariantes!</div>' +
+        '<div class="sub">'+MESES[mes-1]+' '+ano+' &nbsp;&#183;&nbsp; Com muito carinho, família Equilibryum &#128149;</div>' +
+      '</div>' +
+      '<div class="cards">'+cardsHtml+'</div>' +
+      '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; '+new Date().toLocaleDateString('pt-BR')+'</div>' +
+    '</div></body></html>';
+
+  var w = window.open('', '_blank');
+  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 900); }
+}
+
 
 
 // ============================================================
@@ -9145,6 +9302,45 @@ function gerarRequisicaoUniforme() {
 
   closeModal('modal-requisicao');
   abrirEImprimirDoc(doc, 'Requisicao_Uniforme_' + f.n.replace(/ /g,'_'), f);
+}
+
+// ── Foto do funcionário ──────────────────────────────────────
+var _funcFotoDataURL = null;
+
+function previewFuncFoto(inp) {
+  var file = inp.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _funcFotoDataURL = e.target.result;
+    var img = document.getElementById('func-foto-img');
+    var ini = document.getElementById('func-foto-inicial');
+    if (img) { img.src = _funcFotoDataURL; img.style.display = 'block'; }
+    if (ini) ini.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetFuncFoto() {
+  _funcFotoDataURL = null;
+  var img = document.getElementById('func-foto-img');
+  var ini = document.getElementById('func-foto-inicial');
+  var inp = document.getElementById('ffoto');
+  if (img) { img.src = ''; img.style.display = 'none'; }
+  if (ini) { ini.style.display = ''; ini.textContent = '👤'; }
+  if (inp) inp.value = '';
+}
+
+function loadFuncFotoPreview(fotoURL) {
+  var img = document.getElementById('func-foto-img');
+  var ini = document.getElementById('func-foto-inicial');
+  if (fotoURL && img) {
+    img.src = fotoURL; img.style.display = 'block';
+    if (ini) ini.style.display = 'none';
+  } else {
+    if (img) { img.src = ''; img.style.display = 'none'; }
+    if (ini) { ini.style.display = ''; ini.textContent = '👤'; }
+  }
+  _funcFotoDataURL = fotoURL || null;
 }
 
 // ============================================================
