@@ -4847,38 +4847,51 @@ function rdExp() {
 function rdExpTab(funcs, dias, tbId) {
   var tb = document.getElementById(tbId);
   var hoje = td();
-  // Exibir quem: ainda não completou o período (adm + dias >= hoje - 5) E foi admitido (adm + dias - dias >= hoje - (dias+30))
-  // Na prática: admitidos nos últimos (dias+30) dias E que ainda não passaram mais de 5 dias do vencimento
+
+  // "Contando o primeiro dia da admissão como dia 1"
+  // Vencimento = adm + (dias - 1) dias corridos
+  // Ex: admitido 01/07 → 45 dias → vence em 14/08 (01/07 é dia 1, 14/08 é dia 45)
+  var prazo = dias - 1; // dias a adicionar na data de admissão
+
   var eligivel = funcs.filter(function(f) {
     if (!f.adm) return false;
-    var diasDeAdm = dif(f.adm, hoje); // dias desde a admissão
-    // Mostrar se ainda não está muito além do período (até 5 dias após o vencimento)
-    // E se já passou tempo suficiente para ser relevante (pelo menos 1 dia admitido)
-    return diasDeAdm >= 0 && diasDeAdm <= dias + 5;
+    var diasDeAdm = dif(f.adm, hoje); // 0 = dia da admissão, 1 = dia seguinte...
+    // Exibir: a partir do dia da admissão (diasDeAdm >= 0)
+    // Até 5 dias após o vencimento (diasDeAdm <= prazo + 5)
+    return diasDeAdm >= 0 && diasDeAdm <= prazo + 5;
   });
+
   if (!eligivel.length) {
-    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário neste período.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário neste período.</td></tr>';
     return;
   }
-  // Ordenar por vencimento mais próximo
+
   eligivel.sort(function(a,b) { return a.adm.localeCompare(b.adm); });
+
   tb.innerHTML = eligivel.map(function(f) {
-    var venc = add(f.adm, dias);
-    var d    = dif(hoje, venc); // dias restantes (negativo = vencido)
+    // Vencimento: admissão + (dias-1) — conta o primeiro dia
+    var venc = add(f.adm, prazo);
+    // Dias restantes: positivo = faltam dias, negativo = vencido
+    var d = dif(hoje, venc);
+
     var bc, st;
-    if (d < 0)      { bc = 'badge-red';    st = 'Vencido há ' + Math.abs(d) + 'd'; }
-    else if (d <= 7) { bc = 'badge-yellow'; st = 'Vence em ' + d + 'd'; }
-    else             { bc = 'badge-green';  st = 'Em andamento'; }
+    if (d < 0)       { bc = 'badge-red';    st = 'Vencido há ' + Math.abs(d) + 'd'; }
+    else if (d === 0) { bc = 'badge-yellow'; st = 'Vence HOJE'; }
+    else if (d <= 7)  { bc = 'badge-yellow'; st = 'Vence em ' + d + 'd'; }
+    else              { bc = 'badge-green';  st = 'Em andamento'; }
+
     var diasInfo = d < 0
-      ? '<span style="color:var(--red);font-weight:600;">'+Math.abs(d)+'d atraso</span>'
-      : '<strong style="color:var(--green-dark);">' + d + ' dias</strong>';
+      ? '<span style="color:var(--red);font-weight:600;">' + Math.abs(d) + 'd atraso</span>'
+      : d === 0
+        ? '<strong style="color:var(--accent);">HOJE</strong>'
+        : '<strong style="color:var(--green-dark);">' + d + ' dias restantes</strong>';
+
     return '<tr>' +
       '<td><strong>' + f.n + '</strong></td>' +
       '<td>' + fd(f.adm) + '</td>' +
       '<td><strong>' + fd(venc) + '</strong></td>' +
       '<td>' + diasInfo + '</td>' +
-      '<td><button class="btn btn-outline btn-sm" onclick="document.getElementById(\"modal-form-exp\").classList.add(\"open\");rdFormExpModal()">&#128203; Gerar Avaliação</button></td>' +
-
+      '<td><span class="badge ' + bc + '">' + st + '</span></td>' +
     '</tr>';
   }).join('');
 }
@@ -9561,7 +9574,7 @@ function gerarFormExp() {
   var emps = DB.g('empresas');
   var dep  = deps.find(function(d){ return d.id===f.dep; });
   var emp  = emps.find(function(e){ return e.id===f.emp; });
-  var venc = add(f.adm, dias);
+  var venc = add(f.adm, dias - 1); // conta o primeiro dia da admissão como dia 1
   var dataFmt = data ? data.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR');
 
   var criterios = [
