@@ -3446,6 +3446,11 @@ async function savFunc() {
     }
     list[idx] = updated;
     DB.s('funcionarios', list);
+    // Salvar foto separadamente
+    if (_funcFotoDataURL) {
+      fotoStoreSet(updated.id, _funcFotoDataURL);
+      if (driveReady) syncFotoStoreToDrive();
+    }
     if (driveReady) await driveSync('funcionarios');
     closeModal('modal-func');
     resetFuncModal();
@@ -3487,6 +3492,11 @@ async function savFunc() {
     pendingFiles = [];
     list.push(f);
     DB.s('funcionarios', list);
+    // Salvar foto separadamente
+    if (_funcFotoDataURL) {
+      fotoStoreSet(f.id, _funcFotoDataURL);
+      if (driveReady) syncFotoStoreToDrive();
+    }
     // Auto-registrar férias aquisitivas
     autoRegistrarFerias(f);
     if (driveReady) {
@@ -4781,37 +4791,78 @@ function rdExpTab(funcs, dias, tbId) {
   }).join('');
 }
 function openAvd(fid, dias) {
-  const f = DB.g('funcionarios').find(x => x.id === fid); if (!f) return;
+  var f = DB.g('funcionarios').find(function(x){ return x.id === fid; });
+  if (!f) return;
   _avdFunc = f;
-  const venc = add(f.adm, dias);
-  document.getElementById('avd-body').innerHTML = `
-    <div style="text-align:center;margin-bottom:16px">
-      <h2 style="color:#1f5c44">EQUILIBRYUM – Especialidades Médicas &amp; Terapêuticas</h2>
-      <h3>Avaliação de Período de Experiência – ${dias} dias</h3>
-    </div>
-    <p><strong>Funcionário:</strong> ${f.n}</p>
-    <p><strong>CPF:</strong> ${f.cpf}</p>
-    <p><strong>Cargo:</strong> ${f.car||'—'}</p>
-    <p><strong>Data de Admissão:</strong> ${fd(f.adm)}</p>
-    <p><strong>Vencimento ${dias} dias:</strong> ${fd(venc)}</p>
-    <p><strong>Gestor:</strong> ${f.ges||'—'}</p>
-    <hr style="margin:14px 0;border:none;border-top:1px solid #ccc">
-    <p><strong>Critérios de Avaliação:</strong></p>
-    <table width="100%" border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;font-size:13px;margin-top:8px">
-      <tr style="background:#e8f5ee"><th>Critério</th><th>Nota (1-5)</th><th>Observação</th></tr>
-      <tr><td>Pontualidade e assiduidade</td><td></td><td></td></tr>
-      <tr><td>Comprometimento</td><td></td><td></td></tr>
-      <tr><td>Qualidade do trabalho</td><td></td><td></td></tr>
-      <tr><td>Relacionamento interpessoal</td><td></td><td></td></tr>
-      <tr><td>Iniciativa e proatividade</td><td></td><td></td></tr>
-    </table>
-    <p style="margin-top:10px"><strong>Parecer final do Gestor:</strong></p>
-    <div style="border:1px solid #ccc;border-radius:6px;padding:12px;min-height:60px;margin-bottom:14px"></div>
-    <div style="display:flex;justify-content:space-between;margin-top:20px">
-      <div style="border-top:1px solid #333;width:45%;text-align:center;padding-top:6px">Gestor Responsável</div>
-      <div style="border-top:1px solid #333;width:45%;text-align:center;padding-top:6px">RH – Equilibryum</div>
-    </div>
-    <p style="text-align:center;margin-top:12px;font-size:11px;color:#999">Gerado em ${new Date().toLocaleDateString('pt-BR')} | Sistema RH Equilibryum</p>`;
+  var venc = add(f.adm, dias);
+  var deps = DB.g('departamentos');
+  var emps = DB.g('empresas');
+  var dep  = deps.find(function(d){ return d.id === f.dep; });
+  var emp  = emps.find(function(e){ return e.id === f.emp; });
+
+  var body = document.getElementById('avd-body');
+  if (!body) return;
+
+  var rows = [
+    'Pontualidade e assiduidade',
+    'Comprometimento e responsabilidade',
+    'Qualidade do trabalho',
+    'Relacionamento interpessoal',
+    'Iniciativa e proatividade',
+    'Conhecimento técnico / adaptação à função',
+    'Apresentação pessoal e uniforme'
+  ].map(function(crit) {
+    return '<tr>' +
+      '<td style="padding:8px;">' + crit + '</td>' +
+      '<td style="padding:8px;text-align:center;width:90px;">____ / 5</td>' +
+      '<td style="padding:8px;width:40%;"></td>' +
+    '</tr>';
+  }).join('');
+
+  body.innerHTML =
+    '<div style="text-align:center;margin-bottom:16px;">' +
+      '<strong style="font-size:14pt;color:#1f5c44;">EQUILIBRYUM</strong>' +
+      '<br><span style="font-size:10pt;color:#555;">Especialidades Médicas &amp; Terapêuticas</span>' +
+      '<br><strong style="font-size:12pt;">Avaliação de Período de Experiência – ' + dias + ' dias</strong>' +
+    '</div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px;">' +
+      '<tr><td style="padding:5px 8px;width:50%;"><strong>Funcionário:</strong> ' + f.n + '</td>' +
+           '<td style="padding:5px 8px;"><strong>CPF:</strong> ' + (f.cpf||'—') + '</td></tr>' +
+      '<tr><td style="padding:5px 8px;"><strong>Cargo:</strong> ' + (f.car||'—') + '</td>' +
+           '<td style="padding:5px 8px;"><strong>Depto:</strong> ' + (dep ? dep.nome : '—') + '</td></tr>' +
+      '<tr><td style="padding:5px 8px;"><strong>Empresa:</strong> ' + (emp ? emp.razao : '—') + '</td>' +
+           '<td style="padding:5px 8px;"><strong>Gestor:</strong> ' + (f.ges||'—') + '</td></tr>' +
+      '<tr><td style="padding:5px 8px;"><strong>Admissão:</strong> ' + fd(f.adm) + '</td>' +
+           '<td style="padding:5px 8px;"><strong>Vencimento ' + dias + 'd:</strong> ' + fd(venc) + '</td></tr>' +
+    '</table>' +
+    '<hr style="margin:12px 0;border:none;border-top:1.5px solid #1f5c44;">' +
+    '<strong style="font-size:11.5pt;">Critérios de Avaliação</strong>' +
+    '<table width="100%" border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:12px;margin-top:8px;">' +
+      '<thead><tr style="background:#e8f5ee;">' +
+        '<th style="padding:8px;text-align:left;">Critério</th>' +
+        '<th style="padding:8px;width:90px;">Nota (1-5)</th>' +
+        '<th style="padding:8px;">Observação</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+    '<div style="margin-top:12px;"><strong>Resultado:</strong>' +
+      '<label style="margin-left:16px;"><input type="radio" name="resultado"> ✅ Efetivado</label>' +
+      '<label style="margin-left:16px;"><input type="radio" name="resultado"> 🔄 Prorrogado</label>' +
+      '<label style="margin-left:16px;"><input type="radio" name="resultado"> ❌ Desligado</label>' +
+    '</div>' +
+    '<p style="margin-top:12px;"><strong>Parecer do Gestor:</strong></p>' +
+    '<div style="border:1px solid #ccc;border-radius:6px;padding:10px;min-height:60px;background:#fafafa;"></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-top:28px;gap:20px;">' +
+      '<div style="flex:1;border-top:1.5px solid #333;text-align:center;padding-top:6px;font-size:11pt;">' +
+        (f.ges||'Gestor Responsável') + '<br><small style="color:#666;">Gestor / Supervisor</small>' +
+      '</div>' +
+      '<div style="flex:1;border-top:1.5px solid #333;text-align:center;padding-top:6px;font-size:11pt;">' +
+        'MÔNICA SANTOS<br><small style="color:#666;">Coordenadora RH – Equilibryum</small>' +
+      '</div>' +
+    '</div>' +
+    '<p style="text-align:center;margin-top:14px;font-size:10px;color:#aaa;">Gerado em ' +
+      new Date().toLocaleDateString('pt-BR') + ' | Sistema RH Equilibryum</p>';
+
   openModal('modal-avd');
 }
 function avdWha() {
