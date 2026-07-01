@@ -3121,6 +3121,9 @@ function openModal(id) {
     document.getElementById('pg-status-pag').value='pendente';
     document.querySelectorAll('#pg-meses-checks input').forEach(function(c){c.checked=true;});
   }
+  if (id === 'modal-form-exp') {
+    setTimeout(function(){ rdFormExpModal(); }, 50);
+  }
   if (id === 'modal-vaga') {
     // Só resetar se for nova vaga (editingVagaId é null antes de chamar openModal)
     var isNewVaga = !editingVagaId;
@@ -9420,6 +9423,179 @@ async function loadFotoStoreFromDrive() {
     var data = await loadDriveJSON('eq_fotos_func.json');
     if (data && typeof data === 'object') { _fotoStore = data; fotoStoreSave(); }
   } catch(e) {}
+}
+
+// ============================================================
+// GERAR FORMULÁRIO DE AVALIAÇÃO DE EXPERIÊNCIA
+// ============================================================
+function rdFormExpModal() {
+  var sel = document.getElementById('fexp-func');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione</option>';
+  DB.g('funcionarios')
+    .filter(function(f){ return f.st !== 'Desligado' && f.adm; })
+    .sort(function(a,b){ return a.n.localeCompare(b.n); })
+    .forEach(function(f) {
+      var o = document.createElement('option');
+      o.value = f.id; o.textContent = f.n;
+      sel.appendChild(o);
+    });
+  document.getElementById('fexp-data').value = td();
+}
+
+function gerarFormExp() {
+  var fid  = (document.getElementById('fexp-func')||{}).value;
+  var dias = parseInt((document.getElementById('fexp-dias')||{}).value)||45;
+  var data = (document.getElementById('fexp-data')||{}).value;
+
+  if (!fid) { alert('Selecione um funcionário.'); return; }
+
+  var f    = DB.g('funcionarios').find(function(x){ return x.id===fid; });
+  if (!f)  { alert('Funcionário não encontrado.'); return; }
+
+  var deps = DB.g('departamentos');
+  var emps = DB.g('empresas');
+  var dep  = deps.find(function(d){ return d.id===f.dep; });
+  var emp  = emps.find(function(e){ return e.id===f.emp; });
+  var venc = add(f.adm, dias);
+  var dataFmt = data ? data.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR');
+
+  var criterios = [
+    'Pontualidade e assiduidade',
+    'Comprometimento e responsabilidade',
+    'Qualidade do trabalho realizado',
+    'Relacionamento interpessoal / trabalho em equipe',
+    'Iniciativa e proatividade',
+    'Conhecimento técnico e adaptação à função',
+    'Apresentação pessoal e uso do uniforme',
+    'Organização e zelo com materiais e equipamentos'
+  ];
+
+  var rows = criterios.map(function(crit) {
+    return '<tr>' +
+      '<td style="padding:7px 10px;">' + crit + '</td>' +
+      '<td style="padding:7px 10px;text-align:center;">___</td>' +
+      '<td style="padding:7px 10px;text-align:center;">___</td>' +
+      '<td style="padding:7px 10px;text-align:center;">___</td>' +
+      '<td style="padding:7px 10px;text-align:center;">___</td>' +
+      '<td style="padding:7px 10px;text-align:center;">___</td>' +
+      '<td style="padding:7px 10px;"></td>' +
+    '</tr>';
+  }).join('');
+
+  var sigHtml = _savedSignature
+    ? '<img src="' + _savedSignature + '" style="max-height:40px;display:block;margin:0 auto 3px;">'
+    : '';
+
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:50px;max-width:160px;object-fit:contain;">'
+    : '<strong>EQUILIBRYUM</strong>';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Avaliação de Experiência – ' + f.n + '</title>' +
+    '<style>' +
+      'body{font-family:Calibri,Arial,sans-serif;margin:20px 28px;font-size:10.5pt;color:#111;}' +
+      'table{border-collapse:collapse;width:100%;}' +
+      'td,th{border:1px solid #999;font-size:10pt;}' +
+      '.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:2px solid #1f5c44;padding-bottom:10px;}' +
+      '.title-box{text-align:center;flex:1;}' +
+      '.info-table td{border:none;padding:3px 8px;}' +
+      '.info-table .lbl{color:#555;font-size:9pt;font-weight:600;min-width:110px;}' +
+      'thead th{background:#1f5c44;color:#fff;padding:7px 10px;font-size:10pt;}' +
+      '.notas-hdr th{background:#e8f5ee;color:#1f5c44;font-size:9pt;padding:5px;}' +
+      '.sig{text-align:center;min-width:180px;}' +
+      '.sig-line{border-top:1.5px solid #333;padding-top:5px;margin-top:4px;}' +
+      '@media print{body{margin:12px 16px;} .noprint{display:none;}}' +
+    '</style></head><body>' +
+
+    '<div class="hdr">' +
+      '<div>' + logoHtml + '</div>' +
+      '<div class="title-box">' +
+        '<div style="font-size:14pt;font-weight:700;color:#1f5c44;">AVALIAÇÃO DE PERÍODO DE EXPERIÊNCIA</div>' +
+        '<div style="font-size:11pt;color:#555;">' + dias + ' dias &nbsp;|&nbsp; Data: ' + dataFmt + '</div>' +
+      '</div>' +
+      '<div style="font-size:9pt;color:#777;text-align:right;">' +
+        (emp ? emp.razao : 'Equilibryum') + '<br>' +
+        (emp ? (emp.cnpj||'') : '') +
+      '</div>' +
+    '</div>' +
+
+    '<table class="info-table" style="margin-bottom:14px;">' +
+      '<tr><td class="lbl">Funcionário:</td><td><strong>' + f.n + '</strong></td>' +
+          '<td class="lbl">CPF:</td><td>' + (f.cpf||'—') + '</td></tr>' +
+      '<tr><td class="lbl">Cargo / Função:</td><td>' + (f.car||'—') + '</td>' +
+          '<td class="lbl">Departamento:</td><td>' + (dep ? dep.nome : '—') + '</td></tr>' +
+      '<tr><td class="lbl">Data Admissão:</td><td>' + fd(f.adm) + '</td>' +
+          '<td class="lbl">Vencimento ' + dias + 'd:</td><td><strong>' + fd(venc) + '</strong></td></tr>' +
+      '<tr><td class="lbl">Gestor / Supervisor:</td><td>' + (f.ges||'—') + '</td>' +
+          '<td class="lbl">Empresa:</td><td>' + (emp ? emp.razao.split(' ')[0] : '—') + '</td></tr>' +
+    '</table>' +
+
+    '<table style="margin-bottom:14px;">' +
+      '<thead>' +
+        '<tr><th style="text-align:left;padding:7px 10px;" rowspan="2">Critério de Avaliação</th>' +
+          '<th colspan="5" style="text-align:center;">Nota</th>' +
+          '<th rowspan="2" style="min-width:120px;">Observação</th></tr>' +
+        '<tr class="notas-hdr">' +
+          '<th>1<br><small>Insuf.</small></th>' +
+          '<th>2<br><small>Regular</small></th>' +
+          '<th>3<br><small>Bom</small></th>' +
+          '<th>4<br><small>Ótimo</small></th>' +
+          '<th>5<br><small>Excl.</small></th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+
+    '<div style="display:flex;gap:16px;margin-bottom:14px;">' +
+      '<div style="flex:1;border:1px solid #999;border-radius:4px;padding:8px;min-height:50px;">' +
+        '<strong style="font-size:9pt;color:#555;">RESULTADO DA AVALIAÇÃO:</strong><br>' +
+        '<label style="margin-right:16px;">( &nbsp;) Efetivado</label>' +
+        '<label style="margin-right:16px;">( &nbsp;) Prorrogado</label>' +
+        '<label>( &nbsp;) Desligado</label>' +
+      '</div>' +
+      '<div style="flex:1;border:1px solid #999;border-radius:4px;padding:8px;min-height:50px;">' +
+        '<strong style="font-size:9pt;color:#555;">MEDIA GERAL:</strong> _______ / 5' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="border:1px solid #999;border-radius:4px;padding:8px;min-height:60px;margin-bottom:20px;">' +
+      '<strong style="font-size:9pt;color:#555;">PARECER DO GESTOR / OBSERVAÇÕES GERAIS:</strong><br><br><br>' +
+    '</div>' +
+
+    '<div style="display:flex;justify-content:space-between;gap:30px;margin-top:20px;">' +
+      '<div class="sig">' +
+        '<div style="height:36px;"></div>' +
+        '<div class="sig-line">' +
+          '<strong>' + (f.ges||'Gestor Responsável') + '</strong><br>' +
+          '<small style="color:#666;">Gestor / Supervisor</small>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sig">' +
+        '<div style="height:36px;"></div>' +
+        '<div class="sig-line">' +
+          '<strong>' + f.n + '</strong><br>' +
+          '<small style="color:#666;">Funcionário(a) – CPF: ' + (f.cpf||'') + '</small>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sig">' +
+        sigHtml +
+        '<div class="sig-line">' +
+          '<strong>MÔNICA SANTOS</strong><br>' +
+          '<small style="color:#666;">Coordenadora de RH</small>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<p style="text-align:center;font-size:8.5pt;color:#aaa;margin-top:16px;border-top:1px solid #eee;padding-top:8px;">' +
+      'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum' +
+    '</p>' +
+
+    '</body></html>';
+
+  closeModal('modal-form-exp');
+  var w = window.open('', '_blank');
+  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
 }
 
 // ============================================================
