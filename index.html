@@ -1925,60 +1925,56 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <div class="section-page" id="sec-pj">
   <div class="card">
     <div class="card-header">
-      <span class="card-title">&#128188; PJ / Prestadores de Serviço</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-outline btn-sm" onclick="importarPJPlanilha()">&#128196; Importar Planilha</button>
-        <button class="btn btn-primary" onclick="openModal('modal-pj')">+ Novo PJ</button>
+      <span class="card-title">&#128188; PJ / Prestadores — Aniversariantes do Mês</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span id="pj-contador" style="font-size:12px;color:var(--gray-500);"></span>
+        <button class="btn btn-outline btn-sm" id="pj-btn-template" style="display:none;" onclick="gerarTemplatePJ()">&#127873; Gerar Template Aniversariantes</button>
+        <label class="btn btn-primary" style="cursor:pointer;">
+          &#128196; Importar Planilha
+          <input type="file" id="pj-file-inp" accept=".csv,.xlsx,.xls,.ods" style="display:none;" onchange="processarPJArquivo(this)">
+        </label>
       </div>
     </div>
 
-    <!-- Import instructions -->
-    <div id="pj-import-area" style="display:none;margin-bottom:16px;padding:16px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);">
-      <div style="font-weight:700;color:var(--green-dark);margin-bottom:8px;">📂 Importar Planilha CSV/Excel</div>
-      <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px;">Selecione um arquivo CSV com as colunas: <strong>Nome, Data Nascimento, Cargo, Departamento</strong></p>
-      <input type="file" id="pj-file-inp" accept=".csv,.xlsx,.xls" onchange="processarPJArquivo(this)" style="margin-bottom:8px;">
-      <div id="pj-import-msg" style="font-size:13px;color:var(--green-dark);margin-top:6px;"></div>
+    <!-- Info box -->
+    <div style="background:var(--green-pale);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--green-dark);display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">&#128204;</span>
+      <span>Importe a planilha mensal de PJ. Os dados ficam <strong>apenas nesta sessão</strong> — não são salvos no Drive. A cada mês, importe novamente para gerar o template de aniversariantes.</span>
     </div>
 
-    <!-- Search -->
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-      <input type="text" id="pj-busca" placeholder="🔍 Buscar por nome ou cargo..." oninput="rdPJ()" style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+    <!-- Status + mesFilter -->
+    <div id="pj-empty" style="text-align:center;padding:48px;color:var(--gray-400);">
+      <div style="font-size:48px;margin-bottom:12px;">&#128196;</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Nenhuma planilha importada ainda</div>
+      <div style="font-size:13px;">Clique em <strong>Importar Planilha</strong> para carregar o arquivo do mês</div>
+      <div style="font-size:12px;margin-top:8px;color:var(--gray-400);">Colunas esperadas: Prestador · Data de nascimento · Área · Email · Telefone</div>
     </div>
 
-    <table class="data-table">
-      <thead><tr>
-        <th>Nome</th>
-        <th>Nascimento</th>
-        <th>Cargo / Função</th>
-        <th>Departamento</th>
-        <th>Ações</th>
-      </tr></thead>
-      <tbody id="tb-pj"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- MODAL PJ -->
-<div class="modal-bg" id="modal-pj">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-header">
-      <span class="modal-title" id="pj-modal-title">&#128188; Novo PJ</span>
-      <button class="modal-close" onclick="closeModal('modal-pj')">&#215;</button>
-    </div>
-    <div class="form-grid">
-      <div class="form-group form-full"><label>Nome Completo *</label><input id="pj-nome" type="text" placeholder="Nome do prestador"></div>
-      <div class="form-group"><label>Data de Nascimento</label><input id="pj-nas" type="date"></div>
-      <div class="form-group"><label>Cargo / Função</label><input id="pj-cargo" type="text" placeholder="Ex.: Fisioterapeuta, Psicólogo..."></div>
-      <div class="form-group form-full"><label>Departamento</label>
-        <select id="pj-dep" style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
-          <option value="">Selecione</option>
+    <div id="pj-content" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="pj-busca" placeholder="🔍 Buscar por nome ou área..." oninput="rdPJ()" style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+        <select id="pj-mes-filter" onchange="rdPJ()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+          <option value="">Todos os meses</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
         </select>
       </div>
-      <div class="form-group form-full"><label>Observações</label><textarea id="pj-obs" rows="2" placeholder="Informações adicionais..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-pj')">Cancelar</button>
-      <button class="btn btn-primary" onclick="savPJ()">&#128190; Salvar</button>
+
+      <div id="pj-bday-alert" style="display:none;margin-bottom:12px;"></div>
+
+      <table class="data-table">
+        <thead><tr>
+          <th>Nome</th>
+          <th>Nascimento</th>
+          <th>Área</th>
+          <th>E-mail</th>
+        </tr></thead>
+        <tbody id="tb-pj"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -3111,10 +3107,6 @@ async function syncFromDrive() {
     const uniEst = await loadDriveJSON('eq_uni-est.json');
     if (uniEst !== null) DB.so('uni-est', uniEst);
   } catch(e) {}
-  try {
-    const pjData = await loadDriveJSON('eq_pj.json');
-    if (pjData !== null) DB.s('pj', pjData);
-  } catch(e) {}
   await loadFotoStoreFromDrive();
   // Reload all UI with fresh data from Drive
   updDash();
@@ -3285,17 +3277,7 @@ function exTab(id, btn) {
 // NAV
 // ============================================================
 function nav(id, el) {
-  if (id === 'pj') {
-    // Fill dep select on PJ modal open
-    var sel = document.getElementById('pj-dep');
-    if (sel && sel.options.length <= 1) {
-      DB.g('departamentos').forEach(function(d){
-        var o = document.createElement('option');
-        o.value = d.id; o.textContent = d.nome; sel.appendChild(o);
-      });
-    }
-    rdPJ();
-  }
+  if (id === 'pj') { rdPJ(); }
   document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
   var secEl = document.getElementById('sec-' + id);
   if (!secEl) { console.warn('Section not found: sec-' + id); return; }
@@ -5867,11 +5849,7 @@ function hideReconnectButton() {
 function rdBday() {
   var filter = (document.getElementById('bday-filter') || {value:'mes'}).value;
   var hoje = new Date(); var hm = hoje.getMonth()+1; var hd = hoje.getDate();
-  var funcsCLT = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
-  var funcsPJ  = DB.g('pj').filter(function(p){ return p.nas; }).map(function(p){
-    return Object.assign({}, p, {n: p.nome, st: 'PJ', emp: '', _isPJ: true});
-  });
-  var funcs = funcsCLT.concat(funcsPJ);
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
   var lista = funcs.map(function(f){
     var parts = f.nas.split('-').map(Number);
     return Object.assign({}, f, {bm: parts[1], bd: parts[2]});
@@ -5969,14 +5947,10 @@ function rdBday() {
 function gerarTemplateAniversariantes(mes) {
   var ano   = new Date().getFullYear();
   var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var funcsCLT2 = DB.g('funcionarios').filter(function(f){
+  var funcs = DB.g('funcionarios').filter(function(f){
     if (!f.nas || f.st === 'Desligado') return false;
     return parseInt(f.nas.split('-')[1]) === mes;
-  });
-  var funcsPJ2 = DB.g('pj').filter(function(p){
-    return p.nas && parseInt(p.nas.split('-')[1]) === mes;
-  }).map(function(p){ return Object.assign({}, p, {n: p.nome, _isPJ: true}); });
-  var funcs = funcsCLT2.concat(funcsPJ2).sort(function(a,b){
+  }).sort(function(a,b){
     return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
   });
   if (!funcs.length) { alert('Nenhum aniversariante em ' + MESES[mes-1] + '.'); return; }
@@ -9735,323 +9709,225 @@ function gerarFormExp() {
 }
 
 // ============================================================
-// PJ / PRESTADORES DE SERVIÇO
+// PJ / PRESTADORES — SESSÃO TEMPORÁRIA (não salva no Drive)
 // ============================================================
-var editingPJId = null;
-
-function rdPJ() {
-  var busca = (document.getElementById('pj-busca')||{value:''}).value.toLowerCase();
-  var list  = DB.g('pj');
-  if (busca) list = list.filter(function(p){
-    return (p.nome||'').toLowerCase().includes(busca) || (p.cargo||'').toLowerCase().includes(busca);
-  });
-  list.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
-
-  var deps = DB.g('departamentos');
-  var tb   = document.getElementById('tb-pj');
-  if (!tb) return;
-
-  if (!list.length) {
-    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum PJ cadastrado. Clique em <strong>+ Novo PJ</strong> ou <strong>Importar Planilha</strong>.</td></tr>';
-    return;
-  }
-
-  tb.innerHTML = '';
-  list.forEach(function(p) {
-    var dep  = deps.find(function(d){ return d.id === p.dep; });
-    var nasFmt = p.nas ? p.nas.split('-').reverse().join('/') : '—';
-    var tr   = document.createElement('tr');
-    tr.innerHTML =
-      '<td><strong>' + p.nome + '</strong></td>' +
-      '<td>' + nasFmt + '</td>' +
-      '<td>' + (p.cargo||'—') + '</td>' +
-      '<td>' + (dep ? dep.nome : (p.depNome||'—')) + '</td>' +
-      '<td style="display:flex;gap:6px;"></td>';
-    var btns = tr.querySelector('td:last-child');
-    var btnE = document.createElement('button');
-    btnE.className='btn-icon'; btnE.title='Editar'; btnE.innerHTML='✏️';
-    (function(id){ btnE.onclick=function(){ editPJ(id); }; })(p.id);
-    var btnD = document.createElement('button');
-    btnD.className='btn-icon danger'; btnD.title='Excluir'; btnD.innerHTML='🗑️';
-    (function(id){ btnD.onclick=function(){ delPJ(id); }; })(p.id);
-    btns.appendChild(btnE); btns.appendChild(btnD);
-    tb.appendChild(tr);
-  });
-}
-
-function openPJModal() {
-  editingPJId = null;
-  document.getElementById('pj-modal-title').textContent = '📋 Novo PJ';
-  ['pj-nome','pj-nas','pj-cargo','pj-obs'].forEach(function(id){
-    var el = document.getElementById(id); if(el) el.value = '';
-  });
-  // Fill dep select
-  var sel = document.getElementById('pj-dep');
-  if (sel) {
-    sel.innerHTML = '<option value="">Selecione</option>';
-    DB.g('departamentos').forEach(function(d){
-      var o = document.createElement('option');
-      o.value = d.id; o.textContent = d.nome; sel.appendChild(o);
-    });
-  }
-  openModal('modal-pj');
-}
-
-function editPJ(id) {
-  var p = DB.g('pj').find(function(x){ return x.id===id; });
-  if (!p) return;
-  editingPJId = id;
-  document.getElementById('pj-modal-title').textContent = '✏️ Editar PJ — ' + p.nome;
-  // Fill dep select
-  var sel = document.getElementById('pj-dep');
-  if (sel) {
-    sel.innerHTML = '<option value="">Selecione</option>';
-    DB.g('departamentos').forEach(function(d){
-      var o = document.createElement('option');
-      o.value = d.id; o.textContent = d.nome; sel.appendChild(o);
-    });
-    sel.value = p.dep||'';
-  }
-  document.getElementById('pj-nome').value  = p.nome  || '';
-  document.getElementById('pj-nas').value   = p.nas   || '';
-  document.getElementById('pj-cargo').value = p.cargo || '';
-  document.getElementById('pj-obs').value   = p.obs   || '';
-  openModal('modal-pj');
-}
-
-async function savPJ() {
-  var nome = (document.getElementById('pj-nome')||{}).value.trim();
-  if (!nome) { alert('Nome é obrigatório.'); return; }
-  var list = DB.g('pj');
-  var dep  = document.getElementById('pj-dep');
-  var rec  = {
-    id:    editingPJId || uid(),
-    nome:  nome,
-    nas:   (document.getElementById('pj-nas')||{}).value  || '',
-    cargo: (document.getElementById('pj-cargo')||{}).value|| '',
-    dep:   dep ? dep.value : '',
-    obs:   (document.getElementById('pj-obs')||{}).value  || ''
-  };
-  if (editingPJId) {
-    var idx = list.findIndex(function(x){ return x.id===editingPJId; });
-    if (idx !== -1) list[idx] = rec;
-    editingPJId = null;
-  } else {
-    list.push(rec);
-  }
-  DB.s('pj', list);
-  if (driveReady) await driveSync('pj');
-  closeModal('modal-pj');
-  rdPJ();
-  toast('PJ salvo!' + (driveReady?' ☁️':''));
-}
-
-async function delPJ(id) {
-  if (!confirm('Excluir este prestador?')) return;
-  DB.s('pj', DB.g('pj').filter(function(x){ return x.id!==id; }));
-  if (driveReady) await driveSync('pj');
-  rdPJ();
-}
-
-function importarPJPlanilha() {
-  var area = document.getElementById('pj-import-area');
-  if (area) area.style.display = area.style.display === 'none' ? 'block' : 'none';
-}
+// Dados ficam só na memória da sessão atual
+var _pjSessao = []; // [{nome, nas, area, email, tel}]
 
 function processarPJArquivo(inp) {
   var file = inp.files[0]; if (!file) return;
-  var msg  = document.getElementById('pj-import-msg');
-  if (msg) msg.textContent = '⏳ Processando...';
-
   var reader = new FileReader();
   reader.onload = function(e) {
     var text = e.target.result;
-    var lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
-    if (lines.length < 2) {
-      if (msg) msg.textContent = '❌ Arquivo vazio ou inválido.';
-      return;
+    var linhas = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+    if (linhas.length < 2) { alert('Arquivo vazio ou inválido.'); return; }
+
+    // Detectar separador
+    var sep = linhas[0].includes(';') ? ';' : ',';
+    var header = linhas[0].split(sep).map(function(h){ return h.replace(/['"]/g,'').trim().toLowerCase(); });
+
+    // Mapear colunas pelo nome
+    function colIdx(keywords) {
+      return header.findIndex(function(h){ return keywords.some(function(k){ return h.includes(k); }); });
     }
+    var iNome  = colIdx(['prestador','nome']);
+    var iNas   = colIdx(['nascimento','nasc','data de nasc','data nasc']);
+    var iArea  = colIdx(['área','area','cargo','func']);
+    var iEmail = colIdx(['email','e-mail']);
+    var iTel   = colIdx(['tel','fone','contato']);
 
-    // Detect delimiter
-    var sep = lines[0].includes(';') ? ';' : ',';
-    var header = lines[0].split(sep).map(function(h){ return h.trim().toLowerCase().replace(/['"]/g,''); });
+    if (iNome < 0) { alert('Coluna "Prestador" ou "Nome" não encontrada.'); return; }
 
-    // Map columns: nome, nascimento/data_nascimento, cargo, departamento
-    var iNome  = header.findIndex(function(h){ return h.includes('nome'); });
-    var iNas   = header.findIndex(function(h){ return h.includes('nasc') || h.includes('data'); });
-    var iCargo = header.findIndex(function(h){ return h.includes('cargo') || h.includes('func'); });
-    var iDep   = header.findIndex(function(h){ return h.includes('dep') || h.includes('setor'); });
-
-    if (iNome < 0) {
-      if (msg) msg.textContent = '❌ Coluna "Nome" não encontrada. Verifique o cabeçalho.';
-      return;
-    }
-
-    var deps = DB.g('departamentos');
-    var list = DB.g('pj');
-    var importados = 0, atualizados = 0;
-
-    lines.slice(1).forEach(function(line) {
-      if (!line.trim()) return;
-      var cols = line.split(sep).map(function(c){ return c.trim().replace(/^["']|["']$/g,''); });
+    // Parse rows, deduplicar por nome+nascimento
+    var seen = {};
+    var parsed = [];
+    linhas.slice(1).forEach(function(linha) {
+      if (!linha.trim()) return;
+      var cols = linha.split(sep).map(function(c){ return c.replace(/^["']|["']$/g,'').trim(); });
       var nome = iNome >= 0 ? cols[iNome]||'' : '';
-      if (!nome) return;
+      if (!nome || nome === '-') return;
 
-      // Parse date
+      // Parse data DD/MM/YYYY ou YYYY-MM-DD
       var nasRaw = iNas >= 0 ? cols[iNas]||'' : '';
       var nas = '';
       if (nasRaw) {
-        // Try DD/MM/YYYY or YYYY-MM-DD
-        var m1 = nasRaw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        var m2 = nasRaw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        var m1 = nasRaw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        var m2 = nasRaw.match(/(\d{4})-(\d{2})-(\d{2})/);
         if (m1) nas = m1[3]+'-'+m1[2]+'-'+m1[1];
         else if (m2) nas = nasRaw;
       }
 
-      var cargo  = iCargo >= 0 ? cols[iCargo]||'' : '';
-      var depNomeRaw = iDep >= 0 ? cols[iDep]||'' : '';
-      var dep = '';
-      if (depNomeRaw) {
-        var depFound = deps.find(function(d){ return d.nome.toLowerCase() === depNomeRaw.toLowerCase(); });
-        dep = depFound ? depFound.id : '';
-      }
+      var key = nome.toLowerCase() + '|' + nas;
+      if (seen[key]) return;
+      seen[key] = true;
 
-      // Check if already exists (by nome)
-      var existing = list.findIndex(function(p){ return p.nome.toLowerCase() === nome.toLowerCase(); });
-      var rec = { id: existing>=0 ? list[existing].id : uid(), nome:nome, nas:nas, cargo:cargo, dep:dep, depNome:depNomeRaw, obs:'' };
-      if (existing >= 0) { list[existing] = rec; atualizados++; }
-      else { list.push(rec); importados++; }
+      parsed.push({
+        nome:  nome,
+        nas:   nas,
+        area:  iArea  >= 0 ? cols[iArea]||''  : '',
+        email: iEmail >= 0 ? cols[iEmail]||'' : '',
+        tel:   iTel   >= 0 ? cols[iTel]||''   : ''
+      });
     });
 
-    DB.s('pj', list);
-    if (msg) msg.textContent = '✅ ' + importados + ' importado(s), ' + atualizados + ' atualizado(s).';
-    rdPJ();
-    if (driveReady) driveSync('pj');
+    _pjSessao = parsed;
     inp.value = '';
+
+    // Mostrar mês atual no filtro automaticamente
+    var mesAtual = new Date().getMonth() + 1;
+    var mesEl = document.getElementById('pj-mes-filter');
+    if (mesEl) mesEl.value = String(mesAtual);
+
+    rdPJ();
+    toast('✅ ' + parsed.length + ' prestador(es) carregado(s) na sessão!');
   };
   reader.readAsText(file, 'UTF-8');
 }
 
-// ============================================================
-// INIT
-// ============================================================
-var _eqReconnectSetupDone = false;
+function rdPJ() {
+  var busca   = (document.getElementById('pj-busca')      ||{value:''}).value.toLowerCase();
+  var mesF    = parseInt((document.getElementById('pj-mes-filter')||{value:''}).value)||0;
 
-function setupDriveReconnectWatchers() {
-  // Garante que isso roda apenas UMA vez, não toda vez que init() é chamado
-  if (_eqReconnectSetupDone) return;
-  _eqReconnectSetupDone = true;
+  var emptyEl   = document.getElementById('pj-empty');
+  var contentEl = document.getElementById('pj-content');
 
-  // 1. Renovar token preventivamente a cada 45 min
-  //    Usa prompt:'' para tentar silenciosamente sem popup
-  setInterval(function() {
-    if (!CLIENT_ID || !driveReady || _reconnectInProgress) return;
-    var tTime = parseInt(localStorage.getItem('eq_drive_token_time') || '0');
-    var ageMin = (Date.now() - tTime) / 60000;
-    if (ageMin >= 45) {
-      console.log('[Drive] Renovação preventiva após ' + Math.round(ageMin) + 'min');
-      silentReconnect();
+  if (!_pjSessao.length) {
+    if (emptyEl)   emptyEl.style.display   = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    document.getElementById('pj-btn-template').style.display = 'none';
+    document.getElementById('pj-contador').textContent = '';
+    return;
+  }
+  if (emptyEl)   emptyEl.style.display   = 'none';
+  if (contentEl) contentEl.style.display = 'block';
+
+  var lista = _pjSessao.slice();
+  if (busca) lista = lista.filter(function(p){
+    return (p.nome||'').toLowerCase().includes(busca) || (p.area||'').toLowerCase().includes(busca);
+  });
+  if (mesF) lista = lista.filter(function(p){
+    return p.nas && parseInt(p.nas.split('-')[1]) === mesF;
+  });
+  lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
+
+  // Aniversariantes do mês atual
+  var hoje   = new Date();
+  var mesHoje = hoje.getMonth() + 1;
+  var bdayHoje = lista.filter(function(p){
+    if (!p.nas) return false;
+    var m = parseInt(p.nas.split('-')[1]);
+    var d = parseInt(p.nas.split('-')[2]);
+    return m === mesHoje && d === hoje.getDate();
+  });
+
+  var alertEl = document.getElementById('pj-bday-alert');
+  if (alertEl) {
+    if (bdayHoje.length) {
+      alertEl.style.display = 'block';
+      alertEl.innerHTML = '<div style="background:var(--green-pale);border:1.5px solid var(--green);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--green-dark);">&#127874; <strong>Aniversariante(s) hoje:</strong> ' + bdayHoje.map(function(p){return p.nome;}).join(', ') + '</div>';
+    } else {
+      alertEl.style.display = 'none';
     }
-  }, 5 * 60 * 1000); // Checa a cada 5min se precisa renovar
+  }
 
-  // 2. Checar validade a cada 10 min — só quando conectado
-  setInterval(function() {
-    if (!CLIENT_ID || !driveToken || !driveReady || _reconnectInProgress) return;
-    fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
-      headers: { 'Authorization': 'Bearer ' + driveToken }
-    }).then(function(r) {
-      if (r.status === 401) {
-        driveReady = false;
-        updDriveStatus(false);
-        silentReconnect(); // Tenta renovar silenciosamente
-      }
-    }).catch(function(){
-      // Erro de rede temporário — ignora, não desconecta
-    });
-  }, 10 * 60 * 1000);
+  // Contador
+  var bdayMes = _pjSessao.filter(function(p){ return p.nas && parseInt(p.nas.split('-')[1])===mesHoje; });
+  document.getElementById('pj-contador').textContent = _pjSessao.length + ' PJ(s) carregado(s) · ' + bdayMes.length + ' aniversariam em ' + ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mesHoje];
 
-  // 3. Ao voltar à aba — só testa se estava conectado
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState !== 'visible' || !CLIENT_ID || !driveReady || _reconnectInProgress) return;
-    fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
-      headers: { 'Authorization': 'Bearer ' + driveToken }
-    }).then(function(r) {
-      if (r.status === 401) { driveReady = false; updDriveStatus(false); silentReconnect(); }
-    }).catch(function(){});
-  });
+  // Botão template — mostra se tem filtro de mês ou há aniversariantes no mês
+  var btnTpl = document.getElementById('pj-btn-template');
+  if (btnTpl) btnTpl.style.display = (mesF || bdayMes.length) ? 'inline-block' : 'none';
 
-  // 4. Ao restaurar internet — só se estava conectado antes
-  window.addEventListener('online', function() {
-    if (CLIENT_ID && driveReady && !_reconnectInProgress) silentReconnect();
+  var tb = document.getElementById('tb-pj');
+  if (!tb) return;
+  tb.innerHTML = '';
+  if (!lista.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum prestador encontrado para este filtro.</td></tr>';
+    return;
+  }
+  var MESES_ABR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  lista.forEach(function(p) {
+    var tr = document.createElement('tr');
+    var nasFmt = '—';
+    var isAnivMes = false;
+    if (p.nas) {
+      var pts = p.nas.split('-');
+      nasFmt = pts[2]+'/'+MESES_ABR[parseInt(pts[1])]+'/'+pts[0];
+      isAnivMes = parseInt(pts[1]) === mesHoje;
+    }
+    if (p.nas && parseInt(p.nas.split('-')[2]) === hoje.getDate() && parseInt(p.nas.split('-')[1]) === mesHoje) {
+      tr.style.background = '#e8f5ee';
+    }
+    tr.innerHTML =
+      '<td><strong>' + p.nome + '</strong>' + (isAnivMes ? ' &#127874;':'') + '</td>' +
+      '<td>' + nasFmt + '</td>' +
+      '<td>' + (p.area && p.area !== '-' ? p.area : '—') + '</td>' +
+      '<td style="font-size:12px;">' + (p.email||'—') + '</td>';
+    tb.appendChild(tr);
   });
 }
 
-function init() {
-  updDash(); rdUni();
-  initRelFilters(); rdRel();
-  rdBenef();
+function gerarTemplatePJ() {
+  var mesF = parseInt((document.getElementById('pj-mes-filter')||{value:''}).value)||0;
+  var hoje = new Date();
+  var mes  = mesF || (hoje.getMonth()+1);
+  var ano  = hoje.getFullYear();
 
-  // Configura os watchers de reconexão APENAS uma vez (evita loop)
-  setupDriveReconnectWatchers();
+  var MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var MESES_ABR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-  // Carregar foto store e assinatura salva
-  fotoStoreLoad();
-  loadSavedSignature();
-  if (_savedSignature) {
-    var btnSig = document.getElementById('btn-clear-sig');
-    if (btnSig) btnSig.style.display = 'inline-block';
+  var aniversariantes = _pjSessao.filter(function(p){
+    return p.nas && parseInt(p.nas.split('-')[1]) === mes;
+  }).sort(function(a,b){
+    return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
+  });
+
+  if (!aniversariantes.length) {
+    alert('Nenhum PJ aniversaria em ' + MESES[mes] + '.');
+    return;
   }
 
-  // Mostrar tela de sincronização ao iniciar (apenas na primeira vez)
-  if (!window._eqSyncOverlayShown) {
-    window._eqSyncOverlayShown = true;
-    setTimeout(function() {
-      var skip = localStorage.getItem('eq_skip_drive');
-      if (!skip) showSyncOverlay();
-    }, 800);
-  }
+  var cardsHtml = aniversariantes.map(function(p) {
+    var partes = p.nome.trim().split(/\s+/);
+    var nome1  = (partes[0]||'').toUpperCase();
+    var nome2  = (partes[1]||'').toUpperCase();
+    var nomeExibir = nome1 + (nome2 ? ' ' + nome2 : '');
+    var dia  = parseInt(p.nas.split('-')[2]);
+    var mesN = parseInt(p.nas.split('-')[1]);
+
+    return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:160px;border:1px solid rgba(255,255,255,0.2);">' +
+      '<div style="width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">' + (partes[0]||'?')[0].toUpperCase() + '</div>' +
+      '<div style="font-weight:700;font-size:12pt;color:#fff;line-height:1.3;letter-spacing:.3px;">' + nomeExibir + '</div>' +
+      '<div style="font-size:9pt;color:rgba(255,255,255,0.6);margin:3px 0 6px;">PJ / Prestador</div>' +
+      '<div style="font-size:12pt;color:#ffe082;font-weight:700;">&#127874; ' + dia + ' de ' + MESES_ABR[mesN] + '</div>' +
+      '</div>';
+  }).join('');
+
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:180px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:10px;">'
+    : '';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>PJ Aniversariantes ' + MESES[mes] + ' ' + ano + '</title>' +
+    '<style>*{box-sizing:border-box;}body{margin:0;font-family:Calibri,Arial,sans-serif;}' +
+    '.pg{min-height:100vh;background:linear-gradient(135deg,#0d3b26 0%,#1a6b47 35%,#0d4a8a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}' +
+    '.hdr{text-align:center;margin-bottom:30px;}' +
+    '.title{font-size:24pt;font-weight:700;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.4);margin:0;}' +
+    '.sub{font-size:13pt;color:rgba(255,255,255,.75);margin-top:6px;}' +
+    '.cards{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:980px;}' +
+    '.ftr{margin-top:28px;color:rgba(255,255,255,.35);font-size:9pt;text-align:center;}' +
+    '@media print{.pg{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}</style></head><body>' +
+    '<div class="pg">' +
+      '<div class="hdr">' + logoHtml +
+        '<div class="title">&#127873; Parabéns, Aniversariantes!</div>' +
+        '<div class="sub">' + MESES[mes] + ' ' + ano + ' &nbsp;&#183;&nbsp; PJ / Prestadores Equilibryum &#128149;</div>' +
+      '</div>' +
+      '<div class="cards">' + cardsHtml + '</div>' +
+      '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
+    '</div></body></html>';
+
+  var w = window.open('', '_blank');
+  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 900); }
 }
-
-window.addEventListener('load', () => {
-  const savedCID   = localStorage.getItem('eq_client_id');
-  const savedToken = localStorage.getItem('eq_drive_token');
-  const skip       = localStorage.getItem('eq_skip_drive');
-
-  // Carregar foto store imediatamente (antes de qualquer rdFunc)
-  fotoStoreLoad();
-  loadSavedSignature();
-
-  hideAllWizards();
-
-  if (skip) {
-    updDriveStatus(false);
-    init();
-    return;
-  }
-
-  if (savedToken && savedCID) {
-    CLIENT_ID = savedCID;
-    driveToken = savedToken;
-    document.getElementById('client-id-inp').value = savedCID;
-    document.getElementById('drive-bar').style.display = 'flex';
-    testAndConnect();
-    return;
-  }
-
-  if (savedCID) {
-    CLIENT_ID = savedCID;
-    document.getElementById('client-id-inp').value = savedCID;
-    document.getElementById('drive-bar').style.display = 'flex';
-    updDriveStatus(false);
-    // Sem token salvo — não tenta reconectar silenciosamente (causaria loop)
-    // Inicializa offline e mostra botão para o usuário conectar
-    showReconnectButton();
-    init();
-    return;
-  }
-
-  document.getElementById('setup-wizard').style.display = 'flex';
-});
 </script>
 </body>
 </html>
