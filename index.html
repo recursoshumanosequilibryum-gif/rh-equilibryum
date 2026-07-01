@@ -1474,7 +1474,13 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <!-- Funcionário -->
 <div class="modal-bg" id="modal-func">
   <div class="modal" style="max-width:780px">
-    <div class="modal-header"><span class="modal-title">Cadastro de Funcionário</span><button class="modal-close" onclick="closeModal('modal-func')">&#215;</button></div>
+    <div class="modal-header" style="align-items:center;">
+      <div style="display:flex;align-items:center;gap:12px;flex:1;">
+        <div id="func-modal-avatar" style="width:46px;height:46px;border-radius:50%;background:var(--green);color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;border:2.5px solid rgba(255,255,255,.4);">👤</div>
+        <span class="modal-title" id="func-modal-title">&#128101; Novo Funcionário</span>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-func')">&#215;</button>
+    </div>
     <div class="tabs"><div class="tab active" onclick="fTab('ft1',this)">Dados Pessoais</div><div class="tab" onclick="fTab('ft2',this)">Contrato</div><div class="tab" onclick="fTab('ft3',this)">Documentos</div></div>
     <div id="ft1">
       <!-- Foto do funcionário -->
@@ -2821,7 +2827,11 @@ function closeWizard() {
   init();
 }
 
-function initGIS(adminMode) {
+// ── Drive Auth — função central ─────────────────────────────
+// prompt: 'select_account' = login com popup (primeira vez / manual)
+// prompt: ''               = tenta silencioso (renovação)
+function initGIS(adminMode, promptMode) {
+  if (promptMode === undefined) promptMode = 'select_account';
   gapi.load('client', async () => {
     try {
       await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
@@ -2830,69 +2840,79 @@ function initGIS(adminMode) {
         scope: SCOPES,
         ux_mode: 'popup',
         callback: async (tokenResponse) => {
-          if (tokenResponse && tokenResponse.error) {
-            toast('Erro no login Google: ' + tokenResponse.error, 'warn');
-            updDriveStatus(false);
-            init();
+          _reconnectInProgress = false;
+          if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
+            if (promptMode === '') {
+              // Falha silenciosa — mostrar botão sem perturbar o usuário
+              showReconnectButton();
+            } else {
+              toast('Login cancelado ou falhou. Tente novamente.', 'warn');
+              updDriveStatus(false);
+              init();
+            }
             return;
           }
-          if (!tokenResponse || !tokenResponse.access_token) {
-            toast('Login cancelado.', 'warn');
-            updDriveStatus(false);
-            init();
-            return;
-          }
+          // Sucesso — salva token e tempo de emissão
           driveToken = tokenResponse.access_token;
           driveReady = true;
           localStorage.setItem('eq_drive_token', driveToken);
           localStorage.setItem('eq_client_id', CLIENT_ID);
           localStorage.setItem('eq_drive_token_time', Date.now().toString());
+          hideReconnectButton();
           try {
-            const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            var resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { 'Authorization': 'Bearer ' + driveToken }
             });
-            const user = await resp.json();
+            var user = await resp.json();
             driveUserEmail = user.email || '';
-            const nome = user.given_name || user.name || driveUserEmail;
-            document.getElementById('user-avatar').title = driveUserEmail;
-            document.getElementById('user-avatar').textContent = (nome[0] || 'A').toUpperCase();
+            var nome = user.given_name || user.name || driveUserEmail;
+            var av = document.getElementById('user-avatar');
+            if (av) { av.title = driveUserEmail; av.textContent = (nome[0]||'A').toUpperCase(); }
             updDriveStatus(true, driveUserEmail);
-          } catch(e) {
-            updDriveStatus(true, '');
-          }
+          } catch(e) { updDriveStatus(true, ''); }
           await ensureRHFolder();
           await syncFromDrive();
           if (adminMode) {
-            document.getElementById('wizard-token-txt').value = driveToken;
-            document.getElementById('wizard-token-box').style.display = 'block';
+            var wizTxt = document.getElementById('wizard-token-txt');
+            var wizBox = document.getElementById('wizard-token-box');
+            if (wizTxt) wizTxt.value = driveToken;
+            if (wizBox) wizBox.style.display = 'block';
           } else {
-            document.getElementById('setup-wizard').style.display = 'none';
+            var wiz = document.getElementById('setup-wizard');
+            if (wiz) wiz.style.display = 'none';
             init();
           }
+          if (promptMode === '') toast('Drive renovado automaticamente ☁️');
         },
         error_callback: (err) => {
-          console.error('OAuth error:', err);
-          toast('Erro no login Google. Tente novamente.', 'warn');
-          updDriveStatus(false);
-          init();
+          _reconnectInProgress = false;
+          if (promptMode === '') {
+            // Falha silenciosa — só mostra botão
+            showReconnectButton();
+          } else {
+            toast('Erro no login Google. Tente novamente.', 'warn');
+            updDriveStatus(false);
+            init();
+          }
         }
       });
-      tokenClient.requestAccessToken({ prompt: 'select_account' });
+      tokenClient.requestAccessToken({ prompt: promptMode });
     } catch(e) {
-      console.error('GAPI init error:', e);
-      toast('Erro ao inicializar. Usando dados locais.', 'warn');
-      updDriveStatus(false);
-      init();
+      _reconnectInProgress = false;
+      if (promptMode !== '') {
+        toast('Erro ao inicializar Drive. Usando dados locais.', 'warn');
+        updDriveStatus(false);
+        init();
+      }
     }
   });
 }
 
 function driveSignIn() {
-  // Reconectar — admin faz novo login
-  const saved = localStorage.getItem('eq_client_id');
+  var saved = localStorage.getItem('eq_client_id');
   if (saved) {
     CLIENT_ID = saved;
-    initGIS(false);
+    initGIS(false, 'select_account'); // popup explícito
   } else {
     toast('Configure o Client ID primeiro.', 'warn');
   }
@@ -3319,7 +3339,21 @@ function editFunc(id) {
   document.getElementById('ftam-calcado').value = f.tamCalcado   || '';
   document.getElementById('ftam-jaleco').value  = f.tamJaleco    || '';
   // Update modal title and button
-  document.querySelector('#modal-func .modal-title').textContent = '✏️ Editar Funcionário';
+  document.querySelector('#modal-func .modal-title').textContent = '✏️ Editar Funcionário — ' + f.n.split(' ')[0];
+  // Mostrar foto no header do modal
+  var modalAv = document.getElementById('func-modal-avatar');
+  if (modalAv) {
+    var headerFoto = fotoStoreGet(f.id);
+    if (headerFoto) {
+      modalAv.innerHTML = '';
+      var hImg = document.createElement('img');
+      hImg.src = headerFoto;
+      hImg.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+      modalAv.appendChild(hImg);
+    } else {
+      modalAv.innerHTML = f.n[0].toUpperCase();
+    }
+  }
   document.getElementById('btn-save-func').innerHTML = '&#128190; Atualizar Funcionário';
   // Show docs already saved
   const docsList = document.getElementById('docs-list');
@@ -3335,6 +3369,8 @@ function editFunc(id) {
   if (typeof resetDocsCat === 'function') resetDocsCat();
   pendingFiles = [];
   resetFuncFoto();
+  var modalAv = document.getElementById('func-modal-avatar');
+  if (modalAv) { modalAv.innerHTML = '👤'; }
   checkDriveDocs();
   document.getElementById('modal-func').classList.add('open');
 }
@@ -3520,6 +3556,7 @@ function funcTab(status, btn) {
 }
 
 function rdFunc() {
+  fotoStoreLoad(); // Garantir foto store atualizado
   var campo  = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
   var dir    = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
   var search = ((document.getElementById('func-search')||{}).value || '').toLowerCase().trim();
@@ -5591,6 +5628,23 @@ async function delPol(id){if(!confirm('Excluir?'))return;DB.s('politicas',DB.g('
 
 // Testa se o token ainda é válido
 async function testAndConnect() {
+  // Verificar idade do token antes de testar
+  var tokenTime = parseInt(localStorage.getItem('eq_drive_token_time') || '0');
+  var tokenAgeMin = (Date.now() - tokenTime) / 60000;
+
+  if (tokenAgeMin > 58) {
+    // Token provavelmente expirado — renovar silenciosamente antes de usar
+    console.log('[Drive] Token com ' + Math.round(tokenAgeMin) + 'min — renovando silenciosamente');
+    driveToken = null;
+    driveReady = false;
+    localStorage.removeItem('eq_drive_token');
+    localStorage.removeItem('eq_drive_token_time');
+    updDriveStatus(false);
+    showReconnectButton();
+    init();
+    return;
+  }
+
   try {
     var r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
       headers: { 'Authorization': 'Bearer ' + driveToken }
@@ -5607,9 +5661,7 @@ async function testAndConnect() {
       await syncFromDrive();
       init();
     } else {
-      // Token expirado — limpa e inicia offline sem loop
-      driveToken = null;
-      driveReady = false;
+      driveToken = null; driveReady = false;
       localStorage.removeItem('eq_drive_token');
       localStorage.removeItem('eq_drive_token_time');
       updDriveStatus(false);
@@ -5627,66 +5679,9 @@ var _reconnectAttempts = 0;
 var _reconnectInProgress = false;
 
 function silentReconnect() {
-  if (!CLIENT_ID) return;
-  if (_reconnectInProgress) return;
+  if (!CLIENT_ID || _reconnectInProgress) return;
   _reconnectInProgress = true;
-
-  gapi.load('client', async () => {
-    try {
-      await gapi.client.init({});
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: async (tokenResponse) => {
-          _reconnectInProgress = false;
-          if (!tokenResponse || tokenResponse.error) {
-            // Falhou silenciosamente — sessão expirada, precisa de clique do usuário
-            driveReady = false;
-            updDriveStatus(false);
-            showReconnectButton();
-            return;
-          }
-          // Sucesso
-          driveToken = tokenResponse.access_token;
-          driveReady = true;
-          localStorage.setItem('eq_drive_token', driveToken);
-          localStorage.setItem('eq_drive_token_time', Date.now().toString());
-          hideReconnectButton();
-          try {
-            var resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { 'Authorization': 'Bearer ' + driveToken }
-            });
-            var user = await resp.json();
-            driveUserEmail = user.email || '';
-            var nome = user.given_name || user.name || driveUserEmail;
-            var av = document.getElementById('user-avatar');
-            if (av) { av.title = driveUserEmail; av.textContent = (nome[0]||'A').toUpperCase(); }
-            updDriveStatus(true, driveUserEmail);
-          } catch(e) { updDriveStatus(true, ''); }
-          await ensureRHFolder();
-          await syncFromDrive();
-          toast('Drive conectado! ☁️');
-        },
-        error_callback: (err) => {
-          _reconnectInProgress = false;
-          // NÃO faz retry automático — evita loop infinito
-          // Simplesmente mostra o botão para o usuário clicar manualmente
-          driveReady = false;
-          updDriveStatus(false);
-          showReconnectButton();
-        }
-      });
-      // prompt:'' = tenta silenciosamente sem interação do usuário
-      // Se a sessão Google ainda estiver ativa, renova sem abrir nada
-      // Se expirou, o error_callback é chamado e mostramos o botão
-      tokenClient.requestAccessToken({ prompt: '' });
-    } catch(e) {
-      _reconnectInProgress = false;
-      driveReady = false;
-      updDriveStatus(false);
-      showReconnectButton();
-    }
-  });
+  initGIS(false, ''); // prompt:'' = silencioso, sem popup
 }
 
 function showReconnectButton() {
@@ -9386,13 +9381,17 @@ function setupDriveReconnectWatchers() {
   if (_eqReconnectSetupDone) return;
   _eqReconnectSetupDone = true;
 
-  // 1. Renovar token preventivamente a cada 45 min (token dura ~60 min)
-  //    Só renova se estiver conectado — não tenta reconectar se já falhou
+  // 1. Renovar token preventivamente a cada 45 min
+  //    Usa prompt:'' para tentar silenciosamente sem popup
   setInterval(function() {
-    if (CLIENT_ID && driveReady && !_reconnectInProgress) {
+    if (!CLIENT_ID || !driveReady || _reconnectInProgress) return;
+    var tTime = parseInt(localStorage.getItem('eq_drive_token_time') || '0');
+    var ageMin = (Date.now() - tTime) / 60000;
+    if (ageMin >= 45) {
+      console.log('[Drive] Renovação preventiva após ' + Math.round(ageMin) + 'min');
       silentReconnect();
     }
-  }, 45 * 60 * 1000);
+  }, 5 * 60 * 1000); // Checa a cada 5min se precisa renovar
 
   // 2. Checar validade a cada 10 min — só quando conectado
   setInterval(function() {
@@ -9456,6 +9455,10 @@ window.addEventListener('load', () => {
   const savedCID   = localStorage.getItem('eq_client_id');
   const savedToken = localStorage.getItem('eq_drive_token');
   const skip       = localStorage.getItem('eq_skip_drive');
+
+  // Carregar foto store imediatamente (antes de qualquer rdFunc)
+  fotoStoreLoad();
+  loadSavedSignature();
 
   hideAllWizards();
 
