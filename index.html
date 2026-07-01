@@ -462,6 +462,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav('funcionarios',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Funcionários
   </div>
+  <div class="nav-item" onclick="nav('pj',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>PJ / Prestadores
+  </div>
   <div class="nav-item" onclick="nav('departamentos',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Departamentos
   </div>
@@ -1426,9 +1429,14 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="card">
     <div class="card-header">
       <span class="card-title">&#128200; Campanhas</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <select id="camp-ano-filter" onchange="rdCamp()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
           <option value="">Todos os anos</option>
+        </select>
+        <select id="camp-tipo-filter" onchange="rdCamp()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todas (Pontual + Fixa)</option>
+          <option value="pontual">📅 Pontuais</option>
+          <option value="fixa">🔁 Fixas</option>
         </select>
         <button class="btn btn-outline btn-sm" onclick="imprimirRelCampanhas()">&#128438; Relatório c/ Fotos</button>
         <button class="btn btn-outline btn-sm" onclick="imprimirAcompCampanhas()">&#128202; Acompanhamento Anual</button>
@@ -1913,6 +1921,68 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- PJ / PRESTADORES -->
+<div class="section-page" id="sec-pj">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">&#128188; PJ / Prestadores de Serviço</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="importarPJPlanilha()">&#128196; Importar Planilha</button>
+        <button class="btn btn-primary" onclick="openModal('modal-pj')">+ Novo PJ</button>
+      </div>
+    </div>
+
+    <!-- Import instructions -->
+    <div id="pj-import-area" style="display:none;margin-bottom:16px;padding:16px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);">
+      <div style="font-weight:700;color:var(--green-dark);margin-bottom:8px;">📂 Importar Planilha CSV/Excel</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px;">Selecione um arquivo CSV com as colunas: <strong>Nome, Data Nascimento, Cargo, Departamento</strong></p>
+      <input type="file" id="pj-file-inp" accept=".csv,.xlsx,.xls" onchange="processarPJArquivo(this)" style="margin-bottom:8px;">
+      <div id="pj-import-msg" style="font-size:13px;color:var(--green-dark);margin-top:6px;"></div>
+    </div>
+
+    <!-- Search -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <input type="text" id="pj-busca" placeholder="🔍 Buscar por nome ou cargo..." oninput="rdPJ()" style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+    </div>
+
+    <table class="data-table">
+      <thead><tr>
+        <th>Nome</th>
+        <th>Nascimento</th>
+        <th>Cargo / Função</th>
+        <th>Departamento</th>
+        <th>Ações</th>
+      </tr></thead>
+      <tbody id="tb-pj"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL PJ -->
+<div class="modal-bg" id="modal-pj">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <span class="modal-title" id="pj-modal-title">&#128188; Novo PJ</span>
+      <button class="modal-close" onclick="closeModal('modal-pj')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Nome Completo *</label><input id="pj-nome" type="text" placeholder="Nome do prestador"></div>
+      <div class="form-group"><label>Data de Nascimento</label><input id="pj-nas" type="date"></div>
+      <div class="form-group"><label>Cargo / Função</label><input id="pj-cargo" type="text" placeholder="Ex.: Fisioterapeuta, Psicólogo..."></div>
+      <div class="form-group form-full"><label>Departamento</label>
+        <select id="pj-dep" style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+          <option value="">Selecione</option>
+        </select>
+      </div>
+      <div class="form-group form-full"><label>Observações</label><textarea id="pj-obs" rows="2" placeholder="Informações adicionais..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-pj')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savPJ()">&#128190; Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Google API -->
 <!-- Modal: Atribuir Benefício ao Funcionário -->
 <div class="modal-bg" id="modal-benef-atr">
@@ -2183,7 +2253,13 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="modal">
     <div class="modal-header"><span class="modal-title" id="camp-modal-title">Nova Campanha</span><button class="modal-close" onclick="closeModal('modal-camp')">&#215;</button></div>
     <div class="form-grid">
-      <div class="form-group form-full"><label>Título *</label><input id="ca-titulo" type="text" placeholder="Ex.: Campanha de Vacinação Gripe 2025"></div>
+      <div class="form-group"><label>Título *</label><input id="ca-titulo" type="text" placeholder="Ex.: Campanha de Vacinação Gripe 2025"></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="ca-tipo-camp" style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">
+          <option value="pontual">📅 Pontual (evento único)</option>
+          <option value="fixa">🔁 Fixa (recorrente)</option>
+        </select>
+      </div>
       <div class="form-group form-full"><label>Descrição</label><textarea id="ca-desc" rows="3" placeholder="Descrição, público-alvo, objetivos..."></textarea></div>
       <div class="form-group"><label>Início</label><input id="ca-ini" type="date"></div>
       <div class="form-group"><label>Fim</label><input id="ca-fim" type="date"></div>
@@ -3035,6 +3111,10 @@ async function syncFromDrive() {
     const uniEst = await loadDriveJSON('eq_uni-est.json');
     if (uniEst !== null) DB.so('uni-est', uniEst);
   } catch(e) {}
+  try {
+    const pjData = await loadDriveJSON('eq_pj.json');
+    if (pjData !== null) DB.s('pj', pjData);
+  } catch(e) {}
   await loadFotoStoreFromDrive();
   // Reload all UI with fresh data from Drive
   updDash();
@@ -3205,6 +3285,17 @@ function exTab(id, btn) {
 // NAV
 // ============================================================
 function nav(id, el) {
+  if (id === 'pj') {
+    // Fill dep select on PJ modal open
+    var sel = document.getElementById('pj-dep');
+    if (sel && sel.options.length <= 1) {
+      DB.g('departamentos').forEach(function(d){
+        var o = document.createElement('option');
+        o.value = d.id; o.textContent = d.nome; sel.appendChild(o);
+      });
+    }
+    rdPJ();
+  }
   document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
   var secEl = document.getElementById('sec-' + id);
   if (!secEl) { console.warn('Section not found: sec-' + id); return; }
@@ -4771,28 +4862,41 @@ function rdExp() {
   rdExpTab(funcs, 45, 'tb-e45'); rdExpTab(funcs, 90, 'tb-e90');
 }
 function rdExpTab(funcs, dias, tbId) {
-  const tb = document.getElementById(tbId); const hoje = td();
-  // Show ALL non-dismissed employees that were admitted within the period window (admissao + dias + buffer)
-  const eligivel = funcs.filter(f => f.adm && dif(f.adm, hoje) <= dias + 10);
+  var tb = document.getElementById(tbId);
+  var hoje = td();
+  // Exibir quem: ainda não completou o período (adm + dias >= hoje - 5) E foi admitido (adm + dias - dias >= hoje - (dias+30))
+  // Na prática: admitidos nos últimos (dias+30) dias E que ainda não passaram mais de 5 dias do vencimento
+  var eligivel = funcs.filter(function(f) {
+    if (!f.adm) return false;
+    var diasDeAdm = dif(f.adm, hoje); // dias desde a admissão
+    // Mostrar se ainda não está muito além do período (até 5 dias após o vencimento)
+    // E se já passou tempo suficiente para ser relevante (pelo menos 1 dia admitido)
+    return diasDeAdm >= 0 && diasDeAdm <= dias + 5;
+  });
   if (!eligivel.length) {
     tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário neste período.</td></tr>';
     return;
   }
-  tb.innerHTML = eligivel.map(f => {
-    const venc = add(f.adm, dias); const d = dif(hoje, venc);
-    let bc, st;
-    if (d < 0)       { bc = 'badge-red';    st = 'Concluído'; }
-    else if (d <= 7)  { bc = 'badge-yellow'; st = 'Vence em ' + d + 'd'; }
-    else              { bc = 'badge-green';  st = 'Em andamento'; }
-    const diasInfo = d < 0 ? '<span style="color:var(--gray-400)">Concluído</span>' : '<strong>' + d + ' dias</strong>';
-    return `<tr>
-      <td><strong>${f.n}</strong></td>
-      <td>${fd(f.adm)}</td>
-      <td>${fd(venc)}</td>
-      <td>${diasInfo}</td>
-      <td><span class="badge ${bc}">${st}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick="openAvd('${f.id}',${dias})">&#128203; Gerar Avaliação</button></td>
-    </tr>`;
+  // Ordenar por vencimento mais próximo
+  eligivel.sort(function(a,b) { return a.adm.localeCompare(b.adm); });
+  tb.innerHTML = eligivel.map(function(f) {
+    var venc = add(f.adm, dias);
+    var d    = dif(hoje, venc); // dias restantes (negativo = vencido)
+    var bc, st;
+    if (d < 0)      { bc = 'badge-red';    st = 'Vencido há ' + Math.abs(d) + 'd'; }
+    else if (d <= 7) { bc = 'badge-yellow'; st = 'Vence em ' + d + 'd'; }
+    else             { bc = 'badge-green';  st = 'Em andamento'; }
+    var diasInfo = d < 0
+      ? '<span style="color:var(--red);font-weight:600;">'+Math.abs(d)+'d atraso</span>'
+      : '<strong style="color:var(--green-dark);">' + d + ' dias</strong>';
+    return '<tr>' +
+      '<td><strong>' + f.n + '</strong></td>' +
+      '<td>' + fd(f.adm) + '</td>' +
+      '<td><strong>' + fd(venc) + '</strong></td>' +
+      '<td>' + diasInfo + '</td>' +
+      '<td><button class="btn btn-outline btn-sm" onclick="document.getElementById(\"modal-form-exp\").classList.add(\"open\");rdFormExpModal()">&#128203; Gerar Avaliação</button></td>' +
+
+    '</tr>';
   }).join('');
 }
 function openAvd(fid, dias) {
@@ -5623,12 +5727,12 @@ async function savCamp(){
     var idx=list.findIndex(function(x){return x.id===editingCampId;});
     if(idx!==-1){
       var existing = list[idx];
-      list[idx]={...existing,titulo,desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor'),
+      list[idx]={...existing,titulo,tipoCamp:(document.getElementById('ca-tipo-camp')||{value:'pontual'}).value||'pontual',desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor'),
         photos:(existing.photos||[]).concat(photos)};
     }
     editingCampId=null;
   } else {
-    list.push({id:uid(),titulo,desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor'),files,photos});
+    list.push({id:uid(),titulo,tipoCamp:(document.getElementById('ca-tipo-camp')||{value:'pontual'}).value||'pontual',desc:v('ca-desc'),ini:v('ca-ini'),fim:v('ca-fim'),resp:v('ca-resp'),cor:v('ca-cor'),files,photos});
   }
   DB.s('campanhas',list);if(driveReady) await driveSync('campanhas');
   closeModal('modal-camp');rdCamp();toast('Campanha salva'+(driveReady?' ☁️':'!'));
@@ -5642,13 +5746,13 @@ function rdCamp(){
   if(!list.length){el.innerHTML='<div class="alert alert-info">&#128200; Nenhuma campanha cadastrada.</div>';return;}
   el.innerHTML=list.map(function(c){
     var filesHtml=(c.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
-    return '<div class="camp-card '+(c.cor||'green')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="cc-title">'+c.titulo+'</div><div class="cc-meta">&#128197; '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+' | &#128100; '+(c.resp||'—')+'</div>'+(c.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+c.desc+'</p>':'')+'</div>'+
+    return '<div class="camp-card '+(c.cor||'green')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="cc-title">'+c.titulo+(c.tipoCamp==='fixa'?' <span style="font-size:10px;background:#e3f2fd;color:#1565c0;border-radius:10px;padding:2px 8px;">🔁 Fixa</span>':' <span style="font-size:10px;background:#fff8e1;color:#f57f17;border-radius:10px;padding:2px 8px;">📅 Pontual</span>')+'</div><div class="cc-meta">&#128197; '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+' | &#128100; '+(c.resp||'—')+'</div>'+(c.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+c.desc+'</p>':'')+'</div>'+
       '<div style="display:flex;gap:6px;"><button class="btn-icon" data-cid="'+c.id+'" onclick="editCamp(this.dataset.cid)">&#9999;&#65039;</button><button class="btn-icon danger" data-cid="'+c.id+'" onclick="delCamp(this.dataset.cid)">&#128465;</button></div></div>'+
       (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+filesHtml+'</div>':'')+
       '</div>';
   }).join('');
 }
-function editCamp(id){var c=DB.g('campanhas').find(function(x){return x.id===id;});if(!c)return;editingCampId=id;document.getElementById('ca-titulo').value=c.titulo||'';document.getElementById('ca-desc').value=c.desc||'';document.getElementById('ca-ini').value=c.ini||'';document.getElementById('ca-fim').value=c.fim||'';document.getElementById('ca-resp').value=c.resp||'';document.getElementById('ca-cor').value=c.cor||'green';document.getElementById('camp-modal-title').textContent='✏️ Editar Campanha';document.getElementById('modal-camp').classList.add('open');}
+function editCamp(id){var c=DB.g('campanhas').find(function(x){return x.id===id;});if(!c)return;editingCampId=id;document.getElementById('ca-titulo').value=c.titulo||'';var tipoCEl=document.getElementById('ca-tipo-camp');if(tipoCEl)tipoCEl.value=c.tipoCamp||'pontual';document.getElementById('ca-desc').value=c.desc||'';document.getElementById('ca-ini').value=c.ini||'';document.getElementById('ca-fim').value=c.fim||'';document.getElementById('ca-resp').value=c.resp||'';document.getElementById('ca-cor').value=c.cor||'green';document.getElementById('camp-modal-title').textContent='✏️ Editar Campanha';document.getElementById('modal-camp').classList.add('open');}
 async function delCamp(id){if(!confirm('Excluir?'))return;DB.s('campanhas',DB.g('campanhas').filter(function(c){return c.id!==id;}));if(driveReady) await driveSync('campanhas');rdCamp();}
 
 // ============================================================
@@ -5763,7 +5867,11 @@ function hideReconnectButton() {
 function rdBday() {
   var filter = (document.getElementById('bday-filter') || {value:'mes'}).value;
   var hoje = new Date(); var hm = hoje.getMonth()+1; var hd = hoje.getDate();
-  var funcs = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
+  var funcsCLT = DB.g('funcionarios').filter(function(f){ return f.nas && f.st !== 'Desligado'; });
+  var funcsPJ  = DB.g('pj').filter(function(p){ return p.nas; }).map(function(p){
+    return Object.assign({}, p, {n: p.nome, st: 'PJ', emp: '', _isPJ: true});
+  });
+  var funcs = funcsCLT.concat(funcsPJ);
   var lista = funcs.map(function(f){
     var parts = f.nas.split('-').map(Number);
     return Object.assign({}, f, {bm: parts[1], bd: parts[2]});
@@ -5861,30 +5969,38 @@ function rdBday() {
 function gerarTemplateAniversariantes(mes) {
   var ano   = new Date().getFullYear();
   var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var funcs = DB.g('funcionarios').filter(function(f){
+  var funcsCLT2 = DB.g('funcionarios').filter(function(f){
     if (!f.nas || f.st === 'Desligado') return false;
     return parseInt(f.nas.split('-')[1]) === mes;
-  }).sort(function(a,b){
+  });
+  var funcsPJ2 = DB.g('pj').filter(function(p){
+    return p.nas && parseInt(p.nas.split('-')[1]) === mes;
+  }).map(function(p){ return Object.assign({}, p, {n: p.nome, _isPJ: true}); });
+  var funcs = funcsCLT2.concat(funcsPJ2).sort(function(a,b){
     return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
   });
   if (!funcs.length) { alert('Nenhum aniversariante em ' + MESES[mes-1] + '.'); return; }
 
+  var deps = DB.g('departamentos');
   var cardsHtml = funcs.map(function(f) {
+    var partes = f.n.trim().split(/\s+/);
+    var nome1  = partes[0] || '';
+    var nome2  = partes[1] || '';
+    var nomeExibir = (nome1 + (nome2 ? ' ' + nome2 : '')).toUpperCase();
     var dia   = parseInt(f.nas.split('-')[2]);
-    var idade = ano - parseInt(f.nas.split('-')[0]);
-    var primeiroNome = f.n.split(' ')[0];
-    var sobrenome    = f.n.split(' ').slice(1).join(' ');
+    var mes   = parseInt(f.nas.split('-')[1]);
+    var MESES_ABR2 = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    var dep   = deps.find(function(d){ return d.id === f.dep; });
+    var depNome = dep ? dep.nome : '';
     var fotoSrcTpl = fotoStoreGet(f.id);
     var fotoHtml = fotoSrcTpl
       ? '<img src="'+fotoSrcTpl+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.8);display:block;margin:0 auto 10px;">'
-      : '<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">'+f.n[0].toUpperCase()+'</div>';
-    return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:155px;border:1px solid rgba(255,255,255,0.2);">' +
+      : '<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">'+nome1[0].toUpperCase()+'</div>';
+    return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:160px;border:1px solid rgba(255,255,255,0.2);">' +
       fotoHtml +
-      '<div style="font-weight:700;font-size:13.5pt;color:#fff;line-height:1.2;">'+primeiroNome+'</div>' +
-      (sobrenome ? '<div style="font-size:10pt;color:rgba(255,255,255,0.75);margin-bottom:6px;">'+sobrenome+'</div>' : '<div style="margin-bottom:6px;"></div>') +
-      '<div style="font-size:12pt;color:#ffe082;font-weight:700;">&#127874; Dia '+dia+'</div>' +
-      '<div style="font-size:9.5pt;color:rgba(255,255,255,0.65);margin-top:3px;">'+idade+' anos</div>' +
-      '<div style="font-size:9pt;color:rgba(255,255,255,0.55);">'+(f.car||'')+'</div>' +
+      '<div style="font-weight:700;font-size:12pt;color:#fff;line-height:1.3;letter-spacing:.3px;">'+nomeExibir+'</div>' +
+      '<div style="font-size:9pt;color:rgba(255,255,255,0.6);margin:3px 0 6px;">'+depNome+'</div>' +
+      '<div style="font-size:12pt;color:#ffe082;font-weight:700;">&#127874; '+dia+' de '+MESES_ABR2[mes]+'</div>' +
       '</div>';
   }).join('');
 
@@ -6670,7 +6786,8 @@ function fillCampAnoFilter() {
 
 // ── Acompanhamento Anual (inline na tela) ────────────────────
 function renderAcompCamp() {
-  var anoF = (document.getElementById('camp-ano-filter')||{value:''}).value||'';
+  var anoF  = (document.getElementById('camp-ano-filter') ||{value:''}).value||'';
+  var tipoF = (document.getElementById('camp-tipo-filter')||{value:''}).value||'';
   var all  = DB.g('campanhas');
   if (!all.length) {
     document.getElementById('camp-acomp-content').innerHTML =
@@ -8651,12 +8768,22 @@ function gerarAssinaturaEmpresa(empresa) {
           '<div style="font-size:8.5pt;color:#666;">' + cnpjEmp + '</div>',
           '<div style="font-size:8.5pt;color:#666;">' + endEmp + '</div>',
         '</div>',
-        '<div style="text-align:center;min-width:220px;">',
-          sigHtml,
-          '<div style="border-top:1.5px solid #333;padding-top:5px;">',
-            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>',
-            '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>',
-            '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+        '<div style="display:flex;gap:24px;justify-content:flex-end;flex-wrap:wrap;">',
+          '<div style="text-align:center;min-width:190px;">',
+            sigHtml,
+            '<div style="border-top:1.5px solid #333;padding-top:5px;">',
+              '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>',
+              '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>',
+              '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+            '</div>',
+          '</div>',
+          '<div style="text-align:center;min-width:190px;">',
+            '<div style="height:60px;"></div>',
+            '<div style="border-top:1.5px solid #333;padding-top:5px;">',
+              '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">BRUNO NATHAN DA SILVA</div>',
+              '<div style="font-size:9pt;color:#555;">Responsável pela Empresa</div>',
+              '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+            '</div>',
           '</div>',
         '</div>',
       '</div>',
@@ -9565,7 +9692,7 @@ function gerarFormExp() {
       '<strong style="font-size:9pt;color:#555;">PARECER DO GESTOR / OBSERVAÇÕES GERAIS:</strong><br><br><br>' +
     '</div>' +
 
-    '<div style="display:flex;justify-content:space-between;gap:30px;margin-top:20px;">' +
+    '<div style="display:flex;justify-content:space-between;gap:20px;margin-top:20px;flex-wrap:wrap;">' +
       '<div class="sig">' +
         '<div style="height:36px;"></div>' +
         '<div class="sig-line">' +
@@ -9587,6 +9714,13 @@ function gerarFormExp() {
           '<small style="color:#666;">Coordenadora de RH</small>' +
         '</div>' +
       '</div>' +
+      '<div class="sig">' +
+        '<div style="height:36px;"></div>' +
+        '<div class="sig-line">' +
+          '<strong>BRUNO NATHAN DA SILVA</strong><br>' +
+          '<small style="color:#666;">Responsável pela Empresa</small>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
 
     '<p style="text-align:center;font-size:8.5pt;color:#aaa;margin-top:16px;border-top:1px solid #eee;padding-top:8px;">' +
@@ -9598,6 +9732,204 @@ function gerarFormExp() {
   closeModal('modal-form-exp');
   // Use same method as all other documents - works reliably
   abrirEImprimirDoc(doc, 'Avaliacao_Experiencia_' + f.n.replace(/ /g,'_') + '_' + dias + 'd', f);
+}
+
+// ============================================================
+// PJ / PRESTADORES DE SERVIÇO
+// ============================================================
+var editingPJId = null;
+
+function rdPJ() {
+  var busca = (document.getElementById('pj-busca')||{value:''}).value.toLowerCase();
+  var list  = DB.g('pj');
+  if (busca) list = list.filter(function(p){
+    return (p.nome||'').toLowerCase().includes(busca) || (p.cargo||'').toLowerCase().includes(busca);
+  });
+  list.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
+
+  var deps = DB.g('departamentos');
+  var tb   = document.getElementById('tb-pj');
+  if (!tb) return;
+
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum PJ cadastrado. Clique em <strong>+ Novo PJ</strong> ou <strong>Importar Planilha</strong>.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = '';
+  list.forEach(function(p) {
+    var dep  = deps.find(function(d){ return d.id === p.dep; });
+    var nasFmt = p.nas ? p.nas.split('-').reverse().join('/') : '—';
+    var tr   = document.createElement('tr');
+    tr.innerHTML =
+      '<td><strong>' + p.nome + '</strong></td>' +
+      '<td>' + nasFmt + '</td>' +
+      '<td>' + (p.cargo||'—') + '</td>' +
+      '<td>' + (dep ? dep.nome : (p.depNome||'—')) + '</td>' +
+      '<td style="display:flex;gap:6px;"></td>';
+    var btns = tr.querySelector('td:last-child');
+    var btnE = document.createElement('button');
+    btnE.className='btn-icon'; btnE.title='Editar'; btnE.innerHTML='✏️';
+    (function(id){ btnE.onclick=function(){ editPJ(id); }; })(p.id);
+    var btnD = document.createElement('button');
+    btnD.className='btn-icon danger'; btnD.title='Excluir'; btnD.innerHTML='🗑️';
+    (function(id){ btnD.onclick=function(){ delPJ(id); }; })(p.id);
+    btns.appendChild(btnE); btns.appendChild(btnD);
+    tb.appendChild(tr);
+  });
+}
+
+function openPJModal() {
+  editingPJId = null;
+  document.getElementById('pj-modal-title').textContent = '📋 Novo PJ';
+  ['pj-nome','pj-nas','pj-cargo','pj-obs'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  // Fill dep select
+  var sel = document.getElementById('pj-dep');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione</option>';
+    DB.g('departamentos').forEach(function(d){
+      var o = document.createElement('option');
+      o.value = d.id; o.textContent = d.nome; sel.appendChild(o);
+    });
+  }
+  openModal('modal-pj');
+}
+
+function editPJ(id) {
+  var p = DB.g('pj').find(function(x){ return x.id===id; });
+  if (!p) return;
+  editingPJId = id;
+  document.getElementById('pj-modal-title').textContent = '✏️ Editar PJ — ' + p.nome;
+  // Fill dep select
+  var sel = document.getElementById('pj-dep');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione</option>';
+    DB.g('departamentos').forEach(function(d){
+      var o = document.createElement('option');
+      o.value = d.id; o.textContent = d.nome; sel.appendChild(o);
+    });
+    sel.value = p.dep||'';
+  }
+  document.getElementById('pj-nome').value  = p.nome  || '';
+  document.getElementById('pj-nas').value   = p.nas   || '';
+  document.getElementById('pj-cargo').value = p.cargo || '';
+  document.getElementById('pj-obs').value   = p.obs   || '';
+  openModal('modal-pj');
+}
+
+async function savPJ() {
+  var nome = (document.getElementById('pj-nome')||{}).value.trim();
+  if (!nome) { alert('Nome é obrigatório.'); return; }
+  var list = DB.g('pj');
+  var dep  = document.getElementById('pj-dep');
+  var rec  = {
+    id:    editingPJId || uid(),
+    nome:  nome,
+    nas:   (document.getElementById('pj-nas')||{}).value  || '',
+    cargo: (document.getElementById('pj-cargo')||{}).value|| '',
+    dep:   dep ? dep.value : '',
+    obs:   (document.getElementById('pj-obs')||{}).value  || ''
+  };
+  if (editingPJId) {
+    var idx = list.findIndex(function(x){ return x.id===editingPJId; });
+    if (idx !== -1) list[idx] = rec;
+    editingPJId = null;
+  } else {
+    list.push(rec);
+  }
+  DB.s('pj', list);
+  if (driveReady) await driveSync('pj');
+  closeModal('modal-pj');
+  rdPJ();
+  toast('PJ salvo!' + (driveReady?' ☁️':''));
+}
+
+async function delPJ(id) {
+  if (!confirm('Excluir este prestador?')) return;
+  DB.s('pj', DB.g('pj').filter(function(x){ return x.id!==id; }));
+  if (driveReady) await driveSync('pj');
+  rdPJ();
+}
+
+function importarPJPlanilha() {
+  var area = document.getElementById('pj-import-area');
+  if (area) area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+
+function processarPJArquivo(inp) {
+  var file = inp.files[0]; if (!file) return;
+  var msg  = document.getElementById('pj-import-msg');
+  if (msg) msg.textContent = '⏳ Processando...';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+    if (lines.length < 2) {
+      if (msg) msg.textContent = '❌ Arquivo vazio ou inválido.';
+      return;
+    }
+
+    // Detect delimiter
+    var sep = lines[0].includes(';') ? ';' : ',';
+    var header = lines[0].split(sep).map(function(h){ return h.trim().toLowerCase().replace(/['"]/g,''); });
+
+    // Map columns: nome, nascimento/data_nascimento, cargo, departamento
+    var iNome  = header.findIndex(function(h){ return h.includes('nome'); });
+    var iNas   = header.findIndex(function(h){ return h.includes('nasc') || h.includes('data'); });
+    var iCargo = header.findIndex(function(h){ return h.includes('cargo') || h.includes('func'); });
+    var iDep   = header.findIndex(function(h){ return h.includes('dep') || h.includes('setor'); });
+
+    if (iNome < 0) {
+      if (msg) msg.textContent = '❌ Coluna "Nome" não encontrada. Verifique o cabeçalho.';
+      return;
+    }
+
+    var deps = DB.g('departamentos');
+    var list = DB.g('pj');
+    var importados = 0, atualizados = 0;
+
+    lines.slice(1).forEach(function(line) {
+      if (!line.trim()) return;
+      var cols = line.split(sep).map(function(c){ return c.trim().replace(/^["']|["']$/g,''); });
+      var nome = iNome >= 0 ? cols[iNome]||'' : '';
+      if (!nome) return;
+
+      // Parse date
+      var nasRaw = iNas >= 0 ? cols[iNas]||'' : '';
+      var nas = '';
+      if (nasRaw) {
+        // Try DD/MM/YYYY or YYYY-MM-DD
+        var m1 = nasRaw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        var m2 = nasRaw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m1) nas = m1[3]+'-'+m1[2]+'-'+m1[1];
+        else if (m2) nas = nasRaw;
+      }
+
+      var cargo  = iCargo >= 0 ? cols[iCargo]||'' : '';
+      var depNomeRaw = iDep >= 0 ? cols[iDep]||'' : '';
+      var dep = '';
+      if (depNomeRaw) {
+        var depFound = deps.find(function(d){ return d.nome.toLowerCase() === depNomeRaw.toLowerCase(); });
+        dep = depFound ? depFound.id : '';
+      }
+
+      // Check if already exists (by nome)
+      var existing = list.findIndex(function(p){ return p.nome.toLowerCase() === nome.toLowerCase(); });
+      var rec = { id: existing>=0 ? list[existing].id : uid(), nome:nome, nas:nas, cargo:cargo, dep:dep, depNome:depNomeRaw, obs:'' };
+      if (existing >= 0) { list[existing] = rec; atualizados++; }
+      else { list.push(rec); importados++; }
+    });
+
+    DB.s('pj', list);
+    if (msg) msg.textContent = '✅ ' + importados + ' importado(s), ' + atualizados + ' atualizado(s).';
+    rdPJ();
+    if (driveReady) driveSync('pj');
+    inp.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 // ============================================================
