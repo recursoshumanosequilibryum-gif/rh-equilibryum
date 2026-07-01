@@ -598,7 +598,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
     <!-- Tabela -->
     <div class="table-wrap"><table>
-      <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Departamento</th><th>Empresa</th><th>Admissão</th><th>Status</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Departamento</th><th>Empresa</th><th>Salário</th><th>Admissão</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody id="tb-func"></tbody>
     </table></div>
   </div>
@@ -3121,9 +3121,6 @@ function openModal(id) {
     document.getElementById('pg-status-pag').value='pendente';
     document.querySelectorAll('#pg-meses-checks input').forEach(function(c){c.checked=true;});
   }
-  if (id === 'modal-form-exp') {
-    setTimeout(function(){ rdFormExpModal(); }, 50);
-  }
   if (id === 'modal-vaga') {
     // Só resetar se for nova vaga (editingVagaId é null antes de chamar openModal)
     var isNewVaga = !editingVagaId;
@@ -3163,7 +3160,6 @@ function openModal(id) {
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
   if (id === 'modal-benef-comp') { fillFuncSel('bcomp-funcs', true); fillBenefRelMeses(); }
-  if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -3694,6 +3690,12 @@ function rdFunc() {
     td5.style.fontSize = '12px';
     td5.textContent = empNome;
 
+    var td5b = document.createElement('td');
+    td5b.style.fontSize = '12px';
+    td5b.style.color = 'var(--green-dark)';
+    td5b.style.fontWeight = '600';
+    td5b.textContent = f.sal ? 'R$ ' + f.sal : '—';
+
     var td6 = document.createElement('td');
     td6.textContent = fd(f.adm);
 
@@ -3731,7 +3733,7 @@ function rdFunc() {
     td8.appendChild(btnW);
     td8.appendChild(btnX);
 
-    [td1,td2,td3,td4,td5,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
+    [td1,td2,td3,td4,td5,td5b,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
     tb.appendChild(tr);
   });
 }
@@ -9594,8 +9596,20 @@ function gerarFormExp() {
     '</body></html>';
 
   closeModal('modal-form-exp');
-  var w = window.open('', '_blank');
-  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
+  // Use blob URL to avoid popup blocker
+  var blob = new Blob([doc], {type: 'text/html;charset=utf-8'});
+  var url  = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(function(){ 
+    document.body.removeChild(link); 
+    URL.revokeObjectURL(url); 
+  }, 1000);
 }
 
 // ============================================================
