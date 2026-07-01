@@ -2782,6 +2782,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script>
@@ -9716,72 +9717,105 @@ var _pjSessao = []; // [{nome, nas, area, email, tel}]
 
 function processarPJArquivo(inp) {
   var file = inp.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var text = e.target.result;
-    var linhas = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
-    if (linhas.length < 2) { alert('Arquivo vazio ou inválido.'); return; }
+  var ext  = file.name.split('.').pop().toLowerCase();
+  toast('Carregando planilha...');
 
-    // Detectar separador
-    var sep = linhas[0].includes(';') ? ';' : ',';
-    var header = linhas[0].split(sep).map(function(h){ return h.replace(/['"]/g,'').trim().toLowerCase(); });
+  function parseNas(raw) {
+    if (!raw && raw !== 0) return '';
+    var s = String(raw).trim();
+    // Excel serial number (e.g. 28430)
+    if (/^\d{4,5}$/.test(s)) {
+      var serial = parseFloat(s);
+      var d = new Date(Math.round((serial - 25569) * 86400 * 1000));
+      if (!isNaN(d.getTime())) {
+        return d.getUTCFullYear() + '-' +
+               String(d.getUTCMonth()+1).padStart(2,'0') + '-' +
+               String(d.getUTCDate()).padStart(2,'0');
+      }
+    }
+    // DD/MM/YYYY
+    var m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m1) return m1[3]+'-'+m1[2].padStart(2,'0')+'-'+m1[1].padStart(2,'0');
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // DD-MM-YYYY
+    var m3 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (m3) return m3[3]+'-'+m3[2].padStart(2,'0')+'-'+m3[1].padStart(2,'0');
+    return '';
+  }
 
-    // Mapear colunas pelo nome
-    function colIdx(keywords) {
-      return header.findIndex(function(h){ return keywords.some(function(k){ return h.includes(k); }); });
+  function parsePJRows(rows) {
+    if (!rows || rows.length < 2) { alert('Arquivo vazio ou sem dados.'); return; }
+    var header = rows[0].map(function(h){ return String(h||'').trim().toLowerCase(); });
+    function colIdx(kws) {
+      return header.findIndex(function(h){ return kws.some(function(k){ return h.includes(k); }); });
     }
     var iNome  = colIdx(['prestador','nome']);
-    var iNas   = colIdx(['nascimento','nasc','data de nasc','data nasc']);
-    var iArea  = colIdx(['área','area','cargo','func']);
-    var iEmail = colIdx(['email','e-mail']);
-    var iTel   = colIdx(['tel','fone','contato']);
+    var iNas   = colIdx(['nascimento','nasc','data']);
+    var iArea  = colIdx(['area','cargo','func','setor']);
+    var iEmail = colIdx(['email','mail']);
+    var iTel   = colIdx(['tel','fone','contato','celular']);
 
-    if (iNome < 0) { alert('Coluna "Prestador" ou "Nome" não encontrada.'); return; }
+    if (iNome < 0) {
+      alert('Coluna "Prestador" ou "Nome" não encontrada.\nColunas: ' + header.join(', '));
+      return;
+    }
 
-    // Parse rows, deduplicar por nome+nascimento
-    var seen = {};
-    var parsed = [];
-    linhas.slice(1).forEach(function(linha) {
-      if (!linha.trim()) return;
-      var cols = linha.split(sep).map(function(c){ return c.replace(/^["']|["']$/g,'').trim(); });
-      var nome = iNome >= 0 ? cols[iNome]||'' : '';
+    var seen = {}, parsed = [];
+    rows.slice(1).forEach(function(cols) {
+      var nome = String(cols[iNome]||'').trim();
       if (!nome || nome === '-') return;
-
-      // Parse data DD/MM/YYYY ou YYYY-MM-DD
-      var nasRaw = iNas >= 0 ? cols[iNas]||'' : '';
-      var nas = '';
-      if (nasRaw) {
-        var m1 = nasRaw.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-        var m2 = nasRaw.match(/(\d{4})-(\d{2})-(\d{2})/);
-        if (m1) nas = m1[3]+'-'+m1[2]+'-'+m1[1];
-        else if (m2) nas = nasRaw;
-      }
-
-      var key = nome.toLowerCase() + '|' + nas;
+      var nas   = parseNas(iNas  >= 0 ? cols[iNas]  : '');
+      var area  = String(iArea  >= 0 ? cols[iArea]  || '' : '').trim();
+      var email = String(iEmail >= 0 ? cols[iEmail] || '' : '').trim();
+      var tel   = String(iTel   >= 0 ? cols[iTel]   || '' : '').trim();
+      var key   = nome.toLowerCase() + '|' + nas;
       if (seen[key]) return;
       seen[key] = true;
-
-      parsed.push({
-        nome:  nome,
-        nas:   nas,
-        area:  iArea  >= 0 ? cols[iArea]||''  : '',
-        email: iEmail >= 0 ? cols[iEmail]||'' : '',
-        tel:   iTel   >= 0 ? cols[iTel]||''   : ''
-      });
+      parsed.push({ nome:nome, nas:nas, area:area, email:email, tel:tel });
     });
 
     _pjSessao = parsed;
     inp.value = '';
-
-    // Mostrar mês atual no filtro automaticamente
-    var mesAtual = new Date().getMonth() + 1;
+    // Auto-filtrar mês atual
     var mesEl = document.getElementById('pj-mes-filter');
-    if (mesEl) mesEl.value = String(mesAtual);
-
+    if (mesEl) mesEl.value = String(new Date().getMonth() + 1);
     rdPJ();
-    toast('✅ ' + parsed.length + ' prestador(es) carregado(s) na sessão!');
-  };
-  reader.readAsText(file, 'UTF-8');
+    toast('Planilha carregada: ' + parsed.length + ' prestador(es). Filtrando mês atual.');
+  }
+
+  if (ext === 'csv' || ext === 'txt') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var text = e.target.result;
+      var linhas = text.split(/\r?\n/);
+      var sep = linhas[0].includes(';') ? ';' : ',';
+      var rows = linhas.map(function(l){
+        return l.split(sep).map(function(c){ return c.replace(/^["']|["']$/g,'').trim(); });
+      });
+      parsePJRows(rows);
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    // XLSX / XLS — usa SheetJS
+    if (typeof XLSX === 'undefined') {
+      alert('SheetJS nao carregado. Recarregue a pagina.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = new Uint8Array(e.target.result);
+        var wb   = XLSX.read(data, { type: 'array' });
+        var ws   = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
+        parsePJRows(rows);
+      } catch(err) {
+        alert('Erro ao ler arquivo: ' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
 }
 
 function rdPJ() {
