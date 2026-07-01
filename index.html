@@ -5592,27 +5592,34 @@ async function delPol(id){if(!confirm('Excluir?'))return;DB.s('politicas',DB.g('
 // Testa se o token ainda é válido
 async function testAndConnect() {
   try {
-    const r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+    var r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
       headers: { 'Authorization': 'Bearer ' + driveToken }
     });
     if (r.ok) {
-      const data = await r.json();
+      var data = await r.json();
       driveReady = true;
-      const email = data.user ? data.user.emailAddress : '';
-      const nome  = data.user ? data.user.displayName : '';
-      document.getElementById('user-avatar').title = email;
-      document.getElementById('user-avatar').textContent = (nome[0] || 'A').toUpperCase();
+      var email = data.user ? data.user.emailAddress : '';
+      var nome  = data.user ? data.user.displayName  : '';
+      var av = document.getElementById('user-avatar');
+      if (av) { av.title = email; av.textContent = (nome[0]||'A').toUpperCase(); }
       updDriveStatus(true, email);
       await ensureRHFolder();
       await syncFromDrive();
       init();
     } else {
-      driveToken = null; driveReady = false;
-      silentReconnect();
+      // Token expirado — limpa e inicia offline sem loop
+      driveToken = null;
+      driveReady = false;
+      localStorage.removeItem('eq_drive_token');
+      localStorage.removeItem('eq_drive_token_time');
+      updDriveStatus(false);
+      showReconnectButton();
+      init();
     }
   } catch(e) {
-    driveToken = null; driveReady = false;
-    silentReconnect();
+    driveReady = false;
+    updDriveStatus(false);
+    init();
   }
 }
 
@@ -9472,7 +9479,10 @@ window.addEventListener('load', () => {
     document.getElementById('client-id-inp').value = savedCID;
     document.getElementById('drive-bar').style.display = 'flex';
     updDriveStatus(false);
-    silentReconnect();
+    // Sem token salvo — não tenta reconectar silenciosamente (causaria loop)
+    // Inicializa offline e mostra botão para o usuário conectar
+    showReconnectButton();
+    init();
     return;
   }
 
