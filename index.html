@@ -2278,13 +2278,23 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <select id="tr-parts" multiple style="min-height:100px;"></select>
       </div>
       <div class="form-group form-full">
-        <label>&#128196; Materiais do Treinamento <span style="font-size:11px;color:var(--gray-400);">(PDF, PPT, Word, vídeo...)</span></label>
-        <div class="upload-area" style="padding:14px;">
-          <input type="file" id="tr-file" multiple onchange="handleTreinFile(this)">
-          <div style="font-size:24px">&#128196;</div>
-          <p style="font-size:12px;">Clique para anexar materiais — múltiplos arquivos permitidos</p>
+        <label>&#128196; Materiais do Treinamento</label>
+        <div style="display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:end;margin-bottom:8px;">
+          <div><label style="font-size:11px;color:var(--gray-500);">Nome do material</label>
+            <input id="tr-mat-nome" type="text" placeholder="Ex.: Treinamento de Agendamento" style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;"></div>
+          <div><label style="font-size:11px;color:var(--gray-500);">Revisão</label>
+            <select id="tr-mat-rev" style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+              <option value="">Sem revisão</option>
+              <option value="Rev.0">Rev.0</option><option value="Rev.1">Rev.1</option>
+              <option value="Rev.2">Rev.2</option><option value="Rev.3">Rev.3</option>
+              <option value="Rev.4">Rev.4</option><option value="Rev.5">Rev.5</option>
+            </select></div>
+          <label class="btn btn-outline" style="cursor:pointer;white-space:nowrap;margin-bottom:0;">
+            &#128228; Selecionar arquivo
+            <input type="file" id="tr-file" multiple onchange="handleTreinFile(this)" style="display:none;">
+          </label>
         </div>
-        <div id="tr-file-list" style="margin-top:8px;"></div>
+        <div id="tr-file-list" style="margin-top:4px;"></div>
       </div>
       <div class="form-group form-full">
         <label>&#128221; Lista de Presença Assinada <span style="font-size:11px;color:var(--gray-400);">(upload após o treinamento)</span></label>
@@ -2309,6 +2319,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-trein')">Cancelar</button>
+      <button class="btn btn-outline" id="btn-lista-trein" onclick="gerarListaPresencaAtual()" style="color:var(--green-dark);border-color:var(--green);">&#128221; Gerar Lista de Presença</button>
       <button class="btn btn-primary" onclick="savTrein()">&#128190; Salvar</button>
     </div>
   </div>
@@ -5692,7 +5703,37 @@ function rdBenef(){
 // TREINAMENTOS
 // ============================================================
 var treinFiles=[], editingTreinId=null;
-function handleTreinFile(inp){treinFiles=Array.from(inp.files);var el=document.getElementById('tr-file-list');el.innerHTML=treinFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
+function handleTreinFile(inp) {
+  var nome = (document.getElementById('tr-mat-nome')||{}).value.trim();
+  var rev  = (document.getElementById('tr-mat-rev') ||{}).value || '';
+  Array.from(inp.files||[]).forEach(function(f){
+    f._matNome = nome || f.name.replace(/[.][^.]+$/, '');
+    f._matRev  = rev;
+    f._matData = td();
+    treinFiles.push(f);
+  });
+  var nomeEl = document.getElementById('tr-mat-nome'); if (nomeEl) nomeEl.value = '';
+  var revEl  = document.getElementById('tr-mat-rev');  if (revEl)  revEl.value  = '';
+  if (inp.value !== undefined) inp.value = '';
+  renderTreinFileList();
+}
+
+function renderTreinFileList() {
+  var list = document.getElementById('tr-file-list'); if (!list) return;
+  if (!treinFiles.length) { list.innerHTML = ''; return; }
+  list.innerHTML = '<div style="display:flex;flex-direction:column;gap:4px;">' +
+    treinFiles.map(function(f, i){
+      var label = f._matNome || f.name;
+      var rev   = f._matRev ? ' <span style="font-size:10px;background:#e3f2fd;color:#1565c0;border-radius:8px;padding:1px 6px;">' + f._matRev + '</span>' : '';
+      var data  = f._matData ? ' <span style="font-size:10px;color:var(--gray-400);">' + f._matData.split('-').reverse().join('/') + '</span>' : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#f8f9fa;border-radius:6px;font-size:12px;">' +
+        '<span>📎</span>' +
+        '<span style="flex:1;font-weight:600;color:var(--gray-700);">' + label + rev + data + '</span>' +
+        '<button onclick="treinFiles.splice(' + i + ',1);renderTreinFileList()" style="color:var(--red);background:none;border:none;cursor:pointer;font-size:14px;">✕</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
 function treinTab(id,btn){
   ['tr-agenda','tr-conc','tr-todos'].forEach(function(t){
     var el=document.getElementById(t); if(el) el.style.display='none';
@@ -5714,8 +5755,8 @@ async function savTrein(){
   var titulo=document.getElementById('tr-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
   var parts=Array.from(document.getElementById('tr-parts').selectedOptions).map(function(o){return o.value;});
   var list=DB.g('treinamentos');var files=[];
-  if(driveReady&&treinFiles.length>0){for(var file of treinFiles){try{var up=await uploadFileToDrive(file,'Treinamentos');files.push({name:file.name,id:up.id,url:up.webViewLink});toast('📎 '+file.name+' enviado!');}catch(e){files.push({name:file.name});}}}
-  else{files=treinFiles.map(function(f){return {name:f.name};});}
+  if(driveReady&&treinFiles.length>0){for(var file of treinFiles){try{var up=await uploadFileToDrive(file,'Treinamentos');files.push({name:file.name,matNome:file._matNome||'',matRev:file._matRev||'',matData:file._matData||'',id:up.id,url:up.webViewLink});toast('📎 '+(file._matNome||file.name)+' enviado!');}catch(e){files.push({name:file.name,matNome:file._matNome||'',matRev:file._matRev||'',matData:file._matData||''});}}}
+  else{files=treinFiles.map(function(f){return {name:f.name,matNome:f._matNome||'',matRev:f._matRev||'',matData:f._matData||''};});}
   treinFiles=[];
   // Upload fotos
   var pasta = 'Treinamentos/Fotos/' + titulo.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,30);
@@ -5759,35 +5800,97 @@ async function savTrein(){
 }
 function rdTrein(){
   fillTreinAnoFilter();
-  // Se aba acompanhamento estiver ativa, re-renderizar
   var acomp = document.getElementById('tr-acomp');
   if (acomp && acomp.style.display !== 'none') renderAcompTrein();
-  var all=DB.g('treinamentos');var funcs=DB.g('funcionarios');
-  var anoF=(document.getElementById('trein-ano-filter')||{value:''}).value||'';
-  if(anoF) all=all.filter(function(t){return t.data&&t.data.startsWith(anoF);});
-  var agend=all.filter(function(t){return t.st==='Agendado'||t.st==='Em andamento';});
-  var conc=all.filter(function(t){return t.st==='Concluído';});
-  function renderList(arr,elId){
-    var el=document.getElementById(elId);
-    if(!arr.length){el.innerHTML='<p style="color:var(--gray-400);padding:20px 0">Nenhum treinamento.</p>';return;}
-    el.innerHTML=arr.map(function(t){
-      var bcSt={Agendado:'badge-blue','Em andamento':'badge-green',Concluído:'badge-gray',Cancelado:'badge-red'}[t.st]||'badge-gray';
-      var partsNames=(t.parts||[]).map(function(id){var f=funcs.find(function(x){return x.id===id;});return f?f.n:'?';}).join(', ');
-      var filesHtml=(t.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128196; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128196; '+f.name+'</span>';}).join('');
-      var listaAssinadaHtml = t.listaAssinada ? (t.listaAssinada.url ? '<a href="'+t.listaAssinada.url+'" target="_blank" class="btn btn-outline btn-sm" style="color:var(--green-dark);border-color:var(--green);">&#128221; Lista Assinada</a>' : '<span class="btn btn-outline btn-sm" style="color:var(--green-dark);">&#128221; '+t.listaAssinada.name+'</span>') : '';
-      return '<div class="trein-card"><div class="tc-header"><div><div class="tc-title">'+t.titulo+'</div>'+
-        '<div class="tc-meta">&#128197; '+(t.data?fd(t.data):'—')+' '+(t.hora||'')+' | &#128205; '+(t.local||'—')+' | &#9201; '+(t.ch||'?')+'h | &#128100; '+(t.inst||'—')+'</div></div>'+
-        '<div style="display:flex;gap:6px;align-items:center;"><span class="badge '+bcSt+'">'+t.st+'</span>'+
-        '<button class="btn btn-outline btn-sm" data-tid="'+t.id+'" onclick="gerarListaPresenca(this.dataset.tid)" title="Gerar Lista de Presença">&#128221; Lista</button>'+
-        '<button class="btn-icon" data-tid="'+t.id+'" onclick="editTrein(this.dataset.tid)">&#9999;&#65039;</button>'+
-        '<button class="btn-icon danger" data-tid="'+t.id+'" onclick="delTrein(this.dataset.tid)">&#128465;</button></div></div>'+
-        (t.desc?'<p style="font-size:13px;color:var(--gray-600);margin-bottom:8px">'+t.desc+'</p>':'')+
-        (partsNames?'<p style="font-size:12px;color:var(--gray-600)"><strong>Participantes:</strong> '+partsNames+'</p>':'')+
-        (filesHtml||listaAssinadaHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+filesHtml+listaAssinadaHtml+'</div>':'')+
-        '</div>';
+
+  var all   = DB.g('treinamentos');
+  var funcs = DB.g('funcionarios');
+  var anoF  = (document.getElementById('trein-ano-filter')||{value:''}).value||'';
+  if (anoF) all = all.filter(function(t){ return t.data && t.data.startsWith(anoF); });
+
+  var agend = all.filter(function(t){ return t.st==='Agendado'||t.st==='Em andamento'; });
+  var conc  = all.filter(function(t){ return t.st==='Concluído'; });
+
+  function renderList(arr, elId) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    if (!arr.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray-400);"><div style="font-size:36px;margin-bottom:8px;">📋</div><div style="font-size:14px;">Nenhum treinamento.</div></div>';
+      return;
+    }
+    el.innerHTML = arr.map(function(t) {
+      var ST_COLOR = { 'Agendado':'#1565c0', 'Em andamento':'#2e7d32', 'Concluído':'#555', 'Cancelado':'#c62828' };
+      var ST_BG    = { 'Agendado':'#e3f2fd', 'Em andamento':'#e8f5e9', 'Concluído':'#f5f5f5', 'Cancelado':'#ffebee' };
+      var stColor  = ST_COLOR[t.st] || '#555';
+      var stBg     = ST_BG[t.st]    || '#f5f5f5';
+
+      var parts = (t.parts||[]).map(function(id){
+        var f = funcs.find(function(x){ return x.id===id; }); return f ? f.n : null;
+      }).filter(Boolean);
+
+      var filesHtml = (t.files||[]).map(function(f){
+        var label = (f.matNome || f.name) + (f.matRev ? ' ['+f.matRev+']' : '');
+        return f.url
+          ? '<a href="'+f.url+'" target="_blank" style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#f0f7ff;border:1px solid #b3d4fb;border-radius:6px;font-size:11px;color:#1565c0;text-decoration:none;">📎 '+label+'</a>'
+          : '<span style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;font-size:11px;color:#666;">📎 '+label+'</span>';
+      }).join('');
+
+      var listaHtml = t.listaAssinada
+        ? (t.listaAssinada.url
+            ? '<a href="'+t.listaAssinada.url+'" target="_blank" style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;font-size:11px;color:#2e7d32;text-decoration:none;">✅ Lista Assinada</a>'
+            : '<span style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;font-size:11px;color:#2e7d32;">✅ '+t.listaAssinada.name+'</span>')
+        : '';
+
+      var dataFmt = t.data ? t.data.split('-').reverse().join('/') : '—';
+      var hoje    = td();
+      var diasStr = '';
+      if (t.data && t.st === 'Agendado') {
+        var d = dif(hoje, t.data);
+        diasStr = d > 0 ? ' · <span style="color:#e65100;font-weight:600;">Faltam '+d+'d</span>'
+                : d === 0 ? ' · <span style="color:#2e7d32;font-weight:600;">HOJE</span>'
+                : '';
+      }
+
+      return '<div style="background:#fff;border-radius:14px;border:1.5px solid #e8ecef;margin-bottom:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06);">' +
+
+        // Header stripe with status color
+        '<div style="background:linear-gradient(90deg,' + stBg + ' 0%,#fff 60%);padding:14px 16px 10px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:15px;font-weight:700;color:#1a3a2a;margin-bottom:4px;">'+t.titulo+'</div>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#555;">' +
+              '<span>📅 <strong>' + dataFmt + '</strong>' + diasStr + '</span>' +
+              (t.hora ? '<span>⏰ '+t.hora+'</span>' : '') +
+              (t.local ? '<span>📍 '+t.local+'</span>' : '') +
+              (t.ch ? '<span>⏱ '+t.ch+'h</span>' : '') +
+              (t.inst ? '<span>👤 '+t.inst+'</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">' +
+            '<span style="background:'+stBg+';color:'+stColor+';border:1px solid '+stColor+'30;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;white-space:nowrap;">'+t.st+'</span>' +
+            '<div style="display:flex;gap:4px;">' +
+              '<button title="Gerar Lista de Presença" data-tid="'+t.id+'" onclick="gerarListaPresenca(this.dataset.tid)" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:7px;padding:4px 8px;font-size:11px;cursor:pointer;">📋 Lista</button>' +
+              '<button title="Editar" data-tid="'+t.id+'" onclick="editTrein(this.dataset.tid)" style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:7px;padding:4px 8px;cursor:pointer;">✏️</button>' +
+              '<button title="Excluir" data-tid="'+t.id+'" onclick="delTrein(this.dataset.tid)" style="background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:7px;padding:4px 8px;cursor:pointer;">🗑️</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Body
+        '<div style="padding:12px 16px;">' +
+          (t.desc ? '<p style="font-size:13px;color:#555;margin-bottom:10px;border-left:3px solid #c3e6d4;padding-left:8px;">'+t.desc+'</p>' : '') +
+          (parts.length ? '<div style="margin-bottom:10px;"><span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;">Participantes ('+parts.length+')</span><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">' +
+            parts.map(function(n){ return '<span style="background:#f0f7ff;color:#1565c0;border-radius:10px;padding:2px 9px;font-size:11px;">'+n+'</span>'; }).join('') +
+          '</div></div>' : '') +
+          (filesHtml || listaHtml ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' + filesHtml + listaHtml + '</div>' : '') +
+        '</div>' +
+
+      '</div>';
     }).join('');
   }
-  renderList(agend,'trein-agenda-list');renderList(conc,'trein-conc-list');renderList(all,'trein-todos-list');
+
+  renderList(agend, 'trein-agenda-list');
+  renderList(conc,  'trein-conc-list');
+  renderList(all,   'trein-todos-list');
 }
 function editTrein(id){var t=DB.g('treinamentos').find(function(x){return x.id===id;});if(!t)return;editingTreinId=id;fillFuncSel('tr-parts',true);document.getElementById('tr-titulo').value=t.titulo||'';document.getElementById('tr-desc').value=t.desc||'';document.getElementById('tr-data').value=t.data||'';document.getElementById('tr-hora').value=t.hora||'';document.getElementById('tr-local').value=t.local||'';document.getElementById('tr-inst').value=t.inst||'';document.getElementById('tr-ch').value=t.ch||4;document.getElementById('tr-st').value=t.st||'Agendado';Array.from(document.getElementById('tr-parts').options).forEach(function(o){o.selected=(t.parts||[]).includes(o.value);});document.getElementById('trein-modal-title').textContent='✏️ Editar Treinamento';document.getElementById('modal-trein').classList.add('open');}
 async function delTrein(id){if(!confirm('Excluir treinamento?'))return;DB.s('treinamentos',DB.g('treinamentos').filter(function(t){return t.id!==id;}));if(driveReady) await driveSync('treinamentos');rdTrein();}
@@ -10137,8 +10240,11 @@ function handleListaAssinada(inp) {
 }
 
 function gerarListaPresenca(tid) {
-  var t     = DB.g('treinamentos').find(function(x){ return x.id === tid; });
+  var t = DB.g('treinamentos').find(function(x){ return x.id === tid; });
   if (!t) return;
+  _gerarListaPresencaObj(t);
+}
+function _gerarListaPresencaObj(t) {
   var funcs = DB.g('funcionarios');
   var parts = (t.parts||[]).map(function(id){
     var f = funcs.find(function(x){ return x.id === id; });
@@ -10439,8 +10545,6 @@ function _abrirMsgWhatsApp(c) {
   if (c.parts) { linhas.push(''); linhas.push('👥 *Participantes:* ' + c.parts); }
   if (c.obs)   { linhas.push(''); linhas.push('📋 *Observações:*\n' + c.obs); }
   linhas.push('');
-  linhas.push('✅ Por favor, confirme sua presença respondendo esta mensagem.');
-  linhas.push('');
   linhas.push('_Sistema RH Equilibryum_');
 
   var msg = linhas.join('\n');
@@ -10474,106 +10578,121 @@ function _abrirMsgWhatsApp(c) {
 // CRACHÁ DE FUNCIONÁRIO — 5,5 × 8 cm
 // ============================================================
 function gerarCracha(fid) {
-  var f     = DB.g('funcionarios').find(function(x){ return x.id === fid; });
+  var f       = DB.g('funcionarios').find(function(x){ return x.id === fid; });
   if (!f) return;
-  var deps  = DB.g('departamentos');
-  var emps  = DB.g('empresas');
-  var dep   = deps.find(function(d){ return d.id === f.dep; });
-  var emp   = emps.find(function(e){ return e.id === f.emp; });
-  var foto  = fotoStoreGet(fid);
-  var empNome = emp ? (emp.razao || emp.nome || 'EQUILIBRYUM') : 'EQUILIBRYUM';
-
-  // Nome: maiúsculas, só 2 primeiras palavras para caberem no crachá
-  var partes = (f.n||'').trim().split(/\s+/);
-  var nomeExib = partes.slice(0,2).join(' ').toUpperCase();
-  // Cargo: maiúsculas
+  var partes  = (f.n||'').trim().split(/\s+/);
+  var nomeExib  = partes.slice(0,2).join(' ').toUpperCase();
   var cargoExib = (f.car||'').toUpperCase();
+  var foto    = fotoStoreGet(fid);
 
-  // Logo html
   var logoHtml = LOGO_EMP_B64
-    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:28px;max-width:110px;object-fit:contain;display:block;margin:0 auto;">'
-    : '<div style="font-size:9pt;font-weight:700;color:#2d6a4f;letter-spacing:.5px;">EQUILIBRYUM</div>';
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:32px;max-width:120px;object-fit:contain;display:block;margin:0 auto;">'
+    : '<div style="font-size:8pt;font-weight:700;color:#2d6a4f;letter-spacing:.5px;text-align:center;">EQUILIBRYUM</div>';
 
-  // Foto html — círculo central
+  // Foto: retangular com cantos levemente arredondados, igual ao modelo
   var fotoHtml = foto
-    ? '<img src="' + foto + '" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid #fff;display:block;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.18);">'
-    : '<div style="width:68px;height:68px;border-radius:50%;background:#1a5c3a;display:flex;align-items:center;justify-content:center;font-size:22pt;font-weight:700;color:#fff;margin:0 auto;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18);">' + (partes[0]||'?')[0].toUpperCase() + '</div>';
+    ? '<img src="' + foto + '" style="width:90px;height:108px;object-fit:cover;border-radius:6px;display:block;margin:0 auto;border:2px solid rgba(255,255,255,.9);box-shadow:0 2px 10px rgba(0,0,0,.20);">'
+    : '<div style="width:90px;height:108px;border-radius:6px;background:linear-gradient(160deg,#a8c5b5,#7aa090);display:flex;align-items:center;justify-content:center;margin:0 auto;border:2px solid rgba(255,255,255,.9);box-shadow:0 2px 10px rgba(0,0,0,.20);">' +
+        '<span style="font-size:28pt;font-weight:700;color:#fff;">' + (partes[0]||'?')[0].toUpperCase() + '</span>' +
+      '</div>';
 
-  // Geometric background blocks (decorative — replicating the model)
-  var bgBlocks =
-    '<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;border-radius:10px;">' +
-      // Top-left cluster
-      '<div style="position:absolute;width:55px;height:38px;background:rgba(150,180,160,.28);border-radius:4px;top:62px;left:-14px;transform:rotate(-8deg);"></div>' +
-      '<div style="position:absolute;width:38px;height:26px;background:rgba(120,160,140,.22);border-radius:3px;top:80px;left:-8px;transform:rotate(-8deg);"></div>' +
-      '<div style="position:absolute;width:28px;height:8px;background:rgba(100,140,120,.18);border-radius:2px;top:104px;left:0;transform:rotate(-8deg);"></div>' +
-      // Top-right cluster
-      '<div style="position:absolute;width:50px;height:34px;background:rgba(150,180,160,.25);border-radius:4px;top:68px;right:-12px;transform:rotate(8deg);"></div>' +
-      '<div style="position:absolute;width:34px;height:22px;background:rgba(120,155,135,.20);border-radius:3px;top:86px;right:-6px;transform:rotate(8deg);"></div>' +
-      '<div style="position:absolute;width:24px;height:8px;background:rgba(100,140,120,.16);border-radius:2px;top:106px;right:2px;transform:rotate(8deg);"></div>' +
-      // Bottom-left
-      '<div style="position:absolute;width:48px;height:32px;background:rgba(140,170,150,.22);border-radius:4px;bottom:78px;left:-10px;transform:rotate(6deg);"></div>' +
-      '<div style="position:absolute;width:30px;height:10px;background:rgba(110,150,130,.16);border-radius:2px;bottom:95px;left:4px;transform:rotate(6deg);"></div>' +
-      // Bottom-right
-      '<div style="position:absolute;width:44px;height:30px;background:rgba(140,170,150,.20);border-radius:4px;bottom:80px;right:-8px;transform:rotate(-6deg);"></div>' +
-      '<div style="position:absolute;width:28px;height:10px;background:rgba(110,150,130,.15);border-radius:2px;bottom:96px;right:4px;transform:rotate(-6deg);"></div>' +
-    '</div>';
+  // Geometric side blocks — replicating the 3-column pattern from the model
+  // Left side: 3 columns of stacked rounded rectangles
+  // Right side: mirror
+  // Colors: muted teal/sage/gray tones
+  var C1 = 'rgba(130,155,145,.55)'; // dark col
+  var C2 = 'rgba(155,175,168,.45)'; // mid col
+  var C3 = 'rgba(175,195,188,.35)'; // light col
+  var W  = 14; // block width px
+  var G  = 4;  // gap between cols
+  var R  = '4px';
+
+  function col(x, color, heights, topOffset) {
+    return heights.map(function(h, i) {
+      var top = topOffset + heights.slice(0,i).reduce(function(a,b){ return a+b+5; }, 0);
+      return '<div style="position:absolute;left:' + x + 'px;top:' + top + 'px;width:' + W + 'px;height:' + h + 'px;background:' + color + ';border-radius:' + R + ';"></div>';
+    }).join('');
+  }
+
+  // Left side — 3 columns from left edge
+  var leftBlocks =
+    col(0,  C1, [28,20,14,10,20], 55) +
+    col(W+G, C2, [20,28,18,24,12], 50) +
+    col((W+G)*2, C3, [14,22,28,16,18], 48);
+
+  // Right side — mirror from right edge (positions from right using negative right offset trick via absolute)
+  var RW = 5.5 * 37.8; // ~208px total width at 96dpi approximation for 5.5cm
+  // We'll use right-anchored positioning
+  function colR(xFromRight, color, heights, topOffset) {
+    return heights.map(function(h, i) {
+      var top = topOffset + heights.slice(0,i).reduce(function(a,b){ return a+b+5; }, 0);
+      return '<div style="position:absolute;right:' + xFromRight + 'px;top:' + top + 'px;width:' + W + 'px;height:' + h + 'px;background:' + color + ';border-radius:' + R + ';"></div>';
+    }).join('');
+  }
+
+  var rightBlocks =
+    colR(0,  C1, [28,20,14,10,20], 55) +
+    colR(W+G, C2, [20,28,18,24,12], 50) +
+    colR((W+G)*2, C3, [14,22,28,16,18], 48);
+
+  var bgBlocks = '<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;pointer-events:none;">' +
+    leftBlocks + rightBlocks +
+  '</div>';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
     '<title>Cracha - ' + f.n + '</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
-      'body{background:#e0e0e0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Calibri,Arial,sans-serif;}' +
+      'body{background:#dde8e8;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Arial,sans-serif;}' +
       '.cracha{' +
         'width:5.5cm;height:8cm;' +
-        'background:#eaf5ef;' +
-        'border-radius:10px;' +
+        'background:#dde8e6;' +
+        'border-radius:12px;' +
         'position:relative;' +
-        'display:flex;flex-direction:column;align-items:center;' +
-        'box-shadow:0 4px 18px rgba(0,0,0,.22);' +
+        'display:flex;flex-direction:column;align-items:center;justify-content:flex-start;' +
+        'box-shadow:0 6px 24px rgba(0,0,0,.28);' +
         'overflow:hidden;' +
-        'padding:10px 8px 10px;' +
+        'padding:12px 6px 10px;' +
         'gap:0;' +
       '}' +
-      '.logo-area{position:relative;z-index:2;width:100%;text-align:center;margin-bottom:6px;}' +
-      '.foto-area{position:relative;z-index:2;margin:6px 0;}' +
-      '.nome-box{' +
-        'position:relative;z-index:2;' +
-        'background:#fff;' +
-        'border-radius:20px;' +
-        'padding:5px 14px;' +
-        'margin-top:8px;' +
-        'width:90%;text-align:center;' +
-        'box-shadow:0 1px 6px rgba(0,0,0,.10);' +
-      '}' +
-      '.nome{font-size:10.5pt;font-weight:900;color:#1a3a2a;letter-spacing:.3px;line-height:1.15;}' +
-      '.cargo-box{' +
-        'position:relative;z-index:2;' +
-        'background:#1a5c3a;' +
-        'border-radius:20px;' +
-        'padding:4px 12px;' +
-        'margin-top:6px;' +
-        'width:90%;text-align:center;' +
-      '}' +
-      '.cargo{font-size:7.5pt;font-weight:700;color:#fff;letter-spacing:.3px;}' +
+      '.logo-wrap{position:relative;z-index:2;width:100%;text-align:center;margin-bottom:10px;}' +
+      '.foto-wrap{position:relative;z-index:2;margin-bottom:10px;}' +
+      '.nome-box{position:relative;z-index:2;background:#fff;border-radius:22px;padding:5px 10px;width:88%;text-align:center;box-shadow:0 1px 8px rgba(0,0,0,.12);margin-bottom:6px;}' +
+      '.nome{font-size:11pt;font-weight:900;color:#111;letter-spacing:.2px;line-height:1.2;}' +
+      '.cargo-box{position:relative;z-index:2;background:#fff;border-radius:22px;padding:4px 10px;width:88%;text-align:center;box-shadow:0 1px 8px rgba(0,0,0,.10);}' +
+      '.cargo{font-size:8pt;font-weight:700;color:#222;letter-spacing:.2px;}' +
       '@media print{' +
-        'body{background:#fff;min-height:unset;padding:0;margin:0;}' +
+        'body{background:#dde8e6;min-height:unset;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
         '.cracha{box-shadow:none;margin:0 auto;}' +
         '@page{size:5.5cm 8cm;margin:0;}' +
       '}' +
     '</style></head><body>' +
     '<div class="cracha">' +
       bgBlocks +
-      '<div class="logo-area">' + logoHtml + '</div>' +
-      '<div class="foto-area">' + fotoHtml + '</div>' +
+      '<div class="logo-wrap">' + logoHtml + '</div>' +
+      '<div class="foto-wrap">' + fotoHtml + '</div>' +
       '<div class="nome-box"><div class="nome">' + nomeExib + '</div></div>' +
       '<div class="cargo-box"><div class="cargo">' + cargoExib + '</div></div>' +
     '</div>' +
   '</body></html>';
 
-  var w = window.open('', '_blank', 'width=300,height=450');
+  var w = window.open('', '_blank', 'width=320,height=460');
   if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
 }
 
+function gerarListaPresencaAtual() {
+  // Build a temp object from modal fields to reuse gerarListaPresenca logic
+  var titulo = (document.getElementById('tr-titulo')||{}).value.trim() || '(sem título)';
+  var data   = (document.getElementById('tr-data') ||{}).value || '';
+  var hora   = (document.getElementById('tr-hora') ||{}).value || '';
+  var local  = (document.getElementById('tr-local')||{}).value || '';
+  var ch     = (document.getElementById('tr-ch')   ||{}).value || '';
+  var inst   = (document.getElementById('tr-inst') ||{}).value || '';
+  var partsEl = document.getElementById('tr-parts');
+  var partsIds = partsEl ? Array.from(partsEl.selectedOptions).map(function(o){ return o.value; }) : [];
+  var tmpObj = { titulo:titulo, data:data, hora:hora, local:local, ch:ch, inst:inst, parts:partsIds, desc:(document.getElementById('tr-desc')||{}).value||'' };
+  _gerarListaPresencaObj(tmpObj);
+}
 </script>
 </body>
 </html>
