@@ -1970,6 +1970,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <thead><tr>
           <th>Nome</th>
           <th>Nascimento</th>
+          <th>Atividade</th>
           <th>Área</th>
           <th>E-mail</th>
         </tr></thead>
@@ -2219,11 +2220,22 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <select id="tr-parts" multiple style="min-height:100px;"></select>
       </div>
       <div class="form-group form-full">
-        <label>Anexo (material/certificado)</label>
-        <div class="upload-area"><input type="file" id="tr-file" onchange="handleTreinFile(this)">
-          <div style="font-size:28px">&#128196;</div><p>Clique para anexar material ou certificado</p>
+        <label>&#128196; Materiais do Treinamento <span style="font-size:11px;color:var(--gray-400);">(PDF, PPT, Word, vídeo...)</span></label>
+        <div class="upload-area" style="padding:14px;">
+          <input type="file" id="tr-file" multiple onchange="handleTreinFile(this)">
+          <div style="font-size:24px">&#128196;</div>
+          <p style="font-size:12px;">Clique para anexar materiais — múltiplos arquivos permitidos</p>
         </div>
         <div id="tr-file-list" style="margin-top:8px;"></div>
+      </div>
+      <div class="form-group form-full">
+        <label>&#128221; Lista de Presença Assinada <span style="font-size:11px;color:var(--gray-400);">(upload após o treinamento)</span></label>
+        <div class="upload-area" style="padding:14px;">
+          <input type="file" id="tr-lista-assinada" accept=".pdf,.jpg,.jpeg,.png" onchange="handleListaAssinada(this)">
+          <div style="font-size:24px">&#128221;</div>
+          <p style="font-size:12px;">Clique para anexar a lista de presença assinada</p>
+        </div>
+        <div id="tr-lista-assinada-preview" style="margin-top:6px;font-size:12px;color:var(--green-dark);"></div>
       </div>
       <div class="form-group form-full">
         <label>&#128247; Fotos do Treinamento</label>
@@ -5656,12 +5668,28 @@ async function savTrein(){
     var idx=list.findIndex(function(x){return x.id===editingTreinId;});
     if(idx!==-1){
       var existing = list[idx];
+      var listaAssinadaUpload = window._treinListaAssinada || null;
+      var listaAssinadaSaved = existing.listaAssinada || null;
+      if (listaAssinadaUpload) {
+        if (driveReady) {
+          try { var lu = await uploadFileToDrive(listaAssinadaUpload,'Treinamentos/ListasAssinadas'); listaAssinadaSaved = {name:listaAssinadaUpload.name,id:lu.id,url:lu.webViewLink}; } catch(e) { listaAssinadaSaved = {name:listaAssinadaUpload.name}; }
+        } else { listaAssinadaSaved = {name:listaAssinadaUpload.name}; }
+      }
+      window._treinListaAssinada = null;
       list[idx]={...existing,titulo,desc:v('tr-desc'),data:v('tr-data'),hora:v('tr-hora'),local:v('tr-local'),inst:v('tr-inst'),ch:v('tr-ch'),st:v('tr-st'),parts,
+        listaAssinada: listaAssinadaSaved,
         photos: (existing.photos||[]).concat(photos)};
     }
     editingTreinId=null;
   } else {
-    list.push({id:uid(),titulo,desc:v('tr-desc'),data:v('tr-data'),hora:v('tr-hora'),local:v('tr-local'),inst:v('tr-inst'),ch:v('tr-ch'),st:v('tr-st'),parts,files,photos});
+    var listaAssinadaNew = null;
+    if (window._treinListaAssinada) {
+      if (driveReady) {
+        try { var lu2 = await uploadFileToDrive(window._treinListaAssinada,'Treinamentos/ListasAssinadas'); listaAssinadaNew = {name:window._treinListaAssinada.name,id:lu2.id,url:lu2.webViewLink}; } catch(e) { listaAssinadaNew = {name:window._treinListaAssinada.name}; }
+      } else { listaAssinadaNew = {name:window._treinListaAssinada.name}; }
+      window._treinListaAssinada = null;
+    }
+    list.push({id:uid(),titulo,desc:v('tr-desc'),data:v('tr-data'),hora:v('tr-hora'),local:v('tr-local'),inst:v('tr-inst'),ch:v('tr-ch'),st:v('tr-st'),parts,files,listaAssinada:listaAssinadaNew,photos});
   }
   DB.s('treinamentos',list);if(driveReady) await driveSync('treinamentos');
   closeModal('modal-trein');rdTrein();toast('Treinamento salvo'+(driveReady?' ☁️':'!'));
@@ -5682,15 +5710,17 @@ function rdTrein(){
     el.innerHTML=arr.map(function(t){
       var bcSt={Agendado:'badge-blue','Em andamento':'badge-green',Concluído:'badge-gray',Cancelado:'badge-red'}[t.st]||'badge-gray';
       var partsNames=(t.parts||[]).map(function(id){var f=funcs.find(function(x){return x.id===id;});return f?f.n:'?';}).join(', ');
-      var filesHtml=(t.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
+      var filesHtml=(t.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128196; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128196; '+f.name+'</span>';}).join('');
+      var listaAssinadaHtml = t.listaAssinada ? (t.listaAssinada.url ? '<a href="'+t.listaAssinada.url+'" target="_blank" class="btn btn-outline btn-sm" style="color:var(--green-dark);border-color:var(--green);">&#128221; Lista Assinada</a>' : '<span class="btn btn-outline btn-sm" style="color:var(--green-dark);">&#128221; '+t.listaAssinada.name+'</span>') : '';
       return '<div class="trein-card"><div class="tc-header"><div><div class="tc-title">'+t.titulo+'</div>'+
         '<div class="tc-meta">&#128197; '+(t.data?fd(t.data):'—')+' '+(t.hora||'')+' | &#128205; '+(t.local||'—')+' | &#9201; '+(t.ch||'?')+'h | &#128100; '+(t.inst||'—')+'</div></div>'+
         '<div style="display:flex;gap:6px;align-items:center;"><span class="badge '+bcSt+'">'+t.st+'</span>'+
+        '<button class="btn btn-outline btn-sm" data-tid="'+t.id+'" onclick="gerarListaPresenca(this.dataset.tid)" title="Gerar Lista de Presença">&#128221; Lista</button>'+
         '<button class="btn-icon" data-tid="'+t.id+'" onclick="editTrein(this.dataset.tid)">&#9999;&#65039;</button>'+
         '<button class="btn-icon danger" data-tid="'+t.id+'" onclick="delTrein(this.dataset.tid)">&#128465;</button></div></div>'+
         (t.desc?'<p style="font-size:13px;color:var(--gray-600);margin-bottom:8px">'+t.desc+'</p>':'')+
         (partsNames?'<p style="font-size:12px;color:var(--gray-600)"><strong>Participantes:</strong> '+partsNames+'</p>':'')+
-        (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+filesHtml+'</div>':'')+
+        (filesHtml||listaAssinadaHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+filesHtml+listaAssinadaHtml+'</div>':'')+
         '</div>';
     }).join('');
   }
@@ -5993,8 +6023,8 @@ function gerarTemplateAniversariantes(mes) {
   }).join('');
 
   var logoHtml = LOGO_EMP_B64
-    ? '<img src="'+LOGO_EMP_B64+'" style="max-height:55px;max-width:180px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:10px;">'
-    : '';
+    ? '<img src="'+LOGO_EMP_B64+'" style="max-height:60px;max-width:200px;object-fit:contain;filter:brightness(0) invert(1);display:block;margin:0 auto 12px;">'
+    : '<div style="font-size:15pt;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;text-align:center;letter-spacing:1px;">EQUILIBRYUM</div>';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Aniversariantes '+MESES[mes-1]+' '+ano+'</title>' +
     '<style>*{box-sizing:border-box;}body{margin:0;font-family:Calibri,Arial,sans-serif;}' +
@@ -9764,8 +9794,9 @@ function processarPJArquivo(inp) {
       return header.findIndex(function(h){ return kws.some(function(k){ return h.includes(k); }); });
     }
     var iNome  = colIdx(['prestador','nome']);
-    var iNas   = colIdx(['nascimento','nasc','data']);
-    var iArea  = colIdx(['area','cargo','func','setor']);
+    var iNas   = colIdx(['nascimento','nasc','data de nasc']);
+    var iAtiv  = colIdx(['atividade','ativ']);
+    var iArea  = colIdx(['área','area','setor']);
     var iEmail = colIdx(['email','mail']);
     var iTel   = colIdx(['tel','fone','contato','celular']);
 
@@ -9785,7 +9816,8 @@ function processarPJArquivo(inp) {
       var key   = nome.toLowerCase() + '|' + nas;
       if (seen[key]) return;
       seen[key] = true;
-      parsed.push({ nome:nome, nas:nas, area:area, email:email, tel:tel });
+      var ativ  = String(iAtiv  >= 0 ? cols[iAtiv]  || '' : '').trim();
+      parsed.push({ nome:nome, nas:nas, ativ:ativ, area:area, email:email, tel:tel });
     });
 
     _pjSessao = parsed;
@@ -9908,6 +9940,7 @@ function rdPJ() {
     tr.innerHTML =
       '<td><strong>' + p.nome + '</strong>' + (isAnivMes ? ' &#127874;':'') + '</td>' +
       '<td>' + nasFmt + '</td>' +
+      '<td>' + (p.ativ && p.ativ !== '-' ? p.ativ : '—') + '</td>' +
       '<td>' + (p.area && p.area !== '-' ? p.area : '—') + '</td>' +
       '<td style="font-size:12px;">' + (p.email||'—') + '</td>';
     tb.appendChild(tr);
@@ -9919,62 +9952,162 @@ function gerarTemplatePJ() {
   var hoje = new Date();
   var mes  = mesF || (hoje.getMonth()+1);
   var ano  = hoje.getFullYear();
-
   var MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var MESES_ABR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-  var aniversariantes = _pjSessao.filter(function(p){
+  var lista = _pjSessao.filter(function(p){
     return p.nas && parseInt(p.nas.split('-')[1]) === mes;
   }).sort(function(a,b){
-    return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
+    var da = parseInt(a.nas.split('-')[2]);
+    var db = parseInt(b.nas.split('-')[2]);
+    return da - db;
   });
 
-  if (!aniversariantes.length) {
-    alert('Nenhum PJ aniversaria em ' + MESES[mes] + '.');
-    return;
-  }
-
-  var cardsHtml = aniversariantes.map(function(p) {
-    var partes = p.nome.trim().split(/\s+/);
-    var nome1  = (partes[0]||'').toUpperCase();
-    var nome2  = (partes[1]||'').toUpperCase();
-    var nomeExibir = nome1 + (nome2 ? ' ' + nome2 : '');
-    var dia  = parseInt(p.nas.split('-')[2]);
-    var mesN = parseInt(p.nas.split('-')[1]);
-
-    return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:160px;border:1px solid rgba(255,255,255,0.2);">' +
-      '<div style="width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">' + (partes[0]||'?')[0].toUpperCase() + '</div>' +
-      '<div style="font-weight:700;font-size:12pt;color:#fff;line-height:1.3;letter-spacing:.3px;">' + nomeExibir + '</div>' +
-      '<div style="font-size:9pt;color:rgba(255,255,255,0.6);margin:3px 0 6px;">PJ / Prestador</div>' +
-      '<div style="font-size:12pt;color:#ffe082;font-weight:700;">&#127874; ' + dia + ' de ' + MESES_ABR[mesN] + '</div>' +
-      '</div>';
-  }).join('');
+  if (!lista.length) { alert('Nenhum PJ aniversaria em ' + MESES[mes] + '.'); return; }
 
   var logoHtml = LOGO_EMP_B64
-    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:180px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:10px;">'
-    : '';
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:60px;max-width:200px;object-fit:contain;display:block;margin:0 auto 14px;">'
+    : '<div style="font-size:18pt;font-weight:700;color:#1a5c3a;margin-bottom:14px;text-align:center;">EQUILIBRYUM</div>';
 
-  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>PJ Aniversariantes ' + MESES[mes] + ' ' + ano + '</title>' +
-    '<style>*{box-sizing:border-box;}body{margin:0;font-family:Calibri,Arial,sans-serif;}' +
-    '.pg{min-height:100vh;background:linear-gradient(135deg,#0d3b26 0%,#1a6b47 35%,#0d4a8a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}' +
-    '.hdr{text-align:center;margin-bottom:30px;}' +
-    '.title{font-size:24pt;font-weight:700;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.4);margin:0;}' +
-    '.sub{font-size:13pt;color:rgba(255,255,255,.75);margin-top:6px;}' +
-    '.cards{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:980px;}' +
-    '.ftr{margin-top:28px;color:rgba(255,255,255,.35);font-size:9pt;text-align:center;}' +
-    '@media print{.pg{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}</style></head><body>' +
-    '<div class="pg">' +
-      '<div class="hdr">' + logoHtml +
-        '<div class="title">&#127873; Parabéns, Aniversariantes!</div>' +
-        '<div class="sub">' + MESES[mes] + ' ' + ano + ' &nbsp;&#183;&nbsp; PJ / Prestadores Equilibryum &#128149;</div>' +
-      '</div>' +
-      '<div class="cards">' + cardsHtml + '</div>' +
-      '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
-    '</div></body></html>';
+  var linhas = lista.map(function(p, i) {
+    var partes = p.nome.trim().split(/\s+/);
+    var nomeExib = (partes[0]||'').toUpperCase() + (partes[1] ? ' ' + partes[1].toUpperCase() : '');
+    var pts = p.nas.split('-');
+    var nasFmt = pts[2] + '/' + pts[1] + '/' + pts[0];
+    var ativ = (p.ativ && p.ativ !== '-') ? p.ativ : '';
+    var area = (p.area && p.area !== '-') ? p.area : '';
+    var bg = i % 2 === 0 ? '#f4faf7' : '#ffffff';
+    return '<tr style="background:' + bg + ';">' +
+      '<td style="padding:9px 14px;font-weight:700;color:#1a5c3a;font-size:11pt;width:40%;">' + nomeExib + '</td>' +
+      '<td style="padding:9px 14px;font-size:10.5pt;color:#333;width:15%;text-align:center;">&#127874; ' + nasFmt + '</td>' +
+      '<td style="padding:9px 14px;font-size:10.5pt;color:#555;width:25%;">' + (ativ||'—') + '</td>' +
+      '<td style="padding:9px 14px;font-size:10.5pt;color:#555;width:20%;">' + (area||'—') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Aniversariantes PJ ' + MESES[mes] + ' ' + ano + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Calibri,Arial,sans-serif;background:#fff;padding:32px 36px;}' +
+      '.hdr{text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #1a5c3a;}' +
+      '.title{font-size:20pt;font-weight:700;color:#1a5c3a;}' +
+      '.sub{font-size:12pt;color:#555;margin-top:4px;}' +
+      'table{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.08);}' +
+      'thead tr{background:#1a5c3a;}' +
+      'thead th{color:#fff;font-size:10.5pt;font-weight:700;padding:10px 14px;text-align:left;}' +
+      'tbody tr:hover{background:#e8f5ee!important;}' +
+      '.ftr{margin-top:20px;font-size:9pt;color:#aaa;text-align:center;}' +
+      '@media print{body{padding:16px;}@page{margin:1.2cm;}}' +
+    '</style></head><body>' +
+    '<div class="hdr">' + logoHtml +
+      '<div class="title">&#127874; Aniversariantes PJ — ' + MESES[mes] + ' ' + ano + '</div>' +
+      '<div class="sub">PJ / Prestadores de Serviço &nbsp;|&nbsp; ' + lista.length + ' aniversariante(s)</div>' +
+    '</div>' +
+    '<table>' +
+      '<thead><tr>' +
+        '<th>Nome</th><th>Data de Nascimento</th><th>Atividade</th><th>Área</th>' +
+      '</tr></thead>' +
+      '<tbody>' + linhas + '</tbody>' +
+    '</table>' +
+    '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; Gerado em ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
+  '</body></html>';
 
   var w = window.open('', '_blank');
-  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 900); }
+  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
 }
 </script>
 </body>
-</html>
+</html
+function handleListaAssinada(inp) {
+  var file = inp.files[0]; if (!file) return;
+  window._treinListaAssinada = file;
+  var prev = document.getElementById('tr-lista-assinada-preview');
+  if (prev) prev.textContent = '📎 ' + file.name + ' selecionado(a)';
+}
+
+function gerarListaPresenca(tid) {
+  var t     = DB.g('treinamentos').find(function(x){ return x.id === tid; });
+  if (!t) return;
+  var funcs = DB.g('funcionarios');
+  var parts = (t.parts||[]).map(function(id){
+    var f = funcs.find(function(x){ return x.id === id; });
+    return f ? f.n : null;
+  }).filter(Boolean);
+
+  var minLinhas = Math.max(parts.length + 5, 20);
+  var linhas = '';
+  for (var i = 0; i < minLinhas; i++) {
+    var nome = parts[i] || '';
+    var bg   = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    linhas += '<tr style="background:' + bg + ';height:34px;">' +
+      '<td style="padding:6px 10px;border:1px solid #ddd;text-align:center;color:#555;font-size:10pt;">' + (i+1) + '</td>' +
+      '<td style="padding:6px 10px;border:1px solid #ddd;font-weight:' + (nome?'600':'400') + ';color:#222;font-size:10.5pt;">' + nome + '</td>' +
+      '<td style="padding:6px 10px;border:1px solid #ddd;"></td>' +
+      '<td style="padding:6px 10px;border:1px solid #ddd;"></td>' +
+    '</tr>';
+  }
+
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:180px;object-fit:contain;">'
+    : '<div style="font-size:14pt;font-weight:700;color:#1a5c3a;">EQUILIBRYUM</div>';
+
+  var emps   = DB.g('empresas');
+  var empNome = emps.length ? emps[0].razao || emps[0].nome || 'EQUILIBRYUM' : 'EQUILIBRYUM';
+  var empCnpj = emps.length ? emps[0].cnpj || '' : '';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Lista de Presenca - ' + t.titulo + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222;padding:28px 32px;}' +
+      '.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #1a5c3a;}' +
+      '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-bottom:18px;background:#f4faf7;padding:14px 18px;border-radius:6px;border:1px solid #c3e6d4;}' +
+      '.info-label{font-size:9pt;color:#555;text-transform:uppercase;letter-spacing:.4px;}' +
+      '.info-val{font-size:11pt;font-weight:700;color:#1a5c3a;margin-top:1px;}' +
+      'table{width:100%;border-collapse:collapse;margin-top:4px;}' +
+      'thead th{background:#1a5c3a;color:#fff;padding:9px 10px;font-size:10pt;border:1px solid #1a5c3a;text-align:left;}' +
+      '.footer{margin-top:28px;display:flex;justify-content:space-between;gap:40px;}' +
+      '.sig-box{flex:1;border-top:1.5px solid #333;padding-top:6px;text-align:center;font-size:10pt;}' +
+      '.sig-name{font-weight:700;font-size:11pt;color:#1a5c3a;}' +
+      '@media print{body{padding:14px 18px;}@page{margin:1.2cm;size:A4;}}' +
+    '</style></head><body>' +
+    '<div class="hdr">' +
+      '<div>' +
+        '<div style="font-size:17pt;font-weight:700;color:#1a5c3a;margin-bottom:3px;">LISTA DE PRESENCA</div>' +
+        '<div style="font-size:12pt;color:#555;">' + t.titulo + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;">' + logoHtml +
+        '<div style="font-size:9pt;color:#777;margin-top:4px;">' + empNome + (empCnpj ? ' | CNPJ: ' + empCnpj : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="info-grid">' +
+      '<div><div class="info-label">Data</div><div class="info-val">' + (t.data ? t.data.split('-').reverse().join('/') : '___/___/______') + '</div></div>' +
+      '<div><div class="info-label">Horario</div><div class="info-val">' + (t.hora || '___:___') + '</div></div>' +
+      '<div><div class="info-label">Local / Plataforma</div><div class="info-val">' + (t.local||'—') + '</div></div>' +
+      '<div><div class="info-label">Carga Horaria</div><div class="info-val">' + (t.ch||'—') + ' hora(s)</div></div>' +
+      '<div><div class="info-label">Instrutor / Responsavel</div><div class="info-val">' + (t.inst||'—') + '</div></div>' +
+      '<div><div class="info-label">Total de Participantes</div><div class="info-val">' + (parts.length||'—') + '</div></div>' +
+    '</div>' +
+    (t.desc ? '<div style="margin-bottom:14px;font-size:10.5pt;color:#444;padding:8px 14px;background:#fffde7;border-left:3px solid #f9a825;border-radius:4px;">' + t.desc + '</div>' : '') +
+    '<table>' +
+      '<thead><tr>' +
+        '<th style="width:5%;">#</th>' +
+        '<th style="width:45%;">Nome Completo</th>' +
+        '<th style="width:22%;">CPF</th>' +
+        '<th style="width:28%;">Assinatura</th>' +
+      '</tr></thead>' +
+      '<tbody>' + linhas + '</tbody>' +
+    '</table>' +
+    '<div class="footer">' +
+      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">MONICA SANTOS</div><div style="font-size:9.5pt;color:#555;">Coordenadora de RH</div></div>' +
+      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">BRUNO NATHAN DA SILVA</div><div style="font-size:9.5pt;color:#555;">Responsavel pela Empresa</div></div>' +
+      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">' + (t.inst||'INSTRUTOR') + '</div><div style="font-size:9.5pt;color:#555;">Instrutor / Responsavel</div></div>' +
+    '</div>' +
+    '<div style="margin-top:20px;text-align:center;font-size:8.5pt;color:#aaa;">Sistema RH Equilibryum - ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
+  '</body></html>';
+
+  var w = window.open('', '_blank');
+  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
+}
+
+>
