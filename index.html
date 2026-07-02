@@ -9980,64 +9980,71 @@ function gerarTemplatePJ() {
   var hoje = new Date();
   var mes  = mesF || (hoje.getMonth()+1);
   var ano  = hoje.getFullYear();
-  var MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var MESES     = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var MESES_ABR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   var lista = _pjSessao.filter(function(p){
     return p.nas && parseInt(p.nas.split('-')[1]) === mes;
   }).sort(function(a,b){
-    var da = parseInt(a.nas.split('-')[2]);
-    var db = parseInt(b.nas.split('-')[2]);
-    return da - db;
+    return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
   });
 
   if (!lista.length) { alert('Nenhum PJ aniversaria em ' + MESES[mes] + '.'); return; }
 
   var logoHtml = LOGO_EMP_B64
-    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:60px;max-width:200px;object-fit:contain;display:block;margin:0 auto 14px;">'
-    : '<div style="font-size:18pt;font-weight:700;color:#1a5c3a;margin-bottom:14px;text-align:center;">EQUILIBRYUM</div>';
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:52px;max-width:170px;object-fit:contain;display:block;margin:0 auto 10px;">'
+    : '<div style="font-size:15pt;font-weight:700;color:#1a5c3a;margin-bottom:10px;">EQUILIBRYUM</div>';
 
-  var linhas = lista.map(function(p, i) {
-    var partes = p.nome.trim().split(/\s+/);
-    var nomeExib = (partes[0]||'').toUpperCase() + (partes[1] ? ' ' + partes[1].toUpperCase() : '');
-    var pts = p.nas.split('-');
-    var nasFmt = pts[2] + '/' + pts[1] + '/' + pts[0];
-    var ativ = (p.ativ && p.ativ !== '-') ? p.ativ : '';
-    var area = (p.area && p.area !== '-') ? p.area : '';
-    var bg = i % 2 === 0 ? '#f4faf7' : '#ffffff';
-    return '<tr style="background:' + bg + ';">' +
-      '<td style="padding:9px 14px;font-weight:700;color:#1a5c3a;font-size:11pt;width:40%;">' + nomeExib + '</td>' +
-      '<td style="padding:9px 14px;font-size:10.5pt;color:#333;width:15%;text-align:center;">&#127874; ' + nasFmt + '</td>' +
-      '<td style="padding:9px 14px;font-size:10.5pt;color:#555;width:25%;">' + (ativ||'—') + '</td>' +
-      '<td style="padding:9px 14px;font-size:10.5pt;color:#555;width:20%;">' + (area||'—') + '</td>' +
-    '</tr>';
+  // Cards: sem foto, apenas dados — grade responsiva que cabe em 1 página
+  var cards = lista.map(function(p) {
+    var partes   = p.nome.trim().split(/\s+/);
+    var nome1    = (partes[0]||'').toUpperCase();
+    var nome2    = (partes[1]||'').toUpperCase();
+    var nomeExib = nome1 + (nome2 ? ' ' + nome2 : '');
+    var pts      = p.nas.split('-');
+    var dia      = parseInt(pts[2]);
+    var mesN     = parseInt(pts[1]);
+    var ativ     = (p.ativ && p.ativ !== '-') ? p.ativ : '';
+    var area     = (p.area && p.area !== '-') ? p.area : '';
+
+    return '<div class="card">' +
+      '<div class="card-nome">' + nomeExib + '</div>' +
+      '<div class="card-data">&#127874; ' + dia + ' de ' + MESES_ABR[mesN] + '</div>' +
+      (ativ ? '<div class="card-info">' + ativ + '</div>' : '') +
+      (area ? '<div class="card-area">' + area + '</div>' : '') +
+    '</div>';
   }).join('');
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
     '<title>Aniversariantes PJ ' + MESES[mes] + ' ' + ano + '</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
-      'body{font-family:Calibri,Arial,sans-serif;background:#fff;padding:32px 36px;}' +
-      '.hdr{text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #1a5c3a;}' +
-      '.title{font-size:20pt;font-weight:700;color:#1a5c3a;}' +
-      '.sub{font-size:12pt;color:#555;margin-top:4px;}' +
-      'table{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.08);}' +
-      'thead tr{background:#1a5c3a;}' +
-      'thead th{color:#fff;font-size:10.5pt;font-weight:700;padding:10px 14px;text-align:left;}' +
-      'tbody tr:hover{background:#e8f5ee!important;}' +
-      '.ftr{margin-top:20px;font-size:9pt;color:#aaa;text-align:center;}' +
-      '@media print{body{padding:16px;}@page{margin:1.2cm;}}' +
+      'body{font-family:Calibri,Arial,sans-serif;background:#0d3b26;min-height:100vh;padding:22px 26px;}' +
+      '.pg{background:linear-gradient(140deg,#0d3b26 0%,#1a6b47 45%,#0d4a8a 100%);min-height:100vh;padding:22px 26px;border-radius:8px;}' +
+      '.hdr{text-align:center;margin-bottom:18px;}' +
+      '.title{font-size:18pt;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4);}' +
+      '.sub{font-size:11pt;color:rgba(255,255,255,.7);margin-top:4px;}' +
+      '.grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}' +
+      '.card{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.22);border-radius:12px;padding:10px 12px;text-align:center;width:160px;flex-shrink:0;}' +
+      '.card-nome{font-weight:700;font-size:9.5pt;color:#fff;line-height:1.25;margin-bottom:5px;letter-spacing:.2px;}' +
+      '.card-data{font-size:10pt;font-weight:700;color:#ffe082;margin-bottom:4px;}' +
+      '.card-info{font-size:8pt;color:rgba(255,255,255,.65);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+      '.card-area{font-size:7.5pt;color:rgba(255,255,255,.5);}' +
+      '.ftr{margin-top:14px;text-align:center;font-size:8pt;color:rgba(255,255,255,.3);}' +
+      '@media print{' +
+        'html,body{background:#0d3b26!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+        '.pg{min-height:unset;}' +
+        '@page{margin:.8cm;size:A4 landscape;}' +
+      '}' +
     '</style></head><body>' +
-    '<div class="hdr">' + logoHtml +
-      '<div class="title">&#127874; Aniversariantes PJ — ' + MESES[mes] + ' ' + ano + '</div>' +
-      '<div class="sub">PJ / Prestadores de Serviço &nbsp;|&nbsp; ' + lista.length + ' aniversariante(s)</div>' +
+    '<div class="pg">' +
+      '<div class="hdr">' + logoHtml +
+        '<div class="title">&#127874; Aniversariantes PJ — ' + MESES[mes] + ' ' + ano + '</div>' +
+        '<div class="sub">PJ / Prestadores de Serviço &nbsp;|&nbsp; ' + lista.length + ' aniversariante(s)</div>' +
+      '</div>' +
+      '<div class="grid">' + cards + '</div>' +
+      '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
     '</div>' +
-    '<table>' +
-      '<thead><tr>' +
-        '<th>Nome</th><th>Data de Nascimento</th><th>Atividade</th><th>Área</th>' +
-      '</tr></thead>' +
-      '<tbody>' + linhas + '</tbody>' +
-    '</table>' +
-    '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; Gerado em ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
   '</body></html>';
 
   var w = window.open('', '_blank');
