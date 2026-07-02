@@ -1393,7 +1393,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="card">
     <div class="card-header">
       <span class="card-title">&#128187; Treinamentos</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="trein-hdr-actions">
         <select id="trein-ano-filter" onchange="rdTrein()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
           <option value="">Todos os anos</option>
         </select>
@@ -1402,24 +1402,82 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <button class="btn btn-primary" onclick="openModal('modal-trein')">+ Novo Treinamento</button>
       </div>
     </div>
-    <div class="tabs" id="trein-main-tabs">
-      <div class="tab active" onclick="treinTabMain('tr-lista',this)">&#128187; Lista</div>
-      <div class="tab" onclick="treinTabMain('tr-acomp',this)">&#128202; Acompanhamento Anual</div>
+
+    <!-- MENU ABAS PRINCIPAIS -->
+    <div class="tabs" id="trein-main-tabs" style="margin-bottom:0;">
+      <div class="tab active" onclick="treinMenuAba('trein-aba-treinamentos','trein-main-tabs',this);document.getElementById('trein-hdr-actions').style.display='flex';">&#128187; Treinamentos</div>
+      <div class="tab" onclick="treinMenuAba('trein-aba-materiais','trein-main-tabs',this);document.getElementById('trein-hdr-actions').style.display='none';">&#128196; Materiais</div>
+      <div class="tab" onclick="treinMenuAba('trein-aba-cronograma','trein-main-tabs',this);document.getElementById('trein-hdr-actions').style.display='none';">&#128197; Cronograma</div>
     </div>
-    <!-- LISTA COM ABAS -->
-    <div id="tr-lista">
-      <div class="tabs" id="trein-sub-tabs">
+
+    <!-- ABA: TREINAMENTOS -->
+    <div id="trein-aba-treinamentos">
+      <div class="tabs" id="trein-sub-tabs" style="border-top:none;margin-top:0;">
         <div class="tab active" onclick="treinTab('tr-agenda',this)">Agendados</div>
         <div class="tab" onclick="treinTab('tr-conc',this)">Concluídos</div>
         <div class="tab" onclick="treinTab('tr-todos',this)">Todos</div>
+        <div class="tab" onclick="treinTabMain('tr-acomp',this)">&#128202; Anual</div>
       </div>
       <div id="tr-agenda"><div id="trein-agenda-list"></div></div>
       <div id="tr-conc" style="display:none"><div id="trein-conc-list"></div></div>
       <div id="tr-todos" style="display:none"><div id="trein-todos-list"></div></div>
+      <div id="tr-acomp" style="display:none"><div id="trein-acomp-content"></div></div>
     </div>
-    <!-- ACOMPANHAMENTO ANUAL -->
-    <div id="tr-acomp" style="display:none;">
-      <div id="trein-acomp-content"></div>
+
+    <!-- ABA: MATERIAIS -->
+    <div id="trein-aba-materiais" style="display:none;">
+      <div style="padding:16px 0 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="mat-busca" placeholder="🔍 Buscar material..." oninput="rdMateriais()" style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <label class="btn btn-primary" style="cursor:pointer;margin:0;">
+          &#128228; Upload Material
+          <input type="file" id="mat-file-inp" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.xlsx,.xls,.mp4,.png,.jpg" style="display:none;" onchange="uploadMaterial(this)">
+        </label>
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Formatos aceitos: PDF, PowerPoint, Word, Excel, MP4, imagens</div>
+      <div id="mat-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+      <div id="mat-empty" style="text-align:center;padding:40px;color:var(--gray-400);">
+        <div style="font-size:40px;margin-bottom:10px;">&#128196;</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhum material cadastrado</div>
+        <div style="font-size:12px;">Faça upload de PDFs, apresentações e outros arquivos</div>
+      </div>
+    </div>
+
+    <!-- ABA: CRONOGRAMA -->
+    <div id="trein-aba-cronograma" style="display:none;">
+      <div style="padding:16px 0 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-primary" onclick="openModal('modal-cronograma')">+ Novo Agendamento</button>
+      </div>
+      <div id="cron-lista"></div>
+      <div id="cron-empty" style="text-align:center;padding:40px;color:var(--gray-400);">
+        <div style="font-size:40px;margin-bottom:10px;">&#128197;</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhum agendamento no cronograma</div>
+        <div style="font-size:12px;">Crie agendamentos de treinamento e gere convocações para WhatsApp</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRONOGRAMA -->
+<div class="modal-bg" id="modal-cronograma">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <span class="modal-title">&#128197; Novo Agendamento de Treinamento</span>
+      <button class="modal-close" onclick="closeModal('modal-cronograma')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Título do Treinamento *</label><input id="cron-titulo" type="text" placeholder="Ex.: NR-32 Biossegurança"></div>
+      <div class="form-group"><label>Data</label><input id="cron-data" type="date"></div>
+      <div class="form-group"><label>Horário</label><input id="cron-hora" type="time"></div>
+      <div class="form-group"><label>Local / Plataforma</label><input id="cron-local" type="text" placeholder="Ex.: Sala de Reuniões 1 / Teams"></div>
+      <div class="form-group"><label>Carga Horária (h)</label><input id="cron-ch" type="number" min="0.5" step="0.5" placeholder="2"></div>
+      <div class="form-group"><label>Instrutor / Responsável</label><input id="cron-inst" type="text" placeholder="Nome do instrutor"></div>
+      <div class="form-group form-full"><label>Participantes (grupos ou nomes)</label><textarea id="cron-parts" rows="2" placeholder="Ex.: Toda a equipe de enfermagem, Dr. João Silva..."></textarea></div>
+      <div class="form-group form-full"><label>Observações / Pauta</label><textarea id="cron-obs" rows="2" placeholder="Tópicos que serão abordados..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-cronograma')">Cancelar</button>
+      <button class="btn btn-outline" onclick="gerarMsgWhatsApp()" style="color:#25d366;border-color:#25d366;">&#128241; Gerar Convocação WhatsApp</button>
+      <button class="btn btn-primary" onclick="savCronograma()">&#128190; Salvar</button>
     </div>
   </div>
 </div>
@@ -3814,9 +3872,14 @@ function rdFunc() {
     btnX.className = 'btn-icon danger'; btnX.title = 'Excluir'; btnX.innerHTML = '🗑️';
     (function(id){ btnX.onclick = function(){ delFunc(id); }; })(f.id);
 
+    var btnC = document.createElement('button');
+    btnC.className = 'btn-icon'; btnC.title = 'Gerar Crachá'; btnC.innerHTML = '🪪';
+    (function(id){ btnC.onclick = function(){ gerarCracha(id); }; })(f.id);
+
     td8.appendChild(btnE);
     td8.appendChild(btnU);
     td8.appendChild(btnW);
+    td8.appendChild(btnC);
     td8.appendChild(btnX);
 
     [td1,td2,td3,td4,td5,td5b,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
@@ -6012,8 +6075,8 @@ function gerarTemplateAniversariantes(mes) {
     var depNome = dep ? dep.nome : '';
     var fotoSrcTpl = fotoStoreGet(f.id);
     var fotoHtml = fotoSrcTpl
-      ? '<img src="'+fotoSrcTpl+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.8);display:block;margin:0 auto 10px;">'
-      : '<div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.5);">'+nome1[0].toUpperCase()+'</div>';
+      ? '<img src="'+fotoSrcTpl+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #1a5c3a;display:block;margin:0 auto 10px;">'
+      : '<div style="width:80px;height:80px;border-radius:50%;background:#1a5c3a;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.8);">'+nome1[0].toUpperCase()+'</div>';
     return '<div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:18px 14px;text-align:center;min-width:130px;max-width:160px;border:1px solid rgba(255,255,255,0.2);">' +
       fotoHtml +
       '<div style="font-weight:700;font-size:12pt;color:#fff;line-height:1.3;letter-spacing:.3px;">'+nomeExibir+'</div>' +
@@ -6022,13 +6085,12 @@ function gerarTemplateAniversariantes(mes) {
       '</div>';
   }).join('');
 
-  var logoHtml = LOGO_EMP_B64
-    ? '<img src="'+LOGO_EMP_B64+'" style="max-height:60px;max-width:200px;object-fit:contain;filter:brightness(0) invert(1);display:block;margin:0 auto 12px;">'
-    : '<div style="font-size:15pt;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:12px;text-align:center;letter-spacing:1px;">EQUILIBRYUM</div>';
+  // Sem logo no template CLT
+  var logoHtml = '';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Aniversariantes '+MESES[mes-1]+' '+ano+'</title>' +
     '<style>*{box-sizing:border-box;}body{margin:0;font-family:Calibri,Arial,sans-serif;}' +
-    '.pg{min-height:100vh;background:linear-gradient(135deg,#0d3b26 0%,#1a6b47 35%,#0d4a8a 100%);' +
+    '.pg{min-height:100vh;background:linear-gradient(135deg,#d4f0e0 0%,#a8dfc0 50%,#c8e8f5 100%);' +
     'display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;position:relative;}' +
     '.hdr{text-align:center;margin-bottom:30px;}' +
     '.title{font-size:26pt;font-weight:700;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.4);margin:0;}' +
@@ -10019,18 +10081,18 @@ function gerarTemplatePJ() {
     '<title>Aniversariantes PJ ' + MESES[mes] + ' ' + ano + '</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
-      'body{font-family:Calibri,Arial,sans-serif;background:#0d3b26;min-height:100vh;padding:22px 26px;}' +
-      '.pg{background:linear-gradient(140deg,#0d3b26 0%,#1a6b47 45%,#0d4a8a 100%);min-height:100vh;padding:22px 26px;border-radius:8px;}' +
+      'body{font-family:Calibri,Arial,sans-serif;background:#d4f0e0;min-height:100vh;padding:22px 26px;}' +
+      '.pg{background:linear-gradient(140deg,#d4f0e0 0%,#a8dfc0 50%,#c8e8f5 100%);min-height:100vh;padding:22px 26px;border-radius:8px;}' +
       '.hdr{text-align:center;margin-bottom:18px;}' +
-      '.title{font-size:18pt;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4);}' +
-      '.sub{font-size:11pt;color:rgba(255,255,255,.7);margin-top:4px;}' +
+      '.title{font-size:18pt;font-weight:700;color:#1a5c3a;text-shadow:none;}' +
+      '.sub{font-size:11pt;color:#2d6a4f;margin-top:4px;}' +
       '.grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}' +
-      '.card{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.22);border-radius:12px;padding:10px 12px;text-align:center;width:160px;flex-shrink:0;}' +
-      '.card-nome{font-weight:700;font-size:9.5pt;color:#fff;line-height:1.25;margin-bottom:5px;letter-spacing:.2px;}' +
-      '.card-data{font-size:10pt;font-weight:700;color:#ffe082;margin-bottom:4px;}' +
-      '.card-info{font-size:9.5pt;color:rgba(255,255,255,.75);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
-      '.card-area{font-size:9pt;color:rgba(255,255,255,.6);}' +
-      '.ftr{margin-top:14px;text-align:center;font-size:8pt;color:rgba(255,255,255,.3);}' +
+      '.card{background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:10px 12px;text-align:center;width:160px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.08);}' +
+      '.card-nome{font-weight:700;font-size:9.5pt;color:#1a5c3a;line-height:1.25;margin-bottom:5px;letter-spacing:.2px;}' +
+      '.card-data{font-size:10pt;font-weight:700;color:#e65100;margin-bottom:4px;}' +
+      '.card-info{font-size:9.5pt;color:#2d6a4f;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+      '.card-area{font-size:9pt;color:#3d8b6a;}' +
+      '.ftr{margin-top:14px;text-align:center;font-size:8pt;color:#5a9a7a;}' +
       '@media print{' +
         'html,body{background:#0d3b26!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
         '.pg{min-height:unset;}' +
@@ -10144,4 +10206,358 @@ function gerarListaPresenca(tid) {
 
 </script>
 </body>
-</html>
+</html
+// ============================================================
+// MATERIAIS DE TREINAMENTO
+// ============================================================
+function treinMenuAba(abaId, tabsId, btn) {
+  // Hide all content panes
+  ['trein-aba-treinamentos','trein-aba-materiais','trein-aba-cronograma'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  var el = document.getElementById(abaId); if (el) el.style.display = 'block';
+  // Update tab active state
+  var tabs = document.getElementById(tabsId);
+  if (tabs) tabs.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  // Render relevant section
+  if (abaId === 'trein-aba-materiais') rdMateriais();
+  if (abaId === 'trein-aba-cronograma') rdCronograma();
+}
+
+function uploadMaterial(inp) {
+  var files = Array.from(inp.files); if (!files.length) return;
+  var list  = DB.g('mat-trein');
+  var EXT_ICON = {pdf:'📄',ppt:'📊',pptx:'📊',doc:'📝',docx:'📝',xlsx:'📈',xls:'📈',mp4:'🎬',jpg:'🖼️',jpeg:'🖼️',png:'🖼️'};
+
+  files.forEach(function(file) {
+    var ext  = file.name.split('.').pop().toLowerCase();
+    var icon = EXT_ICON[ext] || '📎';
+    var rec  = { id: uid(), nome: file.name, ext: ext, icon: icon, tamanho: file.size, data: td(), driveId: '', driveUrl: '' };
+    // Upload to Drive if connected
+    if (driveReady) {
+      uploadFileToDrive(file, 'Treinamentos/Materiais').then(function(up){
+        rec.driveId  = up.id;
+        rec.driveUrl = up.webViewLink;
+        var l2 = DB.g('mat-trein');
+        var i  = l2.findIndex(function(x){ return x.id === rec.id; });
+        if (i >= 0) l2[i] = rec;
+        DB.s('mat-trein', l2);
+        driveSync('mat-trein');
+        rdMateriais();
+        toast('☁️ ' + file.name + ' salvo no Drive!');
+      }).catch(function(){ toast('⚠️ ' + file.name + ' salvo localmente.'); });
+    }
+    list.push(rec);
+  });
+
+  DB.s('mat-trein', list);
+  inp.value = '';
+  rdMateriais();
+  toast('✅ ' + files.length + ' arquivo(s) adicionado(s)!');
+}
+
+function rdMateriais() {
+  var busca = (document.getElementById('mat-busca')||{value:''}).value.toLowerCase();
+  var list  = DB.g('mat-trein').filter(function(m){
+    return !busca || m.nome.toLowerCase().includes(busca);
+  });
+  list.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+
+  var container = document.getElementById('mat-lista');
+  var empty     = document.getElementById('mat-empty');
+  if (!container) return;
+
+  if (!list.length) {
+    container.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  container.style.display = 'grid';
+
+  container.innerHTML = list.map(function(m){
+    var abre = m.driveUrl
+      ? 'onclick="window.open(\''+m.driveUrl+'\',\'_blank\')" style="cursor:pointer;"'
+      : '';
+    return '<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;min-height:unset;" ' + abre + '>' +
+      '<div style="font-size:28px;text-align:center;">' + m.icon + '</div>' +
+      '<div style="font-weight:700;font-size:12px;color:var(--gray-800);word-break:break-word;text-align:center;">' + m.nome + '</div>' +
+      '<div style="font-size:11px;color:var(--gray-400);text-align:center;">' + fd(m.data) + (m.driveUrl ? ' ☁️' : ' 💾') + '</div>' +
+      '<div style="display:flex;gap:4px;justify-content:center;margin-top:4px;">' +
+        (m.driveUrl ? '<a href="'+m.driveUrl+'" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px;">&#128065; Abrir</a>' : '') +
+        '<button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();delMaterial(\''+m.id+'\')">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function delMaterial(id) {
+  if (!confirm('Excluir este material?')) return;
+  DB.s('mat-trein', DB.g('mat-trein').filter(function(x){ return x.id !== id; }));
+  if (driveReady) driveSync('mat-trein');
+  rdMateriais();
+}
+
+// ============================================================
+// CRONOGRAMA DE TREINAMENTOS
+// ============================================================
+var editingCronId = null;
+
+function savCronograma() {
+  var titulo = (document.getElementById('cron-titulo')||{}).value.trim();
+  if (!titulo) { alert('Título obrigatório.'); return; }
+  var list = DB.g('cronograma-trein');
+  var rec  = {
+    id:    editingCronId || uid(),
+    titulo: titulo,
+    data:  (document.getElementById('cron-data') ||{}).value || '',
+    hora:  (document.getElementById('cron-hora') ||{}).value || '',
+    local: (document.getElementById('cron-local')||{}).value || '',
+    ch:    (document.getElementById('cron-ch')   ||{}).value || '',
+    inst:  (document.getElementById('cron-inst') ||{}).value || '',
+    parts: (document.getElementById('cron-parts')||{}).value || '',
+    obs:   (document.getElementById('cron-obs')  ||{}).value || ''
+  };
+  if (editingCronId) {
+    var i = list.findIndex(function(x){ return x.id === editingCronId; });
+    if (i >= 0) list[i] = rec;
+    editingCronId = null;
+  } else { list.push(rec); }
+  DB.s('cronograma-trein', list);
+  if (driveReady) driveSync('cronograma-trein');
+  closeModal('modal-cronograma');
+  rdCronograma();
+  toast('Agendamento salvo!' + (driveReady?' ☁️':''));
+}
+
+function rdCronograma() {
+  var list = DB.g('cronograma-trein').slice().sort(function(a,b){
+    return (a.data||'').localeCompare(b.data||'');
+  });
+  var container = document.getElementById('cron-lista');
+  var empty     = document.getElementById('cron-empty');
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  container.innerHTML = list.map(function(c){
+    var dataFmt = c.data ? c.data.split('-').reverse().join('/') : '—';
+    var hoje = td();
+    var passado = c.data && c.data < hoje;
+    var borda = passado ? 'var(--gray-200)' : 'var(--green)';
+    return '<div class="card" style="padding:16px;margin-bottom:10px;border-left:4px solid '+borda+';">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:14px;color:var(--gray-800);">'+c.titulo+'</div>' +
+          '<div style="font-size:12px;color:var(--gray-500);margin-top:2px;">'+
+            '📅 '+dataFmt+' &nbsp;⏰ '+(c.hora||'—')+' &nbsp;📍 '+(c.local||'—')+(c.ch?' &nbsp;⏱ '+c.ch+'h':'')+
+          '</div>' +
+          (c.inst?'<div style="font-size:12px;color:var(--gray-500);">👤 '+c.inst+'</div>':'')+
+          (c.parts?'<div style="font-size:12px;color:var(--gray-600);margin-top:4px;"><strong>Participantes:</strong> '+c.parts+'</div>':'')+
+          (c.obs?'<div style="font-size:12px;color:var(--gray-500);margin-top:2px;font-style:italic;">'+c.obs+'</div>':'')+
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<button class="btn btn-outline btn-sm" style="color:#25d366;border-color:#25d366;" data-cid="'+c.id+'" onclick="gerarMsgWhatsAppCron(this.dataset.cid)">&#128241; WhatsApp</button>' +
+          '<button class="btn-icon" data-cid="'+c.id+'" onclick="editCronograma(this.dataset.cid)">✏️</button>' +
+          '<button class="btn-icon danger" data-cid="'+c.id+'" onclick="delCronograma(this.dataset.cid)">🗑️</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function editCronograma(id) {
+  var c = DB.g('cronograma-trein').find(function(x){ return x.id === id; });
+  if (!c) return;
+  editingCronId = id;
+  ['titulo','data','hora','local','ch','inst','parts','obs'].forEach(function(f){
+    var el = document.getElementById('cron-'+f); if (el) el.value = c[f]||'';
+  });
+  openModal('modal-cronograma');
+}
+
+function delCronograma(id) {
+  if (!confirm('Excluir este agendamento?')) return;
+  DB.s('cronograma-trein', DB.g('cronograma-trein').filter(function(x){ return x.id !== id; }));
+  if (driveReady) driveSync('cronograma-trein');
+  rdCronograma();
+}
+
+function gerarMsgWhatsApp() {
+  // Called from modal (new/edit) — reads fields directly
+  var titulo = (document.getElementById('cron-titulo')||{}).value.trim() || '(sem título)';
+  var data   = (document.getElementById('cron-data') ||{}).value;
+  var hora   = (document.getElementById('cron-hora') ||{}).value;
+  var local  = (document.getElementById('cron-local')||{}).value;
+  var ch     = (document.getElementById('cron-ch')   ||{}).value;
+  var inst   = (document.getElementById('cron-inst') ||{}).value;
+  var parts  = (document.getElementById('cron-parts')||{}).value;
+  var obs    = (document.getElementById('cron-obs')  ||{}).value;
+  _abrirMsgWhatsApp({titulo:titulo,data:data,hora:hora,local:local,ch:ch,inst:inst,parts:parts,obs:obs});
+}
+
+function gerarMsgWhatsAppCron(id) {
+  var c = DB.g('cronograma-trein').find(function(x){ return x.id === id; });
+  if (!c) return;
+  _abrirMsgWhatsApp(c);
+}
+
+function _abrirMsgWhatsApp(c) {
+  var dataFmt = c.data ? c.data.split('-').reverse().join('/') : '';
+  var emps    = DB.g('empresas');
+  var empNome = emps.length ? (emps[0].razao||emps[0].nome||'EQUILIBRYUM') : 'EQUILIBRYUM';
+  var linhas  = [];
+  linhas.push('🔔 *CONVOCAÇÃO DE TREINAMENTO*');
+  linhas.push('🏥 *' + empNome + '*');
+  linhas.push('');
+  linhas.push('📚 *Treinamento:* ' + c.titulo);
+  if (dataFmt) linhas.push('📅 *Data:* ' + dataFmt);
+  if (c.hora)  linhas.push('⏰ *Horário:* ' + c.hora);
+  if (c.local) linhas.push('📍 *Local:* ' + c.local);
+  if (c.ch)    linhas.push('⏱ *Carga Horária:* ' + c.ch + 'h');
+  if (c.inst)  linhas.push('👤 *Instrutor:* ' + c.inst);
+  if (c.parts) { linhas.push(''); linhas.push('👥 *Participantes:* ' + c.parts); }
+  if (c.obs)   { linhas.push(''); linhas.push('📋 *Observações:*\n' + c.obs); }
+  linhas.push('');
+  linhas.push('✅ Por favor, confirme sua presença respondendo esta mensagem.');
+  linhas.push('');
+  linhas.push('_Sistema RH Equilibryum_');
+
+  var msg = linhas.join('\n');
+
+  // Show modal with message to copy + WhatsApp link
+  var existing = document.getElementById('modal-wpp-msg');
+  if (existing) existing.remove();
+
+  var div = document.createElement('div');
+  div.id  = 'modal-wpp-msg';
+  div.className = 'modal-bg';
+  div.style.cssText = 'display:flex;z-index:9999;';
+  div.innerHTML =
+    '<div class="modal" style="max-width:520px;">' +
+      '<div class="modal-header">' +
+        '<span class="modal-title">&#128241; Convocação WhatsApp</span>' +
+        '<button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">&#215;</button>' +
+      '</div>' +
+      '<p style="font-size:12px;color:var(--gray-500);padding:12px 20px 4px;">Copie a mensagem abaixo e cole no grupo do WhatsApp:</p>' +
+      '<textarea id="wpp-msg-txt" readonly style="width:calc(100% - 40px);margin:0 20px;height:260px;padding:10px;font-size:13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:monospace;resize:vertical;">' + msg + '</textarea>' +
+      '<div class="modal-footer">' +
+        '<button class="btn btn-outline" onclick="var t=document.getElementById(\'wpp-msg-txt\');t.select();document.execCommand(\'copy\');toast(\'✅ Mensagem copiada!\')">&#128203; Copiar</button>' +
+        '<a href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" class="btn btn-primary" style="background:#25d366;border-color:#25d366;text-decoration:none;">&#128241; Abrir WhatsApp</a>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(div);
+}
+
+
+// ============================================================
+// CRACHÁ DE FUNCIONÁRIO — 5,5 × 8 cm
+// ============================================================
+function gerarCracha(fid) {
+  var f     = DB.g('funcionarios').find(function(x){ return x.id === fid; });
+  if (!f) return;
+  var deps  = DB.g('departamentos');
+  var emps  = DB.g('empresas');
+  var dep   = deps.find(function(d){ return d.id === f.dep; });
+  var emp   = emps.find(function(e){ return e.id === f.emp; });
+  var foto  = fotoStoreGet(fid);
+  var empNome = emp ? (emp.razao || emp.nome || 'EQUILIBRYUM') : 'EQUILIBRYUM';
+
+  // Nome: maiúsculas, só 2 primeiras palavras para caberem no crachá
+  var partes = (f.n||'').trim().split(/\s+/);
+  var nomeExib = partes.slice(0,2).join(' ').toUpperCase();
+  // Cargo: maiúsculas
+  var cargoExib = (f.car||'').toUpperCase();
+
+  // Logo html
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:28px;max-width:110px;object-fit:contain;display:block;margin:0 auto;">'
+    : '<div style="font-size:9pt;font-weight:700;color:#2d6a4f;letter-spacing:.5px;">EQUILIBRYUM</div>';
+
+  // Foto html — círculo central
+  var fotoHtml = foto
+    ? '<img src="' + foto + '" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid #fff;display:block;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,.18);">'
+    : '<div style="width:68px;height:68px;border-radius:50%;background:#1a5c3a;display:flex;align-items:center;justify-content:center;font-size:22pt;font-weight:700;color:#fff;margin:0 auto;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18);">' + (partes[0]||'?')[0].toUpperCase() + '</div>';
+
+  // Geometric background blocks (decorative — replicating the model)
+  var bgBlocks =
+    '<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;border-radius:10px;">' +
+      // Top-left cluster
+      '<div style="position:absolute;width:55px;height:38px;background:rgba(150,180,160,.28);border-radius:4px;top:62px;left:-14px;transform:rotate(-8deg);"></div>' +
+      '<div style="position:absolute;width:38px;height:26px;background:rgba(120,160,140,.22);border-radius:3px;top:80px;left:-8px;transform:rotate(-8deg);"></div>' +
+      '<div style="position:absolute;width:28px;height:8px;background:rgba(100,140,120,.18);border-radius:2px;top:104px;left:0;transform:rotate(-8deg);"></div>' +
+      // Top-right cluster
+      '<div style="position:absolute;width:50px;height:34px;background:rgba(150,180,160,.25);border-radius:4px;top:68px;right:-12px;transform:rotate(8deg);"></div>' +
+      '<div style="position:absolute;width:34px;height:22px;background:rgba(120,155,135,.20);border-radius:3px;top:86px;right:-6px;transform:rotate(8deg);"></div>' +
+      '<div style="position:absolute;width:24px;height:8px;background:rgba(100,140,120,.16);border-radius:2px;top:106px;right:2px;transform:rotate(8deg);"></div>' +
+      // Bottom-left
+      '<div style="position:absolute;width:48px;height:32px;background:rgba(140,170,150,.22);border-radius:4px;bottom:78px;left:-10px;transform:rotate(6deg);"></div>' +
+      '<div style="position:absolute;width:30px;height:10px;background:rgba(110,150,130,.16);border-radius:2px;bottom:95px;left:4px;transform:rotate(6deg);"></div>' +
+      // Bottom-right
+      '<div style="position:absolute;width:44px;height:30px;background:rgba(140,170,150,.20);border-radius:4px;bottom:80px;right:-8px;transform:rotate(-6deg);"></div>' +
+      '<div style="position:absolute;width:28px;height:10px;background:rgba(110,150,130,.15);border-radius:2px;bottom:96px;right:4px;transform:rotate(-6deg);"></div>' +
+    '</div>';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Cracha - ' + f.n + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{background:#e0e0e0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Calibri,Arial,sans-serif;}' +
+      '.cracha{' +
+        'width:5.5cm;height:8cm;' +
+        'background:#eaf5ef;' +
+        'border-radius:10px;' +
+        'position:relative;' +
+        'display:flex;flex-direction:column;align-items:center;' +
+        'box-shadow:0 4px 18px rgba(0,0,0,.22);' +
+        'overflow:hidden;' +
+        'padding:10px 8px 10px;' +
+        'gap:0;' +
+      '}' +
+      '.logo-area{position:relative;z-index:2;width:100%;text-align:center;margin-bottom:6px;}' +
+      '.foto-area{position:relative;z-index:2;margin:6px 0;}' +
+      '.nome-box{' +
+        'position:relative;z-index:2;' +
+        'background:#fff;' +
+        'border-radius:20px;' +
+        'padding:5px 14px;' +
+        'margin-top:8px;' +
+        'width:90%;text-align:center;' +
+        'box-shadow:0 1px 6px rgba(0,0,0,.10);' +
+      '}' +
+      '.nome{font-size:10.5pt;font-weight:900;color:#1a3a2a;letter-spacing:.3px;line-height:1.15;}' +
+      '.cargo-box{' +
+        'position:relative;z-index:2;' +
+        'background:#1a5c3a;' +
+        'border-radius:20px;' +
+        'padding:4px 12px;' +
+        'margin-top:6px;' +
+        'width:90%;text-align:center;' +
+      '}' +
+      '.cargo{font-size:7.5pt;font-weight:700;color:#fff;letter-spacing:.3px;}' +
+      '@media print{' +
+        'body{background:#fff;min-height:unset;padding:0;margin:0;}' +
+        '.cracha{box-shadow:none;margin:0 auto;}' +
+        '@page{size:5.5cm 8cm;margin:0;}' +
+      '}' +
+    '</style></head><body>' +
+    '<div class="cracha">' +
+      bgBlocks +
+      '<div class="logo-area">' + logoHtml + '</div>' +
+      '<div class="foto-area">' + fotoHtml + '</div>' +
+      '<div class="nome-box"><div class="nome">' + nomeExib + '</div></div>' +
+      '<div class="cargo-box"><div class="cargo">' + cargoExib + '</div></div>' +
+    '</div>' +
+  '</body></html>';
+
+  var w = window.open('', '_blank', 'width=300,height=450');
+  if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
+}
+
+>
