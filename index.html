@@ -9496,13 +9496,41 @@ var _funcFotoDataURL = null;
 
 function previewFuncFoto(inp) {
   var file = inp.files[0]; if (!file) return;
+  // Aceita qualquer formato (JPG, PNG, WEBP, HEIC, BMP, GIF, AVIF...)
+  // Converte tudo para JPEG 120x120 via canvas — garante compatibilidade total
   var reader = new FileReader();
   reader.onload = function(e) {
-    _funcFotoDataURL = e.target.result;
-    var img = document.getElementById('func-foto-img');
-    var ini = document.getElementById('func-foto-inicial');
-    if (img) { img.src = _funcFotoDataURL; img.style.display = 'block'; }
-    if (ini) ini.style.display = 'none';
+    var srcData = e.target.result;
+    var tmpImg  = new Image();
+    tmpImg.onload = function() {
+      // Canvas 120x120 — cobre a área de exibição e mantém tamanho pequeno
+      var canvas = document.createElement('canvas');
+      canvas.width  = 120;
+      canvas.height = 120;
+      var ctx = canvas.getContext('2d');
+      // Recorte centralizado (crop quadrado)
+      var s  = Math.min(tmpImg.naturalWidth, tmpImg.naturalHeight);
+      var ox = (tmpImg.naturalWidth  - s) / 2;
+      var oy = (tmpImg.naturalHeight - s) / 2;
+      ctx.drawImage(tmpImg, ox, oy, s, s, 0, 0, 120, 120);
+      // Exportar como JPEG qualidade 80% (≈ 6–10 KB)
+      var jpeg = canvas.toDataURL('image/jpeg', 0.80);
+      _funcFotoDataURL = jpeg;
+      var img = document.getElementById('func-foto-img');
+      var ini = document.getElementById('func-foto-inicial');
+      if (img) { img.src = jpeg; img.style.display = 'block'; }
+      if (ini) ini.style.display = 'none';
+    };
+    tmpImg.onerror = function() {
+      // Fallback: se o browser não conseguir decodificar (ex: HEIC em alguns browsers)
+      // usa o dataURL original sem compressão
+      _funcFotoDataURL = srcData;
+      var img = document.getElementById('func-foto-img');
+      var ini = document.getElementById('func-foto-inicial');
+      if (img) { img.src = srcData; img.style.display = 'block'; }
+      if (ini) ini.style.display = 'none';
+    };
+    tmpImg.src = srcData;
   };
   reader.readAsDataURL(file);
 }
@@ -10015,9 +10043,6 @@ function gerarTemplatePJ() {
   var w = window.open('', '_blank');
   if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
 }
-</script>
-</body>
-</html
 function handleListaAssinada(inp) {
   var file = inp.files[0]; if (!file) return;
   window._treinListaAssinada = file;
@@ -10110,4 +10135,6 @@ function gerarListaPresenca(tid) {
   if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
 }
 
->
+</script>
+</body>
+</html>
