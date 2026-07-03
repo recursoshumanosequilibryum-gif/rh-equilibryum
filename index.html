@@ -1014,21 +1014,20 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <table id="flash-table">
           <thead>
             <tr>
-              <th>Funcionário</th>
-              <th>CPF</th>
-              <th>Cargo</th>
-              <th>Escala</th>
-              <th style="color:#e65100;">VT/dia (R$)</th>
-              <th style="color:#e65100;">VT Calc. Mensal</th>
-              <th style="color:#1565c0;">VR/dia (R$)</th>
-              <th style="color:#1565c0;">VR Calc. Mensal</th>
-              <th style="color:#2e7d5e;">VA Mensal (R$)</th>
-              <th style="color:#6a1b9a;">Combustível (R$)</th>
-              <th style="color:#00695c;">Assiduidade (R$)</th>
-              <th style="color:#bf360c;">Bônus/Prem. (R$)</th>
-              <th style="color:#880e4f;">Odonto (R$)</th>
-              <th style="color:#1565c0;">Assist. Méd. (R$)</th>
-              <th style="color:#4a148c;">Triênio (R$)</th>
+              <th style="min-width:160px;">Funcionário</th>
+              <th style="font-size:11px;">CPF</th>
+              <th style="font-size:11px;min-width:110px;">Departamento</th>
+              <th style="font-size:11px;">Dias Escala</th>
+              <th style="color:#e65100;font-size:11px;">VT/dia<br><small>R$</small></th>
+              <th style="color:#e65100;font-size:11px;">VT Mensal<br><small>R$</small></th>
+              <th style="color:#1565c0;font-size:11px;">VR/dia<br><small>R$</small></th>
+              <th style="color:#1565c0;font-size:11px;">VR Mensal<br><small>R$</small></th>
+              <th style="color:#2e7d5e;font-size:11px;">VA Mensal<br><small>R$</small></th>
+              <th style="color:#6a1b9a;font-size:11px;">Combustível<br><small>R$</small></th>
+              <th style="color:#00695c;font-size:11px;">Assiduidade<br><small>R$</small></th>
+              <th style="color:#bf360c;font-size:11px;">Bônus/Prem.<br><small>R$</small></th>
+              <th style="color:#880e4f;font-size:11px;">Odonto<br><small>R$</small></th>
+              <th style="color:#1565c0;font-size:11px;">Assist.Méd.<br><small>R$</small></th>
             </tr>
           </thead>
           <tbody id="flash-tbody"></tbody>
@@ -7666,15 +7665,20 @@ function renderFlashTable() {
   if (!tbody) return;
   tbody.innerHTML = '';
 
+  if (!funcs.length) {
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum funcionário ativo nesta empresa.</td></tr>';
+    return;
+  }
+
   funcs.forEach(function(f) {
     var fBenefs = atribs.filter(function(a){ return a.fid===f.id && a.st==='Ativo'; });
-    var dep = deps.find(function(d){ return d.id===f.dep; });
+    var dep     = deps.find(function(d){ return d.id===f.dep; });
     var depNome = dep ? dep.nome : '';
 
-    function findB(keywords) {
+    function findB(kws) {
       return fBenefs.find(function(a){
         var t = (a.tipoBase||a.tipo||'').toUpperCase();
-        return keywords.some(function(k){ return t.includes(k); });
+        return kws.some(function(k){ return t.includes(k); });
       });
     }
     var vtB     = findB(['VT','VALE TRANS']);
@@ -7685,75 +7689,63 @@ function renderFlashTable() {
     var bonusB  = findB(['BÔN','BON','PREM']);
     var odontoB = findB(['ODONTO']);
     var medB    = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
-    var triB    = findB(['TRIEN']);
 
     var tr = document.createElement('tr');
 
-    function makeInput(id, val, color, isCalc) {
-      var inp = document.createElement('input');
-      inp.type = 'number'; inp.step = '0.01'; inp.min = '0';
-      inp.id = id; inp.dataset.fid = f.id;
-      if (val) { inp.value = parseFloat(val).toFixed(2); inp.className = 'has-val'; }
-      inp.style.cssText = 'width:70px;border:1.5px solid '+(color||'var(--gray-200)')+';border-radius:5px;padding:4px 5px;font-size:12px;font-family:inherit;';
-      inp.oninput = function() {
-        this.className = this.value ? 'has-val' : '';
-        updateCalcCell(f.id);
-      };
-      return inp;
+    function inp(id, val, color) {
+      var el = document.createElement('input');
+      el.type = 'number'; el.step = '0.01'; el.min = '0'; el.id = id;
+      el.style.cssText = 'width:72px;border:1.5px solid '+(color||'var(--gray-200)')+';border-radius:5px;padding:4px 5px;font-size:12px;font-family:inherit;';
+      if (val) { el.value = parseFloat(val).toFixed(2); el.className = 'has-val'; }
+      el.oninput = function(){ this.className = this.value?'has-val':''; updateCalcCell(f.id); };
+      return el;
+    }
+    function td(content, extra) {
+      var el = document.createElement('td');
+      el.style.cssText = 'padding:5px 7px;vertical-align:middle;' + (extra||'');
+      if (typeof content === 'string') el.innerHTML = content;
+      else el.appendChild(content);
+      return el;
     }
 
-    function makeTd(content) {
-      var td = document.createElement('td');
-      td.style.padding = '5px 6px;vertical-align:middle;';
-      if (typeof content === 'string') td.innerHTML = content;
-      else td.appendChild(content);
-      return td;
-    }
-
-    // Dias de escala — input numérico editável com auto-cálculo
+    // Dias de escala — campo numérico editável
     var inpDias = document.createElement('input');
     inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
-    inpDias.id   = 'dias-'+f.id;
-    inpDias.value = f.diasEscala || '22'; // default 22 dias úteis
+    inpDias.id = 'dias-'+f.id; inpDias.value = f.diasEscala || '22';
     inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
-    inpDias.title = 'Informe a quantidade de dias trabalhados no período';
-    inpDias.oninput = function() { updateCalcCell(f.id); };
+    inpDias.title = 'Dias trabalhados no período';
+    inpDias.oninput = function(){ updateCalcCell(f.id); };
 
-    // Calc cells
+    // VT/VR total cells
     var tdVTcalc = document.createElement('td');
     tdVTcalc.id = 'vtcalc-'+f.id;
-    tdVTcalc.style.cssText = 'padding:5px 6px;color:#e65100;font-weight:700;font-size:12px;text-align:right;white-space:nowrap;';
+    tdVTcalc.style.cssText = 'padding:5px 7px;color:#e65100;font-weight:700;font-size:12px;text-align:right;white-space:nowrap;';
 
     var tdVRcalc = document.createElement('td');
     tdVRcalc.id = 'vrcalc-'+f.id;
-    tdVRcalc.style.cssText = 'padding:5px 6px;color:#1565c0;font-weight:700;font-size:12px;text-align:right;white-space:nowrap;';
+    tdVRcalc.style.cssText = 'padding:5px 7px;color:#1565c0;font-weight:700;font-size:12px;text-align:right;white-space:nowrap;';
 
+    // ORDER: Funcionário | CPF | Departamento | Dias Escala | VT/dia | VT Mensal | VR/dia | VR Mensal | VA | Comb | Assim | Bônus | Odonto | A.Méd
     [
-      makeTd('<strong style="font-size:12px;">'+f.n+'</strong>'),
-      makeTd('<span style="font-size:11px;color:#555;">'+depNome+'</span>'),
-      makeTd('<span style="font-size:11px;">'+( f.cpf||'')+'</span>'),
-      makeTd('<span style="font-size:11px;">'+( f.car||'')+'</span>'),
-      makeTd(inpDias),
-      makeTd(makeInput('vt-'+f.id,   vtB    ?vtB.valor:'',    '#e65100')),
+      td('<strong style="font-size:12.5px;">'+f.n+'</strong>'),
+      td('<span style="font-size:11px;color:#555;">'+( f.cpf||'')+'</span>'),
+      td('<span style="font-size:11px;color:#333;">'+depNome+'</span>'),
+      td(inpDias),
+      td(inp('vt-'+f.id,    vtB    ?vtB.valor:'',    '#e65100')),
       tdVTcalc,
-      makeTd(makeInput('vr-'+f.id,   vrB    ?vrB.valor:'',    '#1565c0')),
+      td(inp('vr-'+f.id,    vrB    ?vrB.valor:'',    '#1565c0')),
       tdVRcalc,
-      makeTd(makeInput('va-'+f.id,   vaB    ?vaB.valor:'',    '#2e7d5e')),
-      makeTd(makeInput('comb-'+f.id, combB  ?combB.valor:'',  '#6a1b9a')),
-      makeTd(makeInput('assim-'+f.id,assimB ?assimB.valor:'', '#00695c')),
-      makeTd(makeInput('bonus-'+f.id,bonusB ?bonusB.valor:'', '#bf360c')),
-      makeTd(makeInput('odonto-'+f.id,odontoB?odontoB.valor:'','#880e4f')),
-      makeTd(makeInput('med-'+f.id,  medB   ?medB.valor:'',   '#1565c0')),
-      makeTd(makeInput('tri-'+f.id,  triB   ?triB.valor:'',   '#4a148c'))
-    ].forEach(function(td){ tr.appendChild(td); });
+      td(inp('va-'+f.id,    vaB    ?vaB.valor:'',    '#2e7d5e')),
+      td(inp('comb-'+f.id,  combB  ?combB.valor:'',  '#6a1b9a')),
+      td(inp('assim-'+f.id, assimB ?assimB.valor:'', '#00695c')),
+      td(inp('bonus-'+f.id, bonusB ?bonusB.valor:'', '#bf360c')),
+      td(inp('odonto-'+f.id,odontoB?odontoB.valor:'','#880e4f')),
+      td(inp('med-'+f.id,   medB   ?medB.valor:'',   '#1565c0'))
+    ].forEach(function(c){ tr.appendChild(c); });
 
     tbody.appendChild(tr);
     updateCalcCell(f.id);
   });
-
-  if (!funcs.length) {
-    tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum funcionário ativo nesta empresa.</td></tr>';
-  }
 }
 
 function updateCalcCell(fid) {
@@ -7790,7 +7782,6 @@ async function gerarFlashXLSX() {
   var deps  = DB.g('departamentos');
   if (!funcs.length) { alert('Nenhum funcionário ativo nesta empresa.'); return; }
 
-  // Which benefits selected
   var chkVT    = (document.getElementById('flash-chk-vt')    ||{checked:true}).checked;
   var chkVR    = (document.getElementById('flash-chk-vr')    ||{checked:true}).checked;
   var chkVA    = (document.getElementById('flash-chk-va')    ||{checked:true}).checked;
@@ -7800,31 +7791,34 @@ async function gerarFlashXLSX() {
   var chkOdonto= (document.getElementById('flash-chk-odonto')||{checked:false}).checked;
   var chkMed   = (document.getElementById('flash-chk-med')   ||{checked:false}).checked;
 
-  // Period label for filename
   var deFmt  = de.split('-').reverse().join('/');
   var ateFmt = ate.split('-').reverse().join('/');
-  var periodoLabel = deFmt + ' a ' + ateFmt;
+  var periodo = deFmt + ' a ' + ateFmt;
 
-  // Build dynamic headers — always: CNPJ, NOME, DEPARTAMENTO, CPF, CARGO, UNIDADE, DIAS
-  var headers = ['CNPJ','NOME COMPLETO','DEPARTAMENTO','CPF','CARGO','UNIDADE','PERÍODO','DIAS'];
-  if (chkVT)    { headers.push('VT DIA (R$)'); headers.push('TOTAL VT (R$)'); }
-  if (chkVR)    { headers.push('VR DIA (R$)'); headers.push('TOTAL VR (R$)'); }
-  if (chkVA)    headers.push('VA (R$)');
+  // Column order: Funcionário, CPF, Departamento, Dias Escala, then selected benefits
+  var headers = ['FUNCIONÁRIO','CPF','DEPARTAMENTO','DIAS ESCALA'];
+  if (chkVT)    { headers.push('VT/DIA (R$)'); headers.push('VT MENSAL (R$)'); }
+  if (chkVR)    { headers.push('VR/DIA (R$)'); headers.push('VR MENSAL (R$)'); }
+  if (chkVA)    headers.push('VA MENSAL (R$)');
   if (chkComb)  headers.push('COMBUSTÍVEL (R$)');
   if (chkAssim) headers.push('ASSIDUIDADE (R$)');
-  if (chkBonus) headers.push('BÔNUS (R$)');
+  if (chkBonus) headers.push('BÔNUS/PREMIA. (R$)');
   if (chkOdonto)headers.push('ODONTO (R$)');
   if (chkMed)   headers.push('ASSIST. MÉDICA (R$)');
 
   var SEP = ';';
-  var rows = [headers.join(SEP)];
+  var rows = [
+    ['"EMPRESA: ' + (emp?emp.razao:'') + '"','"CNPJ: ' + (cnpj||emp&&emp.cnpj||'') + '"','"PERÍODO: ' + periodo + '"','"UNIDADE: ' + unid + '"'].join(SEP),
+    '',
+    headers.map(function(h){ return '"'+h+'"'; }).join(SEP)
+  ];
+
   var fmtN = function(v){ return v > 0 ? v.toFixed(2).replace('.',',') : ''; };
 
   funcs.forEach(function(f) {
     var dep     = deps.find(function(d){ return d.id===f.dep; });
     var depNome = dep ? dep.nome : '';
     var dias    = parseInt((document.getElementById('dias-'+f.id)||{}).value)||0;
-
     var vtDia   = chkVT    ? (parseFloat((document.getElementById('vt-'+f.id)    ||{}).value)||0) : 0;
     var vrDia   = chkVR    ? (parseFloat((document.getElementById('vr-'+f.id)    ||{}).value)||0) : 0;
     var va      = chkVA    ? (parseFloat((document.getElementById('va-'+f.id)    ||{}).value)||0) : 0;
@@ -7834,47 +7828,32 @@ async function gerarFlashXLSX() {
     var odonto  = chkOdonto? (parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0) : 0;
     var med     = chkMed   ? (parseFloat((document.getElementById('med-'+f.id)   ||{}).value)||0) : 0;
 
-    var vtTotal = vtDia * dias;
-    var vrTotal = vrDia * dias;
-
-    var row = [
-      cnpj || (emp?emp.cnpj||'':''),
-      f.n,
-      depNome,
-      f.cpf||'',
-      f.car||'',
-      unid,
-      periodoLabel,
-      dias > 0 ? String(dias) : ''
-    ];
-    if (chkVT)    { row.push(fmtN(vtDia)); row.push(fmtN(vtTotal)); }
-    if (chkVR)    { row.push(fmtN(vrDia)); row.push(fmtN(vrTotal)); }
-    if (chkVA)    row.push(fmtN(va));
-    if (chkComb)  row.push(fmtN(comb));
-    if (chkAssim) row.push(fmtN(assim));
-    if (chkBonus) row.push(fmtN(bonus));
-    if (chkOdonto)row.push(fmtN(odonto));
-    if (chkMed)   row.push(fmtN(med));
-
-    rows.push(row.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(SEP));
+    var row = ['"'+f.n+'"', '"'+(f.cpf||'')+'"', '"'+depNome+'"', '"'+(dias||'')+'"'];
+    if (chkVT)    { row.push('"'+fmtN(vtDia)+'"'); row.push('"'+fmtN(vtDia*dias)+'"'); }
+    if (chkVR)    { row.push('"'+fmtN(vrDia)+'"'); row.push('"'+fmtN(vrDia*dias)+'"'); }
+    if (chkVA)    row.push('"'+fmtN(va)+'"');
+    if (chkComb)  row.push('"'+fmtN(comb)+'"');
+    if (chkAssim) row.push('"'+fmtN(assim)+'"');
+    if (chkBonus) row.push('"'+fmtN(bonus)+'"');
+    if (chkOdonto)row.push('"'+fmtN(odonto)+'"');
+    if (chkMed)   row.push('"'+fmtN(med)+'"');
+    rows.push(row.join(SEP));
   });
 
   var csv    = '\uFEFF' + rows.join('\r\n');
   var blob   = new Blob([csv], {type:'text/csv;charset=utf-8'});
   var nomeArq = 'Flash_Beneficios_' + de + '_a_' + ate + '.csv';
   var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = nomeArq;
-  a.click();
+  a.href = URL.createObjectURL(blob); a.download = nomeArq; a.click();
 
   if (driveReady) {
     try {
       var file = new File([blob], nomeArq, {type:'text/csv'});
       await uploadFileToDrive(file, 'Beneficios/Flash');
-      toast('Arquivo Flash salvo no Drive ☁️');
+      toast('Arquivo salvo no Drive ☁️');
     } catch(e) { console.warn(e); }
   }
-  toast('Arquivo gerado! ' + funcs.length + ' funcionário(s) — período ' + periodoLabel);
+  toast('Arquivo gerado! ' + funcs.length + ' funcionário(s) — ' + periodo);
 }
 
 // ============================================================
