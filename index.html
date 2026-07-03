@@ -865,15 +865,12 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
   <!-- CARDS RESUMO -->
   <div class="stats-grid" id="benef-stats"></div>
-  <div class="alert alert-success" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-    <span>&#128196; <strong>105 funcionários</strong> prontos para importar das planilhas Flash enviadas (VT, VR, VA, Combustível, Assiduidade, Bônus).</span>
-    <button class="btn btn-primary btn-sm" onclick="importarBenefPlanilhas()">&#9889; Importar das Planilhas</button>
-  </div>
+
 
   <!-- ABAS PRINCIPAIS -->
   <div class="tabs" id="benef-main-tabs">
     <div class="tab active" onclick="benefTab('bt-func',this)">&#128101; Por Funcionário</div>
-    <div class="tab" onclick="benefTab('bt-compras',this)">&#128722; Compras / Recargas</div>
+
     <div class="tab" onclick="benefTab('bt-flash',this)">&#9889; Gerar Arquivo Flash</div>
     <div class="tab" onclick="benefTab('bt-rel',this)">&#128202; Relatório Geral</div>
   </div>
@@ -947,8 +944,12 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <input type="text" id="flash-cnpj" placeholder="Preenchido automaticamente" readonly style="background:var(--gray-100);">
         </div>
         <div class="form-group">
-          <label>Competência (mês/ano) *</label>
-          <input type="month" id="flash-comp">
+          <label>Período — De *</label>
+          <input type="date" id="flash-de" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        </div>
+        <div class="form-group">
+          <label>Até *</label>
+          <input type="date" id="flash-ate" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
         <div class="form-group">
           <label>Unidade</label>
@@ -7630,9 +7631,16 @@ function rdFlash() {
       if (emp && cnpjEl) cnpjEl.value = emp.cnpj || '';
     }
   }
-  if (!document.getElementById('flash-comp').value) {
-    var now = new Date();
-    document.getElementById('flash-comp').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  // Set default period: 1st to last day of current month
+  var deEl  = document.getElementById('flash-de');
+  var ateEl = document.getElementById('flash-ate');
+  if (deEl && !deEl.value) {
+    var now  = new Date();
+    var y    = now.getFullYear();
+    var m    = String(now.getMonth()+1).padStart(2,'0');
+    var last = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    deEl.value  = y + '-' + m + '-01';
+    ateEl.value = y + '-' + m + '-' + String(last).padStart(2,'0');
   }
   renderFlashTable();
 }
@@ -7652,50 +7660,41 @@ function renderFlashTable() {
   if (empty) empty.style.display = 'none';
   if (tbl)   tbl.style.display  = '';
 
-  var funcs = DB.g('funcionarios').filter(function(f) {
-    return f.emp === empId && f.st !== 'Desligado';
-  });
+  var funcs  = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
+  var deps   = DB.g('departamentos');
   var atribs = DB.g('benef-atrib');
-
   if (!tbody) return;
   tbody.innerHTML = '';
 
   funcs.forEach(function(f) {
-    var fBenefs = atribs.filter(function(a) { return a.fid === f.id && a.st === 'Ativo'; });
-    var getVal = function(tipo) {
-      var b = fBenefs.find(function(a) {
-        var t = (a.tipoBase||a.tipo||'').toLowerCase();
-        return t.includes(tipo);
+    var fBenefs = atribs.filter(function(a){ return a.fid===f.id && a.st==='Ativo'; });
+    var dep = deps.find(function(d){ return d.id===f.dep; });
+    var depNome = dep ? dep.nome : '';
+
+    function findB(keywords) {
+      return fBenefs.find(function(a){
+        var t = (a.tipoBase||a.tipo||'').toUpperCase();
+        return keywords.some(function(k){ return t.includes(k); });
       });
-      return b ? (parseFloat(b.valor)||0) : 0;
-    };
+    }
+    var vtB     = findB(['VT','VALE TRANS']);
+    var vrB     = findB(['VR','VALE REFEI']);
+    var vaB     = findB(['VA','ALIMENTA']);
+    var combB   = findB(['COMBUST']);
+    var assimB  = findB(['ASSIDU']);
+    var bonusB  = findB(['BÔN','BON','PREM']);
+    var odontoB = findB(['ODONTO']);
+    var medB    = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
+    var triB    = findB(['TRIEN']);
 
-    // Default values from benefit registrations
-    var vtDia   = getVal('vt') || getVal('vale refeição') > 0 ? 0 : 0;
-    // Try to find VT specifically
-    var vtB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('VT')||((a.tipoBase||a.tipo||'').toUpperCase().includes('VALE TRANS')); });
-    var vrB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('VR')||((a.tipoBase||a.tipo||'').toUpperCase().includes('VALE REFEI')); });
-    var vaB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('VA')||((a.tipoBase||a.tipo||'').toUpperCase().includes('ALIMENTA')); });
-    var combB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('COMBUST'); });
-    var assimB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('ASSIDU'); });
-    var bonusB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('BÔN')||(a.tipoBase||a.tipo||'').toUpperCase().includes('BON')||(a.tipoBase||a.tipo||'').toUpperCase().includes('PREM'); });
-    var odontoB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('ODONTO'); });
-    var medB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('MÉD')||(a.tipoBase||a.tipo||'').toUpperCase().includes('MED'); });
-    var trienioB = fBenefs.find(function(a){ return (a.tipoBase||a.tipo||'').toUpperCase().includes('TRIEN'); });
-
-    var rowId = 'flash-row-' + f.id;
     var tr = document.createElement('tr');
-    tr.id = rowId;
 
-    // Escala do funcionário (padrão: Seg a Sex)
-    var escalaDefault = f.escala || '55';
-
-    function makeInput(id, val, color) {
+    function makeInput(id, val, color, isCalc) {
       var inp = document.createElement('input');
       inp.type = 'number'; inp.step = '0.01'; inp.min = '0';
       inp.id = id; inp.dataset.fid = f.id;
       if (val) { inp.value = parseFloat(val).toFixed(2); inp.className = 'has-val'; }
-      inp.style.borderColor = color || '';
+      inp.style.cssText = 'width:70px;border:1.5px solid '+(color||'var(--gray-200)')+';border-radius:5px;padding:4px 5px;font-size:12px;font-family:inherit;';
       inp.oninput = function() {
         this.className = this.value ? 'has-val' : '';
         updateCalcCell(f.id);
@@ -7703,68 +7702,49 @@ function renderFlashTable() {
       return inp;
     }
 
-    function makeTd(inp) {
+    function makeTd(content) {
       var td = document.createElement('td');
-      td.style.padding = '6px 8px';
-      td.appendChild(inp);
+      td.style.padding = '5px 6px;vertical-align:middle;';
+      if (typeof content === 'string') td.innerHTML = content;
+      else td.appendChild(content);
       return td;
     }
 
-    // TD nome
-    var tdNome = document.createElement('td');
-    tdNome.innerHTML = '<strong style="font-size:12.5px;">'+f.n+'</strong>';
-    tdNome.style.padding = '6px 8px';
+    // Dias de escala — input numérico editável com auto-cálculo
+    var inpDias = document.createElement('input');
+    inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
+    inpDias.id   = 'dias-'+f.id;
+    inpDias.value = f.diasEscala || '22'; // default 22 dias úteis
+    inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
+    inpDias.title = 'Informe a quantidade de dias trabalhados no período';
+    inpDias.oninput = function() { updateCalcCell(f.id); };
 
-    // TD CPF
-    var tdCpf = document.createElement('td');
-    tdCpf.textContent = f.cpf || '';
-    tdCpf.style.padding = '6px 8px; font-size:12px;';
-
-    // TD Cargo
-    var tdCargo = document.createElement('td');
-    tdCargo.textContent = f.car || '';
-    tdCargo.style.cssText = 'padding:6px 8px;font-size:12px;';
-
-    // TD Escala select
-    var tdEsc = document.createElement('td');
-    tdEsc.style.padding = '6px 8px';
-    var selEsc = document.createElement('select');
-    selEsc.className = 'escala-sel';
-    selEsc.id = 'escala-'+f.id;
-    selEsc.innerHTML = '<option value="55"'+(escalaDefault==='55'?' selected':'')+'>Seg–Sex</option><option value="56"'+(escalaDefault==='56'?' selected':'')+'>Seg–Sab</option>';
-    selEsc.onchange = function() { updateCalcCell(f.id); };
-    tdEsc.appendChild(selEsc);
-
-    // VT/dia input + calc cell
-    var inpVT = makeInput('vt-'+f.id, vtB ? vtB.valor : '', '#e65100');
-    var tdVT = makeTd(inpVT);
+    // Calc cells
     var tdVTcalc = document.createElement('td');
-    tdVTcalc.className = 'calc-cell';
     tdVTcalc.id = 'vtcalc-'+f.id;
-    tdVTcalc.style.color = '#e65100';
+    tdVTcalc.style.cssText = 'padding:5px 6px;color:#e65100;font-weight:700;font-size:12px;text-align:right;white-space:nowrap;';
 
-    // VR/dia input + calc cell
-    var inpVR = makeInput('vr-'+f.id, vrB ? vrB.valor : '', '#1565c0');
-    var tdVR = makeTd(inpVR);
     var tdVRcalc = document.createElement('td');
-    tdVRcalc.className = 'calc-cell';
     tdVRcalc.id = 'vrcalc-'+f.id;
-    tdVRcalc.style.color = '#1565c0';
+    tdVRcalc.style.cssText = 'padding:5px 6px;color:#1565c0;font-weight:700;font-size:12px;text-align:right;white-space:nowrap;';
 
-    // Monthly fields
-    var inpVA    = makeInput('va-'+f.id,     vaB    ? vaB.valor    : '', '#2e7d5e');
-    var inpComb  = makeInput('comb-'+f.id,   combB  ? combB.valor  : '', '#6a1b9a');
-    var inpAssim = makeInput('assim-'+f.id,  assimB ? assimB.valor : '', '#00695c');
-    var inpBonus = makeInput('bonus-'+f.id,  bonusB ? bonusB.valor : '', '#bf360c');
-    var inpOd    = makeInput('odonto-'+f.id, odontoB? odontoB.valor: '', '#880e4f');
-    var inpMed   = makeInput('med-'+f.id,    medB   ? medB.valor   : '', '#1565c0');
-    var inpTri   = makeInput('tri-'+f.id,    trienioB?trienioB.valor:'','#4a148c');
-
-    [tdNome, tdCpf, tdCargo, tdEsc,
-     tdVT, tdVTcalc,
-     tdVR, tdVRcalc,
-     makeTd(inpVA), makeTd(inpComb), makeTd(inpAssim),
-     makeTd(inpBonus), makeTd(inpOd), makeTd(inpMed), makeTd(inpTri)
+    [
+      makeTd('<strong style="font-size:12px;">'+f.n+'</strong>'),
+      makeTd('<span style="font-size:11px;color:#555;">'+depNome+'</span>'),
+      makeTd('<span style="font-size:11px;">'+( f.cpf||'')+'</span>'),
+      makeTd('<span style="font-size:11px;">'+( f.car||'')+'</span>'),
+      makeTd(inpDias),
+      makeTd(makeInput('vt-'+f.id,   vtB    ?vtB.valor:'',    '#e65100')),
+      tdVTcalc,
+      makeTd(makeInput('vr-'+f.id,   vrB    ?vrB.valor:'',    '#1565c0')),
+      tdVRcalc,
+      makeTd(makeInput('va-'+f.id,   vaB    ?vaB.valor:'',    '#2e7d5e')),
+      makeTd(makeInput('comb-'+f.id, combB  ?combB.valor:'',  '#6a1b9a')),
+      makeTd(makeInput('assim-'+f.id,assimB ?assimB.valor:'', '#00695c')),
+      makeTd(makeInput('bonus-'+f.id,bonusB ?bonusB.valor:'', '#bf360c')),
+      makeTd(makeInput('odonto-'+f.id,odontoB?odontoB.valor:'','#880e4f')),
+      makeTd(makeInput('med-'+f.id,  medB   ?medB.valor:'',   '#1565c0')),
+      makeTd(makeInput('tri-'+f.id,  triB   ?triB.valor:'',   '#4a148c'))
     ].forEach(function(td){ tr.appendChild(td); });
 
     tbody.appendChild(tr);
@@ -7772,104 +7752,121 @@ function renderFlashTable() {
   });
 
   if (!funcs.length) {
-    tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum funcionário ativo nesta empresa.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum funcionário ativo nesta empresa.</td></tr>';
   }
 }
 
 function updateCalcCell(fid) {
-  var escSel = document.getElementById('escala-'+fid);
-  var escala = escSel ? escSel.value : '55';
-  var dias = getDiasEscala(escala);
-  var vtDia = parseFloat((document.getElementById('vt-'+fid)||{}).value)||0;
-  var vrDia = parseFloat((document.getElementById('vr-'+fid)||{}).value)||0;
-  var vtMes = vtDia * dias;
-  var vrMes = vrDia * dias;
-  var vtcalc = document.getElementById('vtcalc-'+fid);
-  var vrcalc = document.getElementById('vrcalc-'+fid);
-  if (vtcalc) vtcalc.textContent = vtDia > 0 ? 'R$ '+vtMes.toFixed(2).replace('.',',') : '—';
-  if (vrcalc) vrcalc.textContent = vrDia > 0 ? 'R$ '+vrMes.toFixed(2).replace('.',',') : '—';
+  // Ler dias do campo editável
+  var diasEl = document.getElementById('dias-'+fid);
+  var dias   = diasEl ? (parseInt(diasEl.value)||0) : 22;
+
+  var vtDia  = parseFloat((document.getElementById('vt-'+fid)||{}).value)||0;
+  var vrDia  = parseFloat((document.getElementById('vr-'+fid)||{}).value)||0;
+
+  var vtTotal = vtDia * dias;
+  var vrTotal = vrDia * dias;
+
+  var vtCalcEl = document.getElementById('vtcalc-'+fid);
+  var vrCalcEl = document.getElementById('vrcalc-'+fid);
+
+  if (vtCalcEl) vtCalcEl.textContent = vtTotal > 0 ? 'R$ '+vtTotal.toFixed(2).replace('.',',') : '—';
+  if (vrCalcEl) vrCalcEl.textContent = vrTotal > 0 ? 'R$ '+vrTotal.toFixed(2).replace('.',',') : '—';
 }
 
 // ── Gerar XLSX Flash ─────────────────────────────────────────
 async function gerarFlashXLSX() {
-  var empId  = (document.getElementById('flash-empresa')||{}).value||'';
-  var comp   = (document.getElementById('flash-comp')||{}).value||'';
-  var cnpj   = (document.getElementById('flash-cnpj')||{}).value||'';
-  var unid   = (document.getElementById('flash-unidade')||{}).value||'';
+  var empId = (document.getElementById('flash-empresa')||{}).value||'';
+  var de    = (document.getElementById('flash-de') ||{}).value||'';
+  var ate   = (document.getElementById('flash-ate')||{}).value||'';
+  var cnpj  = (document.getElementById('flash-cnpj')||{}).value||'';
+  var unid  = (document.getElementById('flash-unidade')||{}).value||'';
 
   if (!empId) { alert('Selecione uma empresa.'); return; }
+  if (!de || !ate) { alert('Informe o período (De e Até).'); return; }
 
-  var emp = DB.g('empresas').find(function(e){return e.id===empId;});
-  var funcs = DB.g('funcionarios').filter(function(f){return f.emp===empId&&f.st!=='Desligado';});
-
+  var emp   = DB.g('empresas').find(function(e){ return e.id===empId; });
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
+  var deps  = DB.g('departamentos');
   if (!funcs.length) { alert('Nenhum funcionário ativo nesta empresa.'); return; }
 
-  // Build CSV data (semicolon for Excel BR) matching Flash format
-  var SEP = ';';
-  var headers = ['CNPJ','NOME COMPLETO','CPF','VT DIA','COMBUSTÍVEL','UNIDADE','CARGO','VT E AC','ESCALA','VR DIA','PREMIACAO NO CARTAO (R$)','MOBILIDADE (R$)','REFEICAO E ALIMENTACAO (R$)','ALIMENTACAO (R$)','REFEICAO (R$)','PREMIACAO VIRTUAL (R$)'];
-  var rows = [headers.join(SEP)];
-
-  // Get selected benefit filters
-  var chkVT    = (document.getElementById('flash-chk-vt')||{checked:true}).checked;
-  var chkVR    = (document.getElementById('flash-chk-vr')||{checked:true}).checked;
-  var chkVA    = (document.getElementById('flash-chk-va')||{checked:true}).checked;
-  var chkComb  = (document.getElementById('flash-chk-comb')||{checked:true}).checked;
-  var chkAssim = (document.getElementById('flash-chk-assim')||{checked:true}).checked;
-  var chkBonus = (document.getElementById('flash-chk-bonus')||{checked:true}).checked;
+  // Which benefits selected
+  var chkVT    = (document.getElementById('flash-chk-vt')    ||{checked:true}).checked;
+  var chkVR    = (document.getElementById('flash-chk-vr')    ||{checked:true}).checked;
+  var chkVA    = (document.getElementById('flash-chk-va')    ||{checked:true}).checked;
+  var chkComb  = (document.getElementById('flash-chk-comb')  ||{checked:true}).checked;
+  var chkAssim = (document.getElementById('flash-chk-assim') ||{checked:true}).checked;
+  var chkBonus = (document.getElementById('flash-chk-bonus') ||{checked:true}).checked;
   var chkOdonto= (document.getElementById('flash-chk-odonto')||{checked:false}).checked;
-  var chkMed   = (document.getElementById('flash-chk-med')||{checked:false}).checked;
+  var chkMed   = (document.getElementById('flash-chk-med')   ||{checked:false}).checked;
+
+  // Period label for filename
+  var deFmt  = de.split('-').reverse().join('/');
+  var ateFmt = ate.split('-').reverse().join('/');
+  var periodoLabel = deFmt + ' a ' + ateFmt;
+
+  // Build dynamic headers — always: CNPJ, NOME, DEPARTAMENTO, CPF, CARGO, UNIDADE, DIAS
+  var headers = ['CNPJ','NOME COMPLETO','DEPARTAMENTO','CPF','CARGO','UNIDADE','PERÍODO','DIAS'];
+  if (chkVT)    { headers.push('VT DIA (R$)'); headers.push('TOTAL VT (R$)'); }
+  if (chkVR)    { headers.push('VR DIA (R$)'); headers.push('TOTAL VR (R$)'); }
+  if (chkVA)    headers.push('VA (R$)');
+  if (chkComb)  headers.push('COMBUSTÍVEL (R$)');
+  if (chkAssim) headers.push('ASSIDUIDADE (R$)');
+  if (chkBonus) headers.push('BÔNUS (R$)');
+  if (chkOdonto)headers.push('ODONTO (R$)');
+  if (chkMed)   headers.push('ASSIST. MÉDICA (R$)');
+
+  var SEP = ';';
+  var rows = [headers.join(SEP)];
+  var fmtN = function(v){ return v > 0 ? v.toFixed(2).replace('.',',') : ''; };
 
   funcs.forEach(function(f) {
-    var escSel = document.getElementById('escala-'+f.id);
-    var escala = escSel ? escSel.value : '55';
-    var dias   = getDiasEscala(escala);
-    var escLabel = escala === '56' ? 'SEG A SAB' : 'SEG A SEX';
+    var dep     = deps.find(function(d){ return d.id===f.dep; });
+    var depNome = dep ? dep.nome : '';
+    var dias    = parseInt((document.getElementById('dias-'+f.id)||{}).value)||0;
 
-    var vtDia  = chkVT    ? (parseFloat((document.getElementById('vt-'+f.id)||{}).value)||0) : 0;
-    var vrDia  = chkVR    ? (parseFloat((document.getElementById('vr-'+f.id)||{}).value)||0) : 0;
-    var va     = chkVA    ? (parseFloat((document.getElementById('va-'+f.id)||{}).value)||0) : 0;
-    var comb   = chkComb  ? (parseFloat((document.getElementById('comb-'+f.id)||{}).value)||0) : 0;
-    var assim  = chkAssim ? (parseFloat((document.getElementById('assim-'+f.id)||{}).value)||0) : 0;
-    var bonus  = chkBonus ? (parseFloat((document.getElementById('bonus-'+f.id)||{}).value)||0) : 0;
-    var odonto = chkOdonto? (parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0) : 0;
-    var med    = chkMed   ? (parseFloat((document.getElementById('med-'+f.id)||{}).value)||0) : 0;
-    var trienio= parseFloat((document.getElementById('tri-'+f.id)||{}).value)||0;
+    var vtDia   = chkVT    ? (parseFloat((document.getElementById('vt-'+f.id)    ||{}).value)||0) : 0;
+    var vrDia   = chkVR    ? (parseFloat((document.getElementById('vr-'+f.id)    ||{}).value)||0) : 0;
+    var va      = chkVA    ? (parseFloat((document.getElementById('va-'+f.id)    ||{}).value)||0) : 0;
+    var comb    = chkComb  ? (parseFloat((document.getElementById('comb-'+f.id)  ||{}).value)||0) : 0;
+    var assim   = chkAssim ? (parseFloat((document.getElementById('assim-'+f.id) ||{}).value)||0) : 0;
+    var bonus   = chkBonus ? (parseFloat((document.getElementById('bonus-'+f.id) ||{}).value)||0) : 0;
+    var odonto  = chkOdonto? (parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0) : 0;
+    var med     = chkMed   ? (parseFloat((document.getElementById('med-'+f.id)   ||{}).value)||0) : 0;
 
-    // VT E AC: soma VT diário * dias + combustível mensal
-    var vtEAc = vtDia > 0 ? (vtDia * dias + comb).toFixed(2) : (comb > 0 ? comb.toFixed(2) : '');
-
-    var fmtN = function(v){ return v > 0 ? v.toFixed(2).replace('.',',') : ''; };
+    var vtTotal = vtDia * dias;
+    var vrTotal = vrDia * dias;
 
     var row = [
-      cnpj || (emp?emp.cnpj||'':''),  // CNPJ
-      f.n,                              // NOME COMPLETO
-      f.cpf,                            // CPF
-      fmtN(vtDia),                      // VT DIA
-      fmtN(comb),                       // COMBUSTÍVEL
-      unid,                             // UNIDADE
-      f.car||'',                        // CARGO
-      vtEAc,                            // VT E AC
-      escLabel,                         // ESCALA
-      fmtN(vrDia),                      // VR DIA
-      fmtN(bonus),                      // PREMIACAO NO CARTAO
-      fmtN(odonto),                     // MOBILIDADE
-      fmtN(med),                        // REFEICAO E ALIMENTACAO
-      fmtN(va),                         // ALIMENTACAO
-      '',                               // REFEICAO
-      fmtN(assim)                       // PREMIACAO VIRTUAL
+      cnpj || (emp?emp.cnpj||'':''),
+      f.n,
+      depNome,
+      f.cpf||'',
+      f.car||'',
+      unid,
+      periodoLabel,
+      dias > 0 ? String(dias) : ''
     ];
+    if (chkVT)    { row.push(fmtN(vtDia)); row.push(fmtN(vtTotal)); }
+    if (chkVR)    { row.push(fmtN(vrDia)); row.push(fmtN(vrTotal)); }
+    if (chkVA)    row.push(fmtN(va));
+    if (chkComb)  row.push(fmtN(comb));
+    if (chkAssim) row.push(fmtN(assim));
+    if (chkBonus) row.push(fmtN(bonus));
+    if (chkOdonto)row.push(fmtN(odonto));
+    if (chkMed)   row.push(fmtN(med));
+
     rows.push(row.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(SEP));
   });
 
-  var csv = '\uFEFF' + rows.join('\r\n');
-  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var csv    = '\uFEFF' + rows.join('\r\n');
+  var blob   = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var nomeArq = 'Flash_Beneficios_' + de + '_a_' + ate + '.csv';
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  var nomeArq = 'Flash_Beneficios_' + (comp||td()).replace('-','_') + '.csv';
   a.download = nomeArq;
   a.click();
 
-  // Salvar no Drive
   if (driveReady) {
     try {
       var file = new File([blob], nomeArq, {type:'text/csv'});
@@ -7877,7 +7874,7 @@ async function gerarFlashXLSX() {
       toast('Arquivo Flash salvo no Drive ☁️');
     } catch(e) { console.warn(e); }
   }
-  toast('Arquivo gerado! Abra no Excel e importe no Flash Benefícios.');
+  toast('Arquivo gerado! ' + funcs.length + ' funcionário(s) — período ' + periodoLabel);
 }
 
 // ============================================================
