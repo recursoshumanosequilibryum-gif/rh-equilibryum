@@ -695,11 +695,11 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <div class="tab" onclick="expTab('e90',this)">90 Dias</div>
     </div>
     <div id="e45"><div class="table-wrap"><table>
-      <thead><tr><th>Funcionário</th><th>Admissão</th><th>Vencimento</th><th>Restam</th><th>Status</th><th>Avaliação</th></tr></thead>
+      <thead><tr><th>Funcionário</th><th>Admissão</th><th>Vencimento</th><th>Prazo</th><th>Status</th><th>Envio ao Gestor</th></tr></thead>
       <tbody id="tb-e45"></tbody>
     </table></div></div>
     <div id="e90" style="display:none"><div class="table-wrap"><table>
-      <thead><tr><th>Funcionário</th><th>Admissão</th><th>Vencimento</th><th>Restam</th><th>Status</th><th>Avaliação</th></tr></thead>
+      <thead><tr><th>Funcionário</th><th>Admissão</th><th>Vencimento</th><th>Prazo</th><th>Status</th><th>Envio ao Gestor</th></tr></thead>
       <tbody id="tb-e90"></tbody>
     </table></div></div>
   </div>
@@ -4999,7 +4999,7 @@ function rdExpTab(funcs, dias, tbId) {
   });
 
   if (!eligivel.length) {
-    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário neste período.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhum funcionário neste período.</td></tr>';
     return;
   }
 
@@ -5023,12 +5023,22 @@ function rdExpTab(funcs, dias, tbId) {
         ? '<strong style="color:var(--accent);">HOJE</strong>'
         : '<strong style="color:var(--green-dark);">' + d + ' dias restantes</strong>';
 
+    // Verificar status de envio ao gestor
+    var envKey  = 'exp_enviado_' + f.id + '_' + dias;
+    var enviado = localStorage.getItem(envKey) === '1';
+    var eKey    = 'exp_env_' + f.id + '_' + dias;
+    var enviado = localStorage.getItem(eKey) === '1';
+    var btnEnvio = enviado
+      ? '<button data-fid="' + f.id + '" data-dias="' + dias + '" onclick="toggleEnvioGestor(this)" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;white-space:nowrap;">&#9989; Enviado ao Gestor</button>'
+      : '<button data-fid="' + f.id + '" data-dias="' + dias + '" onclick="toggleEnvioGestor(this)" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;white-space:nowrap;">&#128228; Enviar ao Gestor</button>';
+
     return '<tr>' +
       '<td><strong>' + f.n + '</strong></td>' +
       '<td>' + fd(f.adm) + '</td>' +
       '<td><strong>' + fd(venc) + '</strong></td>' +
       '<td>' + diasInfo + '</td>' +
       '<td><span class="badge ' + bc + '">' + st + '</span></td>' +
+      '<td>' + btnEnvio + '</td>' +
     '</tr>';
   }).join('');
 }
@@ -8919,7 +8929,8 @@ function syncOverlayAction() {
   } else {
     // No client ID — open setup wizard
     closeSyncOverlay();
-    document.getElementById('setup-wizard').style.display = 'flex';
+    window._docAssinante = 'monica'; // default signatory
+  document.getElementById('setup-wizard').style.display = 'flex';
   }
 }
 
@@ -8971,51 +8982,58 @@ function clearSavedSignature() {
 }
 
 function gerarAssinaturaEmpresa(empresa) {
-  var isEq = !empresa || empresa === 'equilibryum';
+  var isEq    = !empresa || empresa === 'equilibryum';
   var nomeEmp = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
                      : 'Longhi Serviços de Terceirização a Empresas Ltda';
   var cnpjEmp = isEq ? 'CNPJ: 05.441.897/0001-02' : 'CNPJ: 54.188.772/0001-28';
   var endEmp  = isEq ? 'Rua Dr Costa Júnior, 365 – Perdizes – São Paulo – SP'
                      : 'Rua Dr Germaine Burchard, 324 – Perdizes – São Paulo – SP';
 
-  var sigHtml = _savedSignature
-    ? '<img src="' + _savedSignature + '" style="max-height:60px;max-width:200px;display:block;margin:0 auto 4px;">'
-    : '<div style="height:50px;border-bottom:1.5px solid #333;width:200px;margin:0 auto 4px;"></div>';
+  // Determinar assinante selecionado no menu Gerar Documentos
+  var assinante = window._docAssinante || 'monica';
 
-  var logoHtml = LOGO_EMP_B64
-    ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:200px;object-fit:contain;display:block;margin-bottom:8px;">'
-    : '';
+  var sigHtml = _savedSignature
+    ? '<img src="' + _savedSignature + '" style="max-height:60px;max-width:200px;display:block;margin:0 auto;">'
+    : '<div style="height:60px;"></div>';
+
+  // Primeiro assinante: o selecionado (Mônica ou Bruno)
+  var nomeAss1, cargoAss1, sig1Html;
+  if (assinante === 'bruno') {
+    nomeAss1  = 'BRUNO NATHAN DA SILVA';
+    cargoAss1 = 'Analista de RH';
+    sig1Html  = sigHtml; // assinatura digital vai para Bruno
+  } else {
+    nomeAss1  = 'MÔNICA SANTOS';
+    cargoAss1 = 'Coordenadora de Recursos Humanos';
+    sig1Html  = sigHtml;
+  }
+
+  // Segundo assinante: sempre o outro (linha em branco)
+  var nomeAss2  = (assinante === 'bruno') ? 'MÔNICA SANTOS'          : 'BRUNO NATHAN DA SILVA';
+  var cargoAss2 = (assinante === 'bruno') ? 'Coordenadora de Recursos Humanos' : 'Analista de RH';
 
   return [
-    '<div style="page-break-inside:avoid;margin-top:30px;border-top:2px solid #1f5c44;padding-top:14px;">',
-      '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;">',
-        '<div style="flex:1;">',
-          logoHtml,
-          '<div style="font-size:9pt;color:#333;font-weight:600;">' + nomeEmp + '</div>',
-          '<div style="font-size:8.5pt;color:#666;">' + cnpjEmp + '</div>',
-          '<div style="font-size:8.5pt;color:#666;">' + endEmp + '</div>',
-        '</div>',
-        '<div style="display:flex;gap:24px;justify-content:flex-end;flex-wrap:wrap;">',
-          '<div style="text-align:center;min-width:190px;">',
-            sigHtml,
-            '<div style="border-top:1.5px solid #333;padding-top:5px;">',
-              '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>',
-              '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>',
-              '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
-            '</div>',
-          '</div>',
-          '<div style="text-align:center;min-width:190px;">',
-            '<div style="height:60px;"></div>',
-            '<div style="border-top:1.5px solid #333;padding-top:5px;">',
-              '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">BRUNO NATHAN DA SILVA</div>',
-              '<div style="font-size:9pt;color:#555;">Responsável pela Empresa</div>',
-              '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
-            '</div>',
+    '<div style="page-break-inside:avoid;margin-top:24px;border-top:2px solid #1f5c44;padding-top:16px;font-family:Calibri,Arial,sans-serif;">',
+      '<div style="font-size:8.5pt;color:#777;margin-bottom:12px;text-align:center;">' + nomeEmp + ' &nbsp;|&nbsp; ' + cnpjEmp + ' &nbsp;|&nbsp; ' + endEmp + '</div>',
+      '<div style="display:flex;justify-content:flex-end;gap:24px;flex-wrap:wrap;">',
+        // Assinante 1 (com assinatura digital)
+        '<div style="text-align:center;min-width:190px;">',
+          sig1Html,
+          '<div style="border-top:1.5px solid #333;padding-top:5px;">',
+            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">' + nomeAss1 + '</div>',
+            '<div style="font-size:9pt;color:#555;">' + cargoAss1 + '</div>',
+            '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
           '</div>',
         '</div>',
-      '</div>',
-      '<div style="text-align:center;font-size:8pt;color:#aaa;margin-top:12px;border-top:1px solid #eee;padding-top:6px;">',
-        'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum',
+        // Assinante 2 (linha em branco)
+        '<div style="text-align:center;min-width:190px;">',
+          '<div style="height:60px;"></div>',
+          '<div style="border-top:1.5px solid #333;padding-top:5px;">',
+            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">' + nomeAss2 + '</div>',
+            '<div style="font-size:9pt;color:#555;">' + cargoAss2 + '</div>',
+            '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+          '</div>',
+        '</div>',
       '</div>',
     '</div>'
   ].join('');
@@ -9975,7 +9993,7 @@ function gerarFormExp() {
         '<div style="height:36px;"></div>' +
         '<div class="sig-line">' +
           '<strong>BRUNO NATHAN DA SILVA</strong><br>' +
-          '<small style="color:#666;">Responsável pela Empresa</small>' +
+          '<small style="color:#666;">Analista de RH</small>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -10346,7 +10364,7 @@ function _gerarListaPresencaObj(t) {
     '</table>' +
     '<div class="footer">' +
       '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">MONICA SANTOS</div><div style="font-size:9.5pt;color:#555;">Coordenadora de RH</div></div>' +
-      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">BRUNO NATHAN DA SILVA</div><div style="font-size:9.5pt;color:#555;">Responsavel pela Empresa</div></div>' +
+      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">BRUNO NATHAN DA SILVA</div><div style="font-size:9.5pt;color:#555;">Analista de RH</div></div>' +
       '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">' + (t.inst||'INSTRUTOR') + '</div><div style="font-size:9.5pt;color:#555;">Instrutor / Responsavel</div></div>' +
     '</div>' +
     '<div style="margin-top:20px;text-align:center;font-size:8.5pt;color:#aaa;">Sistema RH Equilibryum - ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
@@ -10756,6 +10774,24 @@ function gerarListaPresencaAtual() {
   var partsIds = partsEl ? Array.from(partsEl.selectedOptions).map(function(o){ return o.value; }) : [];
   var tmpObj = { titulo:titulo, data:data, hora:hora, local:local, ch:ch, inst:inst, parts:partsIds, desc:(document.getElementById('tr-desc')||{}).value||'' };
   _gerarListaPresencaObj(tmpObj);
+}
+function docSetAssinante(valor) {
+  window._docAssinante = valor;
+  var label = document.getElementById('doc-sig-label');
+  if (label) label.textContent = valor === 'bruno' ? 'Bruno Nathan da Silva' : 'Mônica Santos';
+  // Clear saved signature when switching signatories
+  // (user should re-sign for the new signatory)
+}
+function toggleEnvioGestor(el) {
+  var fid  = el.dataset.fid;
+  var dias = parseInt(el.dataset.dias);
+  var key  = 'exp_env_' + fid + '_' + dias;
+  var curr = localStorage.getItem(key) === '1';
+  localStorage.setItem(key, curr ? '0' : '1');
+  var allFuncs = DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; });
+  if (dias === 45) rdExpTab(allFuncs, 45, 'tb-e45');
+  else             rdExpTab(allFuncs, 90, 'tb-e90');
+  toast(curr ? 'Pendente.' : '✅ Marcado como enviado ao gestor!');
 }
 </script>
 </body>
