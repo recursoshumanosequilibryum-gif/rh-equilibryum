@@ -2879,9 +2879,22 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px;">
       Assine abaixo como <strong>representante da empresa</strong>. A assinatura será inserida no rodapé do documento como assinatura institucional.
     </p>
-    <div style="background:var(--green-pale);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:12px;font-size:12.5px;color:var(--green-dark);display:flex;align-items:center;gap:8px;">
-      <span>🏢</span>
-      <span><strong>Assinante:</strong> MÔNICA SANTOS — Coordenadora de Recursos Humanos</span>
+    <!-- Seletor de assinante -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--green-dark);margin-bottom:8px;">🏢 Quem está assinando pela empresa?</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label id="sig-opt-monica" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;background:var(--green-pale);border-radius:20px;border:2px solid var(--green);font-size:13px;transition:all .2s;">
+          <input type="radio" name="sig-assinante" value="monica" checked onchange="sigSelecionarAssinante('monica')" style="accent-color:var(--green);">
+          <span><strong>Mônica Santos</strong><br><span style="font-size:11px;color:var(--gray-500);">Coordenadora de RH</span></span>
+        </label>
+        <label id="sig-opt-bruno" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;background:#fff;border-radius:20px;border:2px solid var(--gray-200);font-size:13px;transition:all .2s;">
+          <input type="radio" name="sig-assinante" value="bruno" onchange="sigSelecionarAssinante('bruno')" style="accent-color:var(--green);">
+          <span><strong>Bruno Nathan da Silva</strong><br><span style="font-size:11px;color:var(--gray-500);">Analista de RH</span></span>
+        </label>
+      </div>
+      <div id="sig-assinante-info" style="margin-top:8px;font-size:12px;color:var(--green-dark);padding:6px 12px;background:var(--green-pale);border-radius:6px;">
+        ✅ Assinando como: <strong id="sig-assinante-nome">Mônica Santos — Coordenadora de RH</strong>
+      </div>
     </div>
     <canvas id="sig-canvas-doc" width="580" height="120"></canvas>
     <div class="sig-toolbar">
@@ -6480,7 +6493,11 @@ function abrirEImprimirDoc(docHTML, filename, f) {
   _sigFilename = filename;
   _sigFuncObj  = f;
 
-  // Se já tem assinatura salva, usa direto sem abrir modal
+  // Recarregar assinatura do assinante atual antes de verificar
+  var currentAssKey = window._sigAssinante === 'bruno' ? 'eq_bruno_assinatura' : 'eq_monica_assinatura';
+  try { var storedSig = localStorage.getItem(currentAssKey); if (storedSig) _savedSignature = storedSig; } catch(e){}
+
+  // Se já tem assinatura salva para o assinante atual, usa direto sem abrir modal
   if (_savedSignature) {
     _abrirDocFinal(docHTML, filename, f, _savedSignature);
     return;
@@ -8961,15 +8978,20 @@ var _savedSignature = null;
 
 function loadSavedSignature() {
   try {
+    // Load Monica's signature by default (most common)
     var s = localStorage.getItem('eq_monica_assinatura');
     if (s) _savedSignature = s;
+    // Store which one is loaded
+    window._sigAssinanteAtual = s ? 'monica' : null;
   } catch(e) {}
 }
 
 function saveSignatureToStorage(dataURL) {
   try {
-    localStorage.setItem('eq_monica_assinatura', dataURL);
+    var key = window._sigAssinante === 'bruno' ? 'eq_bruno_assinatura' : 'eq_monica_assinatura';
+    localStorage.setItem(key, dataURL);
     _savedSignature = dataURL;
+    window._sigAssinanteAtual = window._sigAssinante || 'monica';
   } catch(e) { console.warn('Could not save signature:', e); }
 }
 
@@ -10792,6 +10814,41 @@ function toggleEnvioGestor(el) {
   if (dias === 45) rdExpTab(allFuncs, 45, 'tb-e45');
   else             rdExpTab(allFuncs, 90, 'tb-e90');
   toast(curr ? 'Pendente.' : '✅ Marcado como enviado ao gestor!');
+}
+function sigSelecionarAssinante(valor) {
+  window._sigAssinante = valor;
+
+  // Update visual state
+  var optMon = document.getElementById('sig-opt-monica');
+  var optBru = document.getElementById('sig-opt-bruno');
+  var infoEl = document.getElementById('sig-assinante-info');
+  var nomeEl = document.getElementById('sig-assinante-nome');
+
+  if (optMon) optMon.style.cssText = optMon.style.cssText.replace(/border:[^;]+/, valor === 'monica' ? 'border:2px solid var(--green)' : 'border:2px solid var(--gray-200)');
+  if (optBru) optBru.style.cssText = optBru.style.cssText.replace(/border:[^;]+/, valor === 'bruno'  ? 'border:2px solid var(--green)' : 'border:2px solid var(--gray-200)');
+
+  var nome = valor === 'bruno' ? 'Bruno Nathan da Silva — Analista de RH' : 'Mônica Santos — Coordenadora de RH';
+  if (nomeEl) nomeEl.textContent = nome;
+
+  // Load saved signature for this signatory
+  var key = valor === 'bruno' ? 'eq_bruno_assinatura' : 'eq_monica_assinatura';
+  try {
+    var stored = localStorage.getItem(key);
+    _savedSignature = stored || null;
+  } catch(e) {}
+
+  // Show if this signatory already has a saved signature
+  if (infoEl) {
+    infoEl.innerHTML = _savedSignature
+      ? '✅ Assinando como: <strong>' + nome + '</strong> &nbsp;<span style="color:var(--green-dark);">(assinatura salva ✍️)</span>'
+      : '✍️ Assinando como: <strong>' + nome + '</strong> &nbsp;<span style="color:#e65100;">(sem assinatura salva — assine abaixo)</span>';
+  }
+
+  // Clear canvas for new signature
+  sigClear();
+
+  // Update _docAssinante too for document generation
+  window._docAssinante = valor;
 }
 </script>
 </body>
