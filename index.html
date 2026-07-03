@@ -391,39 +391,58 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
 <!-- SETUP WIZARD -->
 <div id="setup-wizard">
-  <div class="wizard-box">
-    <h2>🔧 Configuração Inicial</h2>
-    <p>Esta configuração é feita <strong>uma única vez</strong> pelo administrador. Todos os usuários salvarão dados no mesmo Google Drive.</p>
-    <div class="wizard-step">
-      <div class="wizard-step-num">1</div>
-      <div class="wizard-step-text">Cole o <strong>Client ID</strong> do Google Cloud abaixo:</div>
+  <div class="wizard-box" style="max-width:480px;">
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:36px;margin-bottom:6px;">🏥</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green-dark);">Sistema RH Equilibryum</div>
+      <div style="font-size:13px;color:var(--gray-500);margin-top:2px;">Gestão de Recursos Humanos</div>
     </div>
-    <input type="text" id="client-id-inp" placeholder="Ex.: 123456789-abc.apps.googleusercontent.com">
-    <div class="wizard-step">
-      <div class="wizard-step-num">2</div>
-      <div class="wizard-step-text">Clique em <strong>"Conectar ao Google Drive"</strong> e faça login com a <strong>conta da Equilibryum</strong> (a conta que ficará como dona dos dados).</div>
+
+    <!-- Status de conexão -->
+    <div id="wiz-status" style="margin-bottom:16px;padding:12px 14px;border-radius:var(--radius-sm);background:#fff3e0;border:1.5px solid #ffb74d;font-size:13px;color:#e65100;text-align:center;">
+      ☁️ Para salvar seus dados com segurança, conecte ao Google Drive da Equilibryum.
     </div>
-    <div class="wizard-step">
-      <div class="wizard-step-num">3</div>
-      <div class="wizard-step-text">Após conectar, o sistema abrirá normalmente e gerará um <strong>Token de Acesso</strong> para compartilhar com outros usuários.</div>
+
+    <!-- Painel principal: reconectar (CID já salvo) -->
+    <div id="wiz-panel-reconectar" style="display:none;">
+      <div style="font-size:13px;color:var(--gray-600);margin-bottom:14px;text-align:center;line-height:1.6;">
+        Clique no botão abaixo para entrar com a conta Google da Equilibryum.<br>
+        <span style="font-size:12px;color:var(--gray-400);">Você usará o sistema o dia todo sem precisar reconectar.</span>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="skipDrive()">Continuar sem Drive</button>
+        <button class="btn btn-primary" style="font-size:14px;padding:10px 24px;" onclick="connectDrive()">
+          ☁️ Conectar ao Google Drive
+        </button>
+      </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px;">
-      <button class="btn btn-outline btn-sm" onclick="skipDrive()">Usar sem Drive (dados locais)</button>
-      <button class="btn btn-primary" onclick="connectDrive()">
-        ☁️ Conectar ao Google Drive
-      </button>
+
+    <!-- Painel primeira vez: precisa do Client ID -->
+    <div id="wiz-panel-setup">
+      <div style="font-size:13px;color:var(--gray-600);margin-bottom:12px;line-height:1.6;">
+        Primeira configuração — informe o Client ID do Google Cloud para vincular ao Drive da Equilibryum. Isso é feito <strong>uma única vez</strong>.
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px;">Client ID do Google Cloud</label>
+        <input type="text" id="client-id-inp" placeholder="Ex.: 123456789-abc.apps.googleusercontent.com" style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px;">
+        <button class="btn btn-outline btn-sm" onclick="skipDrive()">Continuar sem Drive</button>
+        <button class="btn btn-primary" onclick="connectDrive()">☁️ Conectar ao Google Drive</button>
+      </div>
     </div>
+
+    <!-- Box de token após conectar -->
     <div id="wizard-token-box" style="display:none;margin-top:16px;padding:14px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);">
-      <div style="font-weight:700;color:var(--green-dark);margin-bottom:8px;">✅ Conectado! Token de acesso compartilhado:</div>
-      <textarea id="wizard-token-txt" rows="3" style="width:100%;font-size:11px;border:1px solid var(--gray-200);border-radius:6px;padding:8px;font-family:monospace;" readonly></textarea>
+      <div style="font-weight:700;color:var(--green-dark);margin-bottom:8px;">✅ Conectado! Token de acesso:</div>
+      <textarea id="wizard-token-txt" rows="2" style="width:100%;font-size:11px;border:1px solid var(--gray-200);border-radius:6px;padding:8px;font-family:monospace;" readonly></textarea>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" onclick="copyToken()">📋 Copiar Token</button>
-        <button class="btn btn-whatsapp btn-sm" onclick="shareTokenWha()">📲 Enviar pelo WhatsApp</button>
-        <button class="btn btn-outline btn-sm" onclick="closeWizard()">Entrar no Sistema</button>
+        <button class="btn btn-whatsapp btn-sm" onclick="shareTokenWha()">📲 WhatsApp</button>
+        <button class="btn btn-outline btn-sm" onclick="closeWizard()">Entrar no Sistema →</button>
       </div>
-      <p style="font-size:11px;color:var(--gray-600);margin-top:8px;">⚠️ Envie este token para os outros usuários. Eles colarão na tela de token de acesso que aparecerá para eles.</p>
     </div>
-    <p style="margin-top:12px;font-size:11.5px;color:var(--gray-400);">💡 Todos os usuários salvarão dados no mesmo Drive — sem precisar de login individual.</p>
   </div>
 </div>
 
@@ -1426,19 +1445,51 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
     <!-- ABA: MATERIAIS -->
     <div id="trein-aba-materiais" style="display:none;">
-      <div style="padding:16px 0 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="mat-busca" placeholder="🔍 Buscar material..." oninput="rdMateriais()" style="flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-        <label class="btn btn-primary" style="cursor:pointer;margin:0;">
-          &#128228; Upload Material
-          <input type="file" id="mat-file-inp" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.xlsx,.xls,.mp4,.png,.jpg" style="display:none;" onchange="uploadMaterial(this)">
-        </label>
+      <!-- Formulário de cadastro de material -->
+      <div style="background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);padding:16px;margin:12px 0;">
+        <div style="font-weight:700;color:var(--green-dark);margin-bottom:12px;font-size:13px;">&#128228; Novo Material de Treinamento</div>
+        <div style="display:grid;grid-template-columns:1fr 160px 130px;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--gray-600);font-weight:600;display:block;margin-bottom:4px;">Nome do Material *</label>
+            <input id="mat-nome" type="text" placeholder="Ex.: Treinamento de Agendamento" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--gray-600);font-weight:600;display:block;margin-bottom:4px;">Data de Importação</label>
+            <input id="mat-data" type="date" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--gray-600);font-weight:600;display:block;margin-bottom:4px;">Revisão</label>
+            <select id="mat-rev" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+              <option value="">Sem revisão</option>
+              <option value="Rev.0">Rev.0 (original)</option>
+              <option value="Rev.1">Rev.1</option>
+              <option value="Rev.2">Rev.2</option>
+              <option value="Rev.3">Rev.3</option>
+              <option value="Rev.4">Rev.4</option>
+              <option value="Rev.5">Rev.5</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label class="btn btn-primary" style="cursor:pointer;margin:0;">
+            &#128228; Selecionar Arquivo
+            <input type="file" id="mat-file-inp" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.xlsx,.xls,.mp4,.png,.jpg" style="display:none;" onchange="uploadMaterial(this)">
+          </label>
+          <span id="mat-file-preview" style="font-size:12px;color:var(--gray-500);"></span>
+        </div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:6px;">Formatos: PDF, PowerPoint, Word, Excel, MP4, imagens</div>
       </div>
-      <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">Formatos aceitos: PDF, PowerPoint, Word, Excel, MP4, imagens</div>
-      <div id="mat-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+
+      <!-- Busca -->
+      <div style="margin-bottom:12px;">
+        <input type="text" id="mat-busca" placeholder="🔍 Buscar material por nome ou revisão..." oninput="rdMateriais()" style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+
+      <div id="mat-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;"></div>
       <div id="mat-empty" style="text-align:center;padding:40px;color:var(--gray-400);">
         <div style="font-size:40px;margin-bottom:10px;">&#128196;</div>
         <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhum material cadastrado</div>
-        <div style="font-size:12px;">Faça upload de PDFs, apresentações e outros arquivos</div>
+        <div style="font-size:12px;">Preencha o formulário acima e selecione o arquivo</div>
       </div>
     </div>
 
@@ -10346,15 +10397,35 @@ function treinMenuAba(abaId, tabsId, btn) {
 }
 
 function uploadMaterial(inp) {
-  var files = Array.from(inp.files); if (!files.length) return;
-  var list  = DB.g('mat-trein');
+  var files   = Array.from(inp.files); if (!files.length) return;
+  var nomeCampo = (document.getElementById('mat-nome')||{}).value.trim();
+  var dataCampo = (document.getElementById('mat-data')||{}).value || td();
+  var revCampo  = (document.getElementById('mat-rev') ||{}).value || '';
+
+  if (!nomeCampo) {
+    alert('Preencha o nome do material antes de selecionar o arquivo.');
+    inp.value = '';
+    return;
+  }
+
+  var list = DB.g('mat-trein');
   var EXT_ICON = {pdf:'📄',ppt:'📊',pptx:'📊',doc:'📝',docx:'📝',xlsx:'📈',xls:'📈',mp4:'🎬',jpg:'🖼️',jpeg:'🖼️',png:'🖼️'};
 
   files.forEach(function(file) {
     var ext  = file.name.split('.').pop().toLowerCase();
     var icon = EXT_ICON[ext] || '📎';
-    var rec  = { id: uid(), nome: file.name, ext: ext, icon: icon, tamanho: file.size, data: td(), driveId: '', driveUrl: '' };
-    // Upload to Drive if connected
+    var rec  = {
+      id:      uid(),
+      nome:    nomeCampo,
+      arquivo: file.name,
+      ext:     ext,
+      icon:    icon,
+      data:    dataCampo,
+      rev:     revCampo,
+      tamanho: file.size,
+      driveId: '',
+      driveUrl: ''
+    };
     if (driveReady) {
       uploadFileToDrive(file, 'Treinamentos/Materiais').then(function(up){
         rec.driveId  = up.id;
@@ -10365,28 +10436,39 @@ function uploadMaterial(inp) {
         DB.s('mat-trein', l2);
         driveSync('mat-trein');
         rdMateriais();
-        toast('☁️ ' + file.name + ' salvo no Drive!');
-      }).catch(function(){ toast('⚠️ ' + file.name + ' salvo localmente.'); });
+        toast('☁️ ' + rec.nome + ' salvo no Drive!');
+      }).catch(function(){ toast('⚠️ ' + rec.nome + ' salvo localmente.'); });
     }
     list.push(rec);
   });
 
   DB.s('mat-trein', list);
   inp.value = '';
+
+  // Clear form
+  var nEl = document.getElementById('mat-nome'); if (nEl) nEl.value = '';
+  var dEl = document.getElementById('mat-data'); if (dEl) dEl.value = '';
+  var rEl = document.getElementById('mat-rev');  if (rEl) rEl.value = '';
+  var pEl = document.getElementById('mat-file-preview'); if (pEl) pEl.textContent = '';
+
   rdMateriais();
-  toast('✅ ' + files.length + ' arquivo(s) adicionado(s)!');
+  toast('✅ ' + files.length + ' material(is) adicionado(s)!');
 }
 
 function rdMateriais() {
   var busca = (document.getElementById('mat-busca')||{value:''}).value.toLowerCase();
   var list  = DB.g('mat-trein').filter(function(m){
-    return !busca || m.nome.toLowerCase().includes(busca);
+    return !busca || (m.nome||'').toLowerCase().includes(busca) || (m.rev||'').toLowerCase().includes(busca);
   });
   list.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
 
   var container = document.getElementById('mat-lista');
   var empty     = document.getElementById('mat-empty');
   if (!container) return;
+
+  // Set today as default date in form
+  var dEl = document.getElementById('mat-data');
+  if (dEl && !dEl.value) dEl.value = td();
 
   if (!list.length) {
     container.style.display = 'none';
@@ -10397,16 +10479,20 @@ function rdMateriais() {
   container.style.display = 'grid';
 
   container.innerHTML = list.map(function(m){
-    var abre = m.driveUrl
-      ? 'onclick="window.open(\''+m.driveUrl+'\',\'_blank\')" style="cursor:pointer;"'
+    var dataFmt = m.data ? m.data.split('-').reverse().join('/') : '—';
+    var revBadge = m.rev
+      ? '<span style="background:#e3f2fd;color:#1565c0;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;">' + m.rev + '</span>'
       : '';
-    return '<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;min-height:unset;" ' + abre + '>' +
-      '<div style="font-size:28px;text-align:center;">' + m.icon + '</div>' +
-      '<div style="font-weight:700;font-size:12px;color:var(--gray-800);word-break:break-word;text-align:center;">' + m.nome + '</div>' +
-      '<div style="font-size:11px;color:var(--gray-400);text-align:center;">' + fd(m.data) + (m.driveUrl ? ' ☁️' : ' 💾') + '</div>' +
+    var abreAttr = m.driveUrl ? 'onclick="window.open(\'' + m.driveUrl + '\',\'_blank\')" style="cursor:pointer;"' : '';
+    return '<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;min-height:unset;" ' + abreAttr + '>' +
+      '<div style="text-align:center;font-size:26px;">' + (m.icon||'📎') + '</div>' +
+      '<div style="font-weight:700;font-size:12px;color:var(--gray-800);word-break:break-word;text-align:center;line-height:1.3;">' + (m.nome||m.arquivo||'Material') + '</div>' +
+      (m.arquivo && m.arquivo !== m.nome ? '<div style="font-size:10px;color:var(--gray-400);text-align:center;word-break:break-all;">' + m.arquivo + '</div>' : '') +
+      '<div style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap;">' + revBadge + '</div>' +
+      '<div style="font-size:10px;color:var(--gray-400);text-align:center;">📅 ' + dataFmt + (m.driveUrl ? ' ☁️' : ' 💾') + '</div>' +
       '<div style="display:flex;gap:4px;justify-content:center;margin-top:4px;">' +
-        (m.driveUrl ? '<a href="'+m.driveUrl+'" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px;">&#128065; Abrir</a>' : '') +
-        '<button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();delMaterial(\''+m.id+'\')">🗑️</button>' +
+        (m.driveUrl ? '<a href="' + m.driveUrl + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px;" onclick="event.stopPropagation()">&#128065; Abrir</a>' : '') +
+        '<button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();delMaterial(\'' + m.id + '\')">🗑️</button>' +
       '</div>' +
     '</div>';
   }).join('');
