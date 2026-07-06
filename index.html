@@ -1,4 +1,15 @@
-<!DOCTYPE html>
+<!DOC
+    <div id="ft4" style="display:none;">
+      <div style="padding:12px 0 8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span style="font-weight:700;color:var(--green-dark);font-size:13px;">&#128085; Registro de Entrega de Uniformes</span>
+        <button class="btn btn-primary btn-sm" onclick="adicionarItemUniforme()">+ Adicionar Item</button>
+      </div>
+      <div id="uniforme-lista-modal" style="margin-bottom:8px;"></div>
+      <div id="uniforme-vazio" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">
+        Nenhum uniforme registrado. Clique em "+ Adicionar Item" para registrar.
+      </div>
+    </div>
+TYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -538,6 +549,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
   <div class="nav-item" onclick="nav('politicas',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Políticas & Normas
+  </div>
+  <div class="nav-item" onclick="nav('pendencias',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pendências
   </div>
   <div class="sidebar-footer">v2.0 · Equilibryum RH · Drive ☁️</div>
 </aside>
@@ -1508,6 +1522,86 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   </div>
 </div>
 
+<!-- PENDÊNCIAS -->
+<div class="section-page" id="sec-pendencias">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">&#9888;&#65039; Pendências</span>
+      <button class="btn btn-primary" onclick="openModal('modal-pendencia')">+ Nova Pendência</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+      <input type="text" id="pend-busca" placeholder="&#128269; Buscar por funcionário ou item..." oninput="rdPendencias()" style="flex:1;min-width:200px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      <select id="pend-filtro-status" onchange="rdPendencias()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Todos os status</option>
+        <option value="Pendente">&#128308; Pendente</option>
+        <option value="Em andamento">&#129000; Em andamento</option>
+        <option value="Concluído">&#128994; Concluído</option>
+      </select>
+    </div>
+    <div id="pend-lista"></div>
+    <div id="pend-vazio" style="text-align:center;padding:48px;color:var(--gray-400);">
+      <div style="font-size:40px;margin-bottom:10px;">&#9989;</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhuma pendência cadastrada</div>
+      <div style="font-size:12px;">Clique em "+ Nova Pendência" para adicionar</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PENDÊNCIA -->
+<div class="modal-bg" id="modal-pendencia">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-title" id="pend-modal-title">&#9888;&#65039; Nova Pendência</span>
+      <button class="modal-close" onclick="closeModal('modal-pendencia')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Funcionário *</label>
+        <select id="pend-func" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;"><option value="">Selecione o funcionário</option></select>
+      </div>
+      <div class="form-group form-full">
+        <label>Itens Pendentes</label>
+        <div id="pend-itens-lista" style="margin-bottom:8px;display:flex;flex-direction:column;gap:4px;"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="pend-novo-item" placeholder="Digitar novo item..." style="flex:1;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarItemPend();}">
+          <button class="btn btn-outline btn-sm" onclick="adicionarItemPend()">+ Adicionar</button>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">
+          <span style="font-size:11px;color:var(--gray-500);align-self:center;">Atalhos:</span>
+          <button onclick="adicionarItemPendNome('Colher assinatura')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#9997;&#65039; Colher assinatura</button>
+          <button onclick="adicionarItemPendNome('Entregar crachá')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#129338; Crachá</button>
+          <button onclick="adicionarItemPendNome('Entregar cartão de benefício')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#128179; Cartão benefício</button>
+          <button onclick="adicionarItemPendNome('Entregar uniforme')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#128085; Uniforme</button>
+          <button onclick="adicionarItemPendNome('Exame admissional')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#129514; Exame admissional</button>
+          <button onclick="adicionarItemPendNome('Documentação pendente')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#128203; Documentação</button>
+          <button onclick="adicionarItemPendNome('Treinamento obrigatório')" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;">&#128203; Treinamento</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Prazo</label>
+        <input type="date" id="pend-prazo" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="pend-status" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="Pendente">&#128308; Pendente</option>
+          <option value="Em andamento">&#129000; Em andamento</option>
+          <option value="Concluído">&#128994; Concluído</option>
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label>Observação</label>
+        <textarea id="pend-obs" rows="3" placeholder="Anotações, detalhes, responsável..." style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-pendencia')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savPendencia()">&#128190; Salvar</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- MODAL CRONOGRAMA -->
 <div class="modal-bg" id="modal-cronograma">
   <div class="modal" style="max-width:600px;">
@@ -1598,7 +1692,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       </div>
       <button class="modal-close" onclick="closeModal('modal-func')">&#215;</button>
     </div>
-    <div class="tabs"><div class="tab active" onclick="fTab('ft1',this)">Dados Pessoais</div><div class="tab" onclick="fTab('ft2',this)">Contrato</div><div class="tab" onclick="fTab('ft3',this)">Documentos</div></div>
+    <div class="tabs"><div class="tab active" onclick="fTab('ft1',this)">Dados Pessoais</div><div class="tab" onclick="fTab('ft2',this)">Contrato</div><div class="tab" onclick="fTab('ft3',this)">Documentos</div><div class="tab" onclick="fTab('ft4',this)">&#128085; Uniformes</div></div>
     <div id="ft1">
       <!-- Foto do funcionário -->
       <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:16px;padding:14px;background:var(--gray-50);border-radius:var(--radius-sm);">
@@ -3419,13 +3513,14 @@ function exTab(id, btn) {
 // ============================================================
 function nav(id, el) {
   if (id === 'pj') { rdPJ(); }
+  if (id === 'pendencias') { rdPendencias(); }
   document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
   var secEl = document.getElementById('sec-' + id);
   if (!secEl) { console.warn('Section not found: sec-' + id); return; }
   secEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
   const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
   if (rd[id]) rd[id]();
@@ -10891,6 +10986,270 @@ function toggleEnvioGestor(el) {
   toast(curr ? 'Pendente.' : '✅ Marcado como enviado ao gestor!');
 }
 
+// ============================================================
+// UNIFORME TAB in employee modal
+// ============================================================
+var _uniformeEditFid = null;
+
+function adicionarItemUniforme() {
+  var fid = _uniformeEditFid; if (!fid) return;
+  var uni = DB.g('uniformes'); // array of {fid, id, item, qtde, data, obs}
+  uni.push({ fid: fid, id: uid(), item: '', qtde: 1, data: td(), obs: '' });
+  DB.s('uniformes', uni);
+  renderUniformeModal(fid);
+}
+
+function renderUniformeModal(fid) {
+  var container = document.getElementById('uniforme-lista-modal');
+  var vazio = document.getElementById('uniforme-vazio');
+  var itens = DB.g('uniformes').filter(function(u){ return u.fid === fid; });
+  if (!container) return;
+  if (!itens.length) {
+    container.innerHTML = '';
+    if (vazio) vazio.style.display = 'block';
+    return;
+  }
+  if (vazio) vazio.style.display = 'none';
+  container.innerHTML = itens.map(function(u) {
+    return '<div style="display:grid;grid-template-columns:1fr 70px 120px auto;gap:8px;align-items:center;margin-bottom:6px;padding:8px;background:#f8faf9;border-radius:6px;border:1px solid var(--gray-200);">' +
+      '<input type="text" value="' + (u.item||'') + '" placeholder="Ex.: Camiseta polo tam. M" ' +
+        'onchange="updateUniforme(\'' + u.id + '\',\'item\',this.value)" ' +
+        'style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;">' +
+      '<input type="number" value="' + (u.qtde||1) + '" min="1" placeholder="Qtde" ' +
+        'onchange="updateUniforme(\'' + u.id + '\',\'qtde\',this.value)" ' +
+        'style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;">' +
+      '<input type="date" value="' + (u.data||td()) + '" ' +
+        'onchange="updateUniforme(\'' + u.id + '\',\'data\',this.value)" ' +
+        'style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;">' +
+      '<button onclick="removerUniforme(\'' + u.id + '\',\'' + fid + '\')" style="background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:4px;padding:4px 8px;cursor:pointer;">&#128465;</button>' +
+    '</div>';
+  }).join('') +
+  '<div style="margin-top:4px;font-size:11px;color:var(--gray-400);">As alterações são salvas automaticamente ao editar cada campo.</div>';
+}
+
+function updateUniforme(uid2, campo, valor) {
+  var uni = DB.g('uniformes');
+  var idx = uni.findIndex(function(u){ return u.id === uid2; });
+  if (idx >= 0) { uni[idx][campo] = valor; DB.s('uniformes', uni); }
+}
+
+function removerUniforme(uid2, fid) {
+  DB.s('uniformes', DB.g('uniformes').filter(function(u){ return u.id !== uid2; }));
+  renderUniformeModal(fid);
+}
+
+// ============================================================
+// PENDÊNCIAS
+// ============================================================
+var editingPendId = null;
+var _pendItens = [];
+
+function openNovaPendencia() {
+  editingPendId = null;
+  _pendItens = [];
+  document.getElementById('pend-modal-title').textContent = '⚠️ Nova Pendência';
+  // Fill func select
+  var sel = document.getElementById('pend-func');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione o funcionário</option>';
+    DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+      .sort(function(a,b){ return a.n.localeCompare(b.n); })
+      .forEach(function(f){
+        var o = document.createElement('option');
+        o.value = f.id; o.textContent = f.n;
+        sel.appendChild(o);
+      });
+  }
+  renderPendItens();
+  document.getElementById('pend-obs').value = '';
+  document.getElementById('pend-prazo').value = '';
+  document.getElementById('pend-status').value = 'Pendente';
+  openModal('modal-pendencia');
+}
+
+function adicionarItemPend() {
+  var inp = document.getElementById('pend-novo-item');
+  var val = inp ? inp.value.trim() : '';
+  if (!val) return;
+  _pendItens.push({ id: uid(), texto: val, feito: false });
+  if (inp) inp.value = '';
+  renderPendItens();
+}
+
+function adicionarItemPendNome(nome) {
+  _pendItens.push({ id: uid(), texto: nome, feito: false });
+  renderPendItens();
+}
+
+function renderPendItens() {
+  var container = document.getElementById('pend-itens-lista');
+  if (!container) return;
+  if (!_pendItens.length) { container.innerHTML = ''; return; }
+  container.innerHTML = _pendItens.map(function(it, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:' + (it.feito?'#e8f5e9':'#fff3e0') + ';border-radius:6px;border:1px solid ' + (it.feito?'#a5d6a7':'#ffcc80') + ';">' +
+      '<input type="checkbox" ' + (it.feito?'checked':'') + ' onchange="_pendItens[' + i + '].feito=this.checked;renderPendItens();" style="cursor:pointer;">' +
+      '<span style="flex:1;font-size:12.5px;' + (it.feito?'text-decoration:line-through;color:#888;':'') + '">' + it.texto + '</span>' +
+      '<button onclick="_pendItens.splice(' + i + ',1);renderPendItens();" style="background:none;border:none;cursor:pointer;color:#c62828;font-size:14px;">&#215;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function savPendencia() {
+  var fid = (document.getElementById('pend-func')||{}).value || '';
+  if (!fid) { alert('Selecione um funcionário.'); return; }
+  if (!_pendItens.length) { alert('Adicione pelo menos um item.'); return; }
+  var list = DB.g('pendencias');
+  var rec = {
+    id:     editingPendId || uid(),
+    fid:    fid,
+    itens:  _pendItens.slice(),
+    prazo:  (document.getElementById('pend-prazo')||{}).value || '',
+    status: (document.getElementById('pend-status')||{}).value || 'Pendente',
+    obs:    (document.getElementById('pend-obs')||{}).value || '',
+    criado: editingPendId ? (list.find(function(x){ return x.id===editingPendId; })||{}).criado || td() : td()
+  };
+  if (editingPendId) {
+    var idx = list.findIndex(function(x){ return x.id === editingPendId; });
+    if (idx >= 0) list[idx] = rec; else list.push(rec);
+    editingPendId = null;
+  } else { list.push(rec); }
+  DB.s('pendencias', list);
+  if (driveReady) driveSync('pendencias');
+  closeModal('modal-pendencia');
+  rdPendencias();
+  toast('Pendência salva! ' + (driveReady?'☁️':''));
+}
+
+function rdPendencias() {
+  // Fill func select if modal open
+  var sel = document.getElementById('pend-func');
+  if (sel && sel.options.length <= 1) {
+    DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+      .sort(function(a,b){ return a.n.localeCompare(b.n); })
+      .forEach(function(f){
+        var o = document.createElement('option');
+        o.value = f.id; o.textContent = f.n;
+        sel.appendChild(o);
+      });
+  }
+
+  var busca  = ((document.getElementById('pend-busca')||{}).value||'').toLowerCase();
+  var stFilt = (document.getElementById('pend-filtro-status')||{}).value || '';
+  var funcs  = DB.g('funcionarios');
+  var list   = DB.g('pendencias').filter(function(p){
+    if (stFilt && p.status !== stFilt) return false;
+    if (busca) {
+      var f = funcs.find(function(x){ return x.id === p.fid; });
+      var nome = f ? f.n.toLowerCase() : '';
+      var itensStr = (p.itens||[]).map(function(it){ return it.texto; }).join(' ').toLowerCase();
+      if (!nome.includes(busca) && !itensStr.includes(busca)) return false;
+    }
+    return true;
+  }).sort(function(a,b){ return (a.prazo||'9').localeCompare(b.prazo||'9'); });
+
+  var container = document.getElementById('pend-lista');
+  var vazio     = document.getElementById('pend-vazio');
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = '';
+    if (vazio) vazio.style.display = 'block';
+    return;
+  }
+  if (vazio) vazio.style.display = 'none';
+
+  var ST_COLOR = { 'Pendente':'#c62828', 'Em andamento':'#e65100', 'Concluído':'#2e7d32' };
+  var ST_BG    = { 'Pendente':'#ffebee', 'Em andamento':'#fff3e0', 'Concluído':'#e8f5e9' };
+
+  container.innerHTML = list.map(function(p) {
+    var f = funcs.find(function(x){ return x.id === p.fid; });
+    var nome = f ? f.n : '?';
+    var stColor = ST_COLOR[p.status] || '#555';
+    var stBg    = ST_BG[p.status]    || '#f5f5f5';
+    var prazoFmt = p.prazo ? p.prazo.split('-').reverse().join('/') : '—';
+    var hoje = td();
+    var prazoAlerta = p.prazo && p.prazo < hoje && p.status !== 'Concluído'
+      ? '<span style="color:#c62828;font-weight:700;font-size:11px;margin-left:6px;">⚠️ Atrasado</span>' : '';
+
+    var itensList = (p.itens||[]).map(function(it) {
+      return '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 0;">' +
+        '<span style="width:14px;text-align:center;">' + (it.feito ? '&#9989;' : '&#11036;') + '</span>' +
+        '<span style="' + (it.feito?'text-decoration:line-through;color:#888;':'') + '">' + it.texto + '</span>' +
+      '</div>';
+    }).join('');
+
+    var concluidos = (p.itens||[]).filter(function(it){ return it.feito; }).length;
+    var total      = (p.itens||[]).length;
+    var progresso  = total > 0 ? Math.round(concluidos/total*100) : 0;
+
+    return '<div style="background:#fff;border-radius:12px;border:1.5px solid #e8ecef;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);">' +
+      '<div style="background:linear-gradient(90deg,' + stBg + ' 0%,#fff 60%);padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:700;color:#1a3a2a;margin-bottom:2px;">&#128100; ' + nome + '</div>' +
+          '<div style="font-size:12px;color:#555;">Prazo: <strong>' + prazoFmt + '</strong>' + prazoAlerta + ' &nbsp;|&nbsp; ' + concluidos + '/' + total + ' itens</div>' +
+          '<div style="margin-top:5px;background:#e0e0e0;border-radius:10px;height:6px;width:160px;">' +
+            '<div style="background:' + stColor + ';border-radius:10px;height:6px;width:' + progresso + '%;transition:width .3s;"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">' +
+          '<span style="background:' + stBg + ';color:' + stColor + ';border:1px solid ' + stColor + '30;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;">' + p.status + '</span>' +
+          '<div style="display:flex;gap:4px;">' +
+            '<select data-pid="' + p.id + '" onchange="updatePendStatus(this.dataset.pid,this.value)" style="font-size:11px;padding:3px 6px;border:1px solid var(--gray-200);border-radius:5px;cursor:pointer;">' +
+              '<option value="Pendente"' + (p.status==='Pendente'?' selected':'') + '>Pendente</option>' +
+              '<option value="Em andamento"' + (p.status==='Em andamento'?' selected':'') + '>Em andamento</option>' +
+              '<option value="Concluído"' + (p.status==='Concluído'?' selected':'') + '>Concluído</option>' +
+            '</select>' +
+            '<button data-pid="' + p.id + '" onclick="editPendencia(this.dataset.pid)" style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;padding:4px 7px;cursor:pointer;">&#9999;&#65039;</button>' +
+            '<button data-pid="' + p.id + '" onclick="delPendencia(this.dataset.pid)" style="background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:6px;padding:4px 7px;cursor:pointer;">&#128465;</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="padding:10px 16px;">' +
+        '<div>' + itensList + '</div>' +
+        (p.obs ? '<div style="margin-top:8px;padding:7px 10px;background:#f9f9f9;border-left:3px solid var(--green);border-radius:4px;font-size:12px;color:#555;">' + p.obs + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function updatePendStatus(pid, status) {
+  var list = DB.g('pendencias');
+  var idx = list.findIndex(function(x){ return x.id === pid; });
+  if (idx >= 0) { list[idx].status = status; DB.s('pendencias', list); if (driveReady) driveSync('pendencias'); rdPendencias(); }
+}
+
+function editPendencia(pid) {
+  var p = DB.g('pendencias').find(function(x){ return x.id === pid; });
+  if (!p) return;
+  editingPendId = pid;
+  _pendItens = JSON.parse(JSON.stringify(p.itens||[]));
+  // Fill select
+  var sel = document.getElementById('pend-func');
+  if (sel) {
+    sel.innerHTML = '<option value="">Selecione</option>';
+    DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+      .sort(function(a,b){ return a.n.localeCompare(b.n); })
+      .forEach(function(f){
+        var o = document.createElement('option');
+        o.value = f.id; o.textContent = f.n;
+        if (f.id === p.fid) o.selected = true;
+        sel.appendChild(o);
+      });
+  }
+  document.getElementById('pend-prazo').value  = p.prazo  || '';
+  document.getElementById('pend-status').value = p.status || 'Pendente';
+  document.getElementById('pend-obs').value    = p.obs    || '';
+  document.getElementById('pend-modal-title').textContent = '✏️ Editar Pendência';
+  renderPendItens();
+  openModal('modal-pendencia');
+}
+
+function delPendencia(pid) {
+  if (!confirm('Excluir esta pendência?')) return;
+  DB.s('pendencias', DB.g('pendencias').filter(function(x){ return x.id !== pid; }));
+  if (driveReady) driveSync('pendencias');
+  rdPendencias();
+}
 </script>
 </body>
 </html>
