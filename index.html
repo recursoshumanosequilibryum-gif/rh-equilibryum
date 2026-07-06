@@ -2766,8 +2766,8 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     </div>
 
     <div id="sync-done" style="display:none;">
-      <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;" onclick="closeSyncOverlay()">
-        ✅ Entrar no Sistema
+      <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;" onclick="closeSyncOverlay();init();">
+        ✅ Entrar no Sistema →
       </button>
     </div>
 
@@ -11354,6 +11354,20 @@ function initSidebarState() {
     }
   } catch(e) {}
 }
+
+// ============================================================
+// STARTUP — runs when page loads
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  // Restore CLIENT_ID from storage
+  var saved = localStorage.getItem('eq_client_id');
+  if (saved) CLIENT_ID = saved;
+
+  initSidebarState();
+
+  // Always show sync overlay first
+  showSyncOverlay();
+});
 </script>
 </body>
 </html>
