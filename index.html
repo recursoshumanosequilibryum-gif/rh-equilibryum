@@ -3194,60 +3194,87 @@ function initGIS(adminMode, promptMode) {
           _reconnectInProgress = false;
           if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
             if (promptMode === '') {
-              // Falha silenciosa — mostrar botão sem perturbar o usuário
               showReconnectButton();
             } else {
-              toast('Login cancelado ou falhou. Tente novamente.', 'warn');
-              updDriveStatus(false);
-              init();
+              // Restore connect button
+              var syncOv = document.getElementById('sync-overlay');
+              if (syncOv && syncOv.classList.contains('open')) {
+                document.getElementById('sync-spinner').style.display = 'none';
+                document.getElementById('sync-msg').textContent = 'Login cancelado. Tente novamente.';
+                document.getElementById('sync-actions').style.display = 'flex';
+              } else {
+                toast('Login cancelado ou falhou. Tente novamente.', 'warn');
+                updDriveStatus(false);
+                init();
+              }
             }
             return;
           }
-          // Sucesso — salva token e tempo de emissão
+
+          // ── Sucesso: salva token ──
           driveToken = tokenResponse.access_token;
           driveReady = true;
           localStorage.setItem('eq_drive_token', driveToken);
           localStorage.setItem('eq_client_id', CLIENT_ID);
           localStorage.setItem('eq_drive_token_time', Date.now().toString());
           hideReconnectButton();
-          try {
-            var resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { 'Authorization': 'Bearer ' + driveToken }
-            });
-            var user = await resp.json();
-            driveUserEmail = user.email || '';
-            var nome = user.given_name || user.name || driveUserEmail;
-            var av = document.getElementById('user-avatar');
-            if (av) { av.title = driveUserEmail; av.textContent = (nome[0]||'A').toUpperCase(); }
-            updDriveStatus(true, driveUserEmail);
-          } catch(e) { updDriveStatus(true, ''); }
-          await ensureRHFolder();
-          await syncFromDrive();
+          updDriveStatus(true, '');
+
           if (adminMode) {
+            // Admin mode: show token box
+            try {
+              var resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { 'Authorization': 'Bearer ' + driveToken } });
+              var user = await resp.json();
+              driveUserEmail = user.email || '';
+              updDriveStatus(true, driveUserEmail);
+            } catch(e) {}
+            await ensureRHFolder();
+            await syncFromDrive();
             var wizTxt = document.getElementById('wizard-token-txt');
             var wizBox = document.getElementById('wizard-token-box');
             if (wizTxt) wizTxt.value = driveToken;
             if (wizBox) wizBox.style.display = 'block';
           } else {
+            // ── Entrar IMEDIATAMENTE no sistema ──
             var syncOv = document.getElementById('sync-overlay');
             var wiz    = document.getElementById('setup-wizard');
             if (wiz) wiz.style.display = 'none';
-            if (syncOv && syncOv.classList.contains('open')) {
-              syncOv.classList.remove('open');
-            }
+            if (syncOv) syncOv.classList.remove('open');
             init();
+
+            // Sync e userinfo em background, sem bloquear
+            setTimeout(async function() {
+              try {
+                var resp2 = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { 'Authorization': 'Bearer ' + driveToken } });
+                var user2 = await resp2.json();
+                driveUserEmail = user2.email || '';
+                var av = document.getElementById('user-avatar');
+                if (av) { av.title = driveUserEmail; av.textContent = (user2.given_name||user2.name||driveUserEmail||'A')[0].toUpperCase(); }
+                updDriveStatus(true, driveUserEmail);
+              } catch(e) {}
+              try { await ensureRHFolder(); } catch(e) {}
+              try {
+                await syncFromDrive();
+                toast('☁️ Drive sincronizado!');
+              } catch(e) {}
+            }, 500);
           }
-          if (promptMode === '') toast('Drive renovado automaticamente ☁️');
         },
         error_callback: (err) => {
           _reconnectInProgress = false;
           if (promptMode === '') {
-            // Falha silenciosa — só mostra botão
             showReconnectButton();
           } else {
-            toast('Erro no login Google. Tente novamente.', 'warn');
-            updDriveStatus(false);
-            init();
+            var syncOv2 = document.getElementById('sync-overlay');
+            if (syncOv2 && syncOv2.classList.contains('open')) {
+              document.getElementById('sync-spinner').style.display = 'none';
+              document.getElementById('sync-msg').textContent = 'Erro no login. Tente novamente.';
+              document.getElementById('sync-actions').style.display = 'flex';
+            } else {
+              toast('Erro no login Google. Tente novamente.', 'warn');
+              updDriveStatus(false);
+              init();
+            }
           }
         }
       });
@@ -3255,9 +3282,16 @@ function initGIS(adminMode, promptMode) {
     } catch(e) {
       _reconnectInProgress = false;
       if (promptMode !== '') {
-        toast('Erro ao inicializar Drive. Usando dados locais.', 'warn');
-        updDriveStatus(false);
-        init();
+        var syncOv3 = document.getElementById('sync-overlay');
+        if (syncOv3 && syncOv3.classList.contains('open')) {
+          document.getElementById('sync-spinner').style.display = 'none';
+          document.getElementById('sync-msg').textContent = 'Erro ao carregar Drive. Tente novamente.';
+          document.getElementById('sync-actions').style.display = 'flex';
+        } else {
+          toast('Erro ao inicializar Drive. Usando dados locais.', 'warn');
+          updDriveStatus(false);
+          init();
+        }
       }
     }
   });
