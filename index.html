@@ -3694,6 +3694,9 @@ function editFunc(id) {
   var modalAv = document.getElementById('func-modal-avatar');
   if (modalAv) { modalAv.innerHTML = '👤'; }
   checkDriveDocs();
+  // Set uniforme tab context
+  _uniformeEditFid = f.id;
+  renderUniformeModal(f.id);
   document.getElementById('modal-func').classList.add('open');
 }
 
