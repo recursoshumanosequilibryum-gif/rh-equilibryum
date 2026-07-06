@@ -6657,15 +6657,29 @@ function sigConfirmar() { sigConfirmarAmbos(); }
 async function _abrirDocFinal(docHTML, filename, f, sigMonica, sigBruno) {
   var finalHTML = docHTML;
 
-  // Detect company from document
+  // Detect company
   var docEmpresa = 'equilibryum';
   if (finalHTML.indexOf('LONGHI') > 0 || finalHTML.indexOf('Longhi') > 0) docEmpresa = 'longhi';
 
-  // Build company signature block with BOTH signatures
+  // Build signature block — compact, same-page guaranteed
   var compSig = gerarAssinaturaEmpresa(docEmpresa, sigMonica, sigBruno);
+
+  // Inject compact CSS to prevent signature from overflowing to next page
+  var compactCss = '<style>' +
+    'body{font-size:10pt!important;}' +
+    '.assinaturas,.sig-rodape{page-break-inside:avoid!important;break-inside:avoid!important;}' +
+    '@media print{' +
+      '@page{size:A4;margin:1.2cm;}' +
+      'body{font-size:9.5pt!important;}' +
+    '}' +
+  '</style>';
+
+  // Inject CSS before </head>
+  finalHTML = finalHTML.replace('</head>', compactCss + '</head>');
+
+  // Place signature block before </body>
   finalHTML = finalHTML.replace('</body>', compSig + '</body>');
 
-  // Open in new tab and print
   var win = window.open('', '_blank', 'width=960,height=750');
   if (win) {
     win.document.write(finalHTML);
@@ -6673,16 +6687,15 @@ async function _abrirDocFinal(docHTML, filename, f, sigMonica, sigBruno) {
     setTimeout(function(){ win.focus(); win.print(); }, 700);
   }
 
-  // Save to Drive
   if (driveReady && f) {
     try {
       var blob = new Blob([finalHTML], { type: 'text/html;charset=utf-8' });
       var file = new File([blob], filename + '_assinado.html', { type: 'text/html' });
       await uploadFileToDrive(file, f.n);
-      toast('Documento salvo no Drive na pasta de ' + f.n + ' ☁️');
+      toast('Documento salvo no Drive ☁️');
     } catch(e) { console.warn('Drive save error:', e); }
   }
-  toast('Documento gerado com assinaturas ✍️! Use Ctrl+P para PDF.');
+  toast('Documento gerado! ✍️ Use Ctrl+P para PDF.');
 }
 
 // ── RECIBO EPI ─────────────────────────────────────────────
@@ -6738,51 +6751,89 @@ function gerarReciboEPI() {
 function gerarReciboUniforme() {
   var f = getDocFunc(); if (!f) return;
   var hoje = td();
-  var linhas = (document.getElementById('doc-uni-lista').value||'').trim().split('\n').filter(Boolean);
+  var linhas = (document.getElementById('doc-uni-lista') ? document.getElementById('doc-uni-lista').value : '').trim().split('\n').filter(Boolean);
+  var emp    = (document.getElementById('doc-empresa')   ? document.getElementById('doc-empresa').value   : 'equilibryum');
+  var logoHtml = LOGO_EMP_B64 ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:60px;max-width:220px;object-fit:contain;">' : '';
 
-  var rows = linhas.map(function(l){
-    var p = l.split(',').map(function(x){ return x.trim(); });
+  function linhaTabela(p) {
     return '<tr>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;text-align:center;">'+(p[0]||'')+'</td>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[1]||'')+'</td>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;">'+(p[2]||fd(hoje))+'</td>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
-      '<td style="border:1px solid #ccc;padding:6px 8px;"></td>' +
+      '<td style="border:1px solid #aaa;padding:5px 6px;text-align:center;width:60px;">' + (p[0]||'') + '</td>' +
+      '<td style="border:1px solid #aaa;padding:5px 6px;">' + (p[1]||'') + '</td>' +
+      '<td style="border:1px solid #aaa;padding:5px 6px;width:90px;">' + (p[2]||fd(hoje)) + '</td>' +
+      '<td style="border:1px solid #aaa;padding:5px 6px;width:130px;"></td>' +
     '</tr>';
-  });
-  while (rows.length < 15) rows.push('<tr><td style="border:1px solid #ccc;padding:10px;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td><td style="border:1px solid #ccc;"></td></tr>');
+  }
 
-  var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de Uniforme – '+f.n+'</title>' +
-    '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:10.5pt;color:#000;line-height:1.6;}' +
-    'h1{color:#1f5c44;font-size:15pt;text-align:center;margin:0 0 4px;}' +
-    '.header-meta{font-size:9pt;color:#444;margin-bottom:14px;border-bottom:1px solid #ccc;padding-bottom:8px;}' +
-    'table{width:100%;border-collapse:collapse;margin:14px 0;}' +
-    'th{background:#1f5c44;color:#fff;padding:7px 8px;font-size:9.5pt;text-align:center;border:1px solid #1f5c44;}' +
-    '@media print{@page{margin:1.5cm;}}</style></head><body>' +
-    '<h1>Recibo – Entrega de Uniformes</h1>' +
-    '<div class="header-meta">Código: <strong>RH 33 form</strong> &nbsp;|&nbsp; Criação: 11/10/2016 &nbsp;|&nbsp; Revisão: 14/10/2016 &nbsp;|&nbsp; Status: <strong>Vigente</strong><br>' +
-    'Setor: <strong>Departamento Pessoal</strong> &nbsp;|&nbsp; Autor: Nayane Renata &nbsp;|&nbsp; Revisor: Ricardo Hodish &nbsp;|&nbsp; Versão: 01</div>' +
-    '<p>Recebi, para ser usado no desempenho de minhas funções, o uniforme abaixo relacionado. Estou ciente de que sou responsável pela conservação do mesmo e o indenizarei em caso de perda ou danos, em valor integral. Estou ciente, também, de que o não uso deste implicará em insubordinação, sujeito a sanções disciplinares previstas na legislação vigente. Minha assinatura ou rubrica, aposta no local indicado nesta ficha, representa a minha concordância.</p>' +
-    '<p><strong>FUNCIONÁRIO:</strong> '+f.n+'<br><strong>FUNÇÃO:</strong> '+(f.car||'')+'</p>' +
+  var rowsRec = linhas.map(function(l){ return linhaTabela(l.split(',').map(function(x){ return x.trim(); })); });
+  while (rowsRec.length < 10) rowsRec.push('<tr><td style="border:1px solid #aaa;padding:8px;"></td><td style="border:1px solid #aaa;"></td><td style="border:1px solid #aaa;"></td><td style="border:1px solid #aaa;"></td></tr>');
+
+  var mesAno = new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Recibo de Uniforme – ' + f.n + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:1.4cm 1.8cm;}' +
+      'h1{font-size:13pt;text-align:center;font-weight:700;margin:8px 0 4px;color:#1a3a2a;}' +
+      'h2{font-size:11pt;text-align:center;font-weight:700;margin-bottom:10px;color:#1a3a2a;}' +
+      '.header-meta{font-size:8pt;color:#555;border-top:1px solid #aaa;border-bottom:1px solid #aaa;padding:4px 0;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;}' +
+      '.campo{margin-bottom:7px;font-size:10pt;}' +
+      'table{width:100%;border-collapse:collapse;margin:8px 0;}' +
+      'thead th{background:#1a5c3a;color:#fff;padding:6px 7px;font-size:9pt;border:1px solid #1a5c3a;text-align:center;}' +
+      '.section-title{font-size:10.5pt;font-weight:700;margin:10px 0 4px;color:#1a3a2a;}' +
+      'ul{margin:4px 0 4px 18px;font-size:9.5pt;line-height:1.6;}' +
+      '.assinaturas{display:flex;gap:30px;justify-content:space-between;margin-top:16px;flex-wrap:wrap;}' +
+      '.ass-box{flex:1;min-width:160px;text-align:center;}' +
+      '.ass-linha{border-top:1.5px solid #333;margin-top:50px;padding-top:5px;font-size:9pt;}' +
+      '@media print{body{padding:1cm 1.4cm;}@page{size:A4;margin:0;}' +
+        '.assinaturas{page-break-inside:avoid;}}' +
+    '</style></head><body>' +
+
+    // Cabeçalho
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">' +
+      '<div>' + logoHtml + '</div>' +
+      '<div style="text-align:right;font-size:9pt;color:#555;">Código: RH 33 form &nbsp;|&nbsp; Revisão: 14/10/2016 &nbsp;|&nbsp; Status: <strong>Vigente</strong></div>' +
+    '</div>' +
+
+    '<h1>EQUILIBRYUM — REABILITAÇÃO E CONSULTORIA EM SAÚDE LTDA.</h1>' +
+    '<h2>TERMO DE RECEBIMENTO, RESPONSABILIDADE E DEVOLUÇÃO DE UNIFORME</h2>' +
+
+    '<div class="campo"><strong>Nome do(a) Colaborador(a):</strong> ' + f.n + '</div>' +
+    '<div class="campo"><strong>Cargo:</strong> ' + (f.car||'') + '</div>' +
+
+    // Seção 1
+    '<div class="section-title">1. Recebimento</div>' +
+    '<p style="font-size:9.5pt;margin-bottom:8px;text-align:justify;">Declaro que recebi da <strong>EQUILIBRYUM — REABILITAÇÃO E CONSULTORIA EM SAÚDE LTDA.</strong>, sem qualquer custo inicial, os uniformes abaixo relacionados, destinados exclusivamente ao desempenho de minhas atividades profissionais. Comprometo-me a utilizá-los apenas durante a jornada de trabalho, preservando sua boa conservação, higiene e apresentação, conforme as normas internas da empresa.</p>' +
+
+    '<div class="section-title">Relação dos Uniformes Entregues</div>' +
     '<table>' +
-    '<thead>' +
-    '<tr>' +
-    '<th rowspan="2" style="width:60px;">QTDE</th>' +
-    '<th rowspan="2">ESPECIFICAÇÃO</th>' +
-    '<th colspan="2">RECEBIMENTO/ASSINATURA</th>' +
-    '<th rowspan="2" style="width:80px;">DATA</th>' +
-    '<th colspan="2">DEVOLUÇÃO/ASSINATURA</th>' +
-    '</tr>' +
-    '<tr><th>Funcionário</th><th>Empresa</th><th>Funcionário</th><th>Empresa/Data</th></tr>' +
-    '</thead>' +
-    '<tbody>'+rows.join('')+'</tbody>' +
+      '<thead><tr><th style="width:60px;">Qtde</th><th>Especificação</th><th style="width:90px;">Data</th><th style="width:130px;">Assinatura</th></tr></thead>' +
+      '<tbody>' + rowsRec.join('') + '</tbody>' +
     '</table>' +
-    '<p style="margin-top:20px;">Ciente: ___________________________________________________________________</p>' +
+
+    // Seção 2
+    '<div class="section-title">2. Responsabilidades do Colaborador</div>' +
+    '<ul>' +
+      '<li>O uniforme é de propriedade da empresa e seu fornecimento destina-se exclusivamente ao exercício das atividades profissionais.</li>' +
+      '<li>Sou responsável pela guarda, conservação, limpeza e correta utilização do uniforme durante todo o período do contrato de trabalho.</li>' +
+      '<li>Não devo realizar alterações, descaracterizações ou personalizações no uniforme sem autorização expressa da empresa.</li>' +
+      '<li>O uso do uniforme é obrigatório durante a jornada de trabalho, sempre que determinado pela empresa.</li>' +
+      '<li>A recusa injustificada em utilizar o uniforme poderá caracterizar descumprimento das normas internas, sujeitando-me às medidas disciplinares previstas na legislação trabalhista.</li>' +
+      '<li>Em caso de perda, extravio, destruição ou dano decorrente de mau uso, poderei ser responsabilizado(a) pelo ressarcimento do valor correspondente, observadas as disposições da CLT e normas coletivas aplicáveis.</li>' +
+    '</ul>' +
+
+    // Seção 3
+    '<div class="section-title">3. Devolução no Desligamento</div>' +
+    '<p style="font-size:9.5pt;text-align:justify;">Em caso de rescisão do contrato, comprometo-me a devolver todos os uniformes no ato da homologação/rescisão ou no prazo máximo de <strong>03 (três) dias corridos</strong>. A não devolução, sem justificativa aceita, poderá autorizar o desconto do valor correspondente na rescisão contratual, conforme art. 462 da CLT.</p>' +
+
+    // Declaração final
+    '<p style="font-size:9.5pt;margin-top:10px;text-align:justify;">Declaro que li integralmente este termo, compreendi todas as suas disposições e concordo com as responsabilidades assumidas, comprometendo-me a cumprir as normas estabelecidas pela empresa.</p>' +
+
+    '<p style="font-size:9.5pt;margin-top:8px;">São Paulo, _____ de ' + mesAno + '.</p>' +
+
+    // Assinaturas
     '</body></html>';
 
-  abrirEImprimirDoc(doc, 'Recibo_Uniforme_'+f.n.replace(/\s+/g,'_'), f);
+  abrirEImprimirDoc(doc, 'Recibo_Uniforme_' + f.n.replace(/\s+/g,'_'), f);
 }
 
 // ── RECIBO EQUIPAMENTOS E FERRAMENTAS ─────────────────────
@@ -9028,46 +9079,50 @@ function gerarAssinaturaEmpresa(empresa, sigMonicaParam, sigBrunoParam) {
   var nomeEmp = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
                      : 'Longhi Serviços de Terceirização a Empresas Ltda';
   var cnpjEmp = isEq ? 'CNPJ: 05.441.897/0001-02' : 'CNPJ: 54.188.772/0001-28';
-  var endEmp  = isEq ? 'Rua Dr Costa Júnior, 365 – Perdizes – São Paulo – SP'
-                     : 'Rua Dr Germaine Burchard, 324 – Perdizes – São Paulo – SP';
+  var endEmp  = isEq ? 'Rua Dr Costa Júnior, 365 – Perdizes – SP'
+                     : 'Rua Dr Germaine Burchard, 324 – Perdizes – SP';
 
-  // Use passed signatures, or fall back to localStorage
   var sigMonica = sigMonicaParam || null;
   var sigBruno  = sigBrunoParam  || null;
   if (!sigMonica) { try { sigMonica = localStorage.getItem('eq_monica_assinatura'); } catch(e){} }
   if (!sigBruno)  { try { sigBruno  = localStorage.getItem('eq_bruno_assinatura');  } catch(e){} }
 
-  var imgStyle = 'max-height:56px;max-width:180px;display:block;margin:0 auto 2px;';
-  var sigMonHtml = sigMonica ? '<img src="' + sigMonica + '" style="' + imgStyle + '">' : '<div style="height:56px;"></div>';
-  var sigBruHtml = sigBruno  ? '<img src="' + sigBruno  + '" style="' + imgStyle + '">' : '<div style="height:56px;"></div>';
+  var imgSt   = 'max-height:48px;max-width:160px;display:block;margin:0 auto;';
+  var espaco  = '<div style="height:48px;"></div>';
+  var sigMonHtml = sigMonica ? '<img src="' + sigMonica + '" style="' + imgSt + '">' : espaco;
+  var sigBruHtml = sigBruno  ? '<img src="' + sigBruno  + '" style="' + imgSt + '">' : espaco;
 
-  return [
-    '<div style="page-break-inside:avoid;margin-top:28px;border-top:2px solid #1f5c44;padding-top:16px;font-family:Calibri,Arial,sans-serif;">',
-      '<div style="font-size:8.5pt;color:#777;margin-bottom:14px;text-align:center;">',
-        nomeEmp + ' &nbsp;|&nbsp; ' + cnpjEmp + ' &nbsp;|&nbsp; ' + endEmp,
-      '</div>',
-      '<div style="display:flex;justify-content:flex-end;gap:32px;flex-wrap:wrap;">',
+  return '<div class="sig-rodape" style="' +
+      'page-break-inside:avoid;break-inside:avoid;' +
+      'margin-top:18px;padding-top:10px;' +
+      'border-top:2px solid #1a5c3a;' +
+      'font-family:Arial,sans-serif;font-size:8.5pt;color:#222;' +
+    '">' +
+      '<div style="text-align:center;font-size:7.5pt;color:#777;margin-bottom:10px;">' +
+        nomeEmp + ' &nbsp;|&nbsp; ' + cnpjEmp + ' &nbsp;|&nbsp; ' + endEmp +
+      '</div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:28px;flex-wrap:wrap;">' +
+
         // Mônica
-        '<div style="text-align:center;min-width:200px;">',
-          sigMonHtml,
-          '<div style="border-top:1.5px solid #333;padding-top:6px;">',
-            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>',
-            '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>',
-            '<div style="font-size:8pt;color:#888;">' + nomeEmp + '</div>',
-          '</div>',
-        '</div>',
+        '<div style="text-align:center;min-width:170px;">' +
+          sigMonHtml +
+          '<div style="border-top:1.5px solid #222;padding-top:4px;">' +
+            '<strong style="font-size:9pt;color:#1a5c3a;">MÔNICA SANTOS</strong><br>' +
+            '<span style="font-size:8pt;color:#555;">Coordenadora de Recursos Humanos</span>' +
+          '</div>' +
+        '</div>' +
+
         // Bruno
-        '<div style="text-align:center;min-width:200px;">',
-          sigBruHtml,
-          '<div style="border-top:1.5px solid #333;padding-top:6px;">',
-            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">BRUNO NATHAN DA SILVA</div>',
-            '<div style="font-size:9pt;color:#555;">Analista de RH</div>',
-            '<div style="font-size:8pt;color:#888;">' + nomeEmp + '</div>',
-          '</div>',
-        '</div>',
-      '</div>',
-    '</div>'
-  ].join('');
+        '<div style="text-align:center;min-width:170px;">' +
+          sigBruHtml +
+          '<div style="border-top:1.5px solid #222;padding-top:4px;">' +
+            '<strong style="font-size:9pt;color:#1a5c3a;">BRUNO NATHAN DA SILVA</strong><br>' +
+            '<span style="font-size:8pt;color:#555;">Analista de RH</span>' +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+    '</div>';
 }
 
 // ── Edição rápida de tamanhos de uniforme ─────────────────────
