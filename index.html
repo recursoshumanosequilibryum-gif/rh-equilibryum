@@ -1,15 +1,4 @@
-<!DOC
-    <div id="ft4" style="display:none;">
-      <div style="padding:12px 0 8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <span style="font-weight:700;color:var(--green-dark);font-size:13px;">&#128085; Registro de Entrega de Uniformes</span>
-        <button class="btn btn-primary btn-sm" onclick="adicionarItemUniforme()">+ Adicionar Item</button>
-      </div>
-      <div id="uniforme-lista-modal" style="margin-bottom:8px;"></div>
-      <div id="uniforme-vazio" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">
-        Nenhum uniforme registrado. Clique em "+ Adicionar Item" para registrar.
-      </div>
-    </div>
-TYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -675,26 +664,41 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
 <!-- VAGAS -->
 <div class="section-page" id="sec-vagas">
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">&#128188; Vagas</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <select id="vaga-filter-status" onchange="rdVagas()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-          <option value="">Todos os status</option>
-          <option value="Aberta">Abertas</option>
-          <option value="Em Seleção">Em Seleção</option>
-          <option value="Encerrada">Encerradas</option>
-          <option value="Cancelada">Canceladas</option>
-        </select>
-        <select id="vaga-filter-emp" onchange="rdVagas()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-          <option value="">Todas as empresas</option>
-        </select>
-        <button class="btn btn-primary" onclick="openModal('modal-vaga')">+ Nova Vaga</button>
-      </div>
+  <!-- KPI banner -->
+  <div id="vaga-kpi-bar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;"></div>
+
+  <!-- Toolbar -->
+  <div style="background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:18px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+    <div style="flex:1;min-width:200px;position:relative;">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:14px;">🔍</span>
+      <input type="text" id="vaga-busca" placeholder="Buscar por título, unidade..." oninput="rdVagas()"
+        style="width:100%;padding:8px 12px 8px 32px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
     </div>
-    <div class="stats-grid" id="vaga-stats" style="margin-bottom:16px;"></div>
-    <div id="vaga-list"></div>
-    <div id="vaga-empty" class="alert alert-info" style="display:none;">Nenhuma vaga cadastrada. Clique em <strong>+ Nova Vaga</strong> para começar.</div>
+    <select id="vaga-filter-status" onchange="rdVagas()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:150px;">
+      <option value="">Todos os status</option>
+      <option value="Aberta">🟢 Abertas</option>
+      <option value="Em Seleção">🔵 Em Seleção</option>
+      <option value="Encerrada">⚫ Encerradas</option>
+      <option value="Cancelada">🔴 Canceladas</option>
+    </select>
+    <select id="vaga-filter-emp" onchange="rdVagas()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:160px;">
+      <option value="">Todas as empresas</option>
+    </select>
+    <button class="btn btn-primary" onclick="openModal('modal-vaga')" style="white-space:nowrap;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nova Vaga
+    </button>
+  </div>
+
+  <!-- Cards -->
+  <div id="vaga-list" style="display:flex;flex-direction:column;gap:14px;"></div>
+
+  <!-- Empty state -->
+  <div id="vaga-empty" style="display:none;text-align:center;padding:64px 20px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);">
+    <div style="font-size:52px;margin-bottom:14px;">💼</div>
+    <div style="font-size:18px;font-weight:700;color:var(--gray-700);margin-bottom:6px;">Nenhuma vaga cadastrada</div>
+    <div style="font-size:14px;color:var(--gray-400);margin-bottom:20px;">Crie a primeira vaga para começar a acompanhar o processo seletivo.</div>
+    <button class="btn btn-primary" onclick="openModal('modal-vaga')">+ Criar primeira vaga</button>
   </div>
 </div>
 
@@ -1872,6 +1876,16 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
       <!-- Resumo de pendentes -->
       <div id="docs-pendentes-resumo" style="margin-top:10px;font-size:12px;color:var(--gray-600);"></div>
+    </div>
+    <div id="ft4" style="display:none;">
+      <div style="padding:12px 0 8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span style="font-weight:700;color:var(--green-dark);font-size:13px;">&#128085; Registro de Entrega de Uniformes</span>
+        <button class="btn btn-primary btn-sm" onclick="adicionarItemUniforme()">+ Adicionar Item</button>
+      </div>
+      <div id="uniforme-lista-modal" style="margin-bottom:8px;"></div>
+      <div id="uniforme-vazio" style="text-align:center;padding:24px;color:var(--gray-400);font-size:13px;">
+        Nenhum uniforme registrado. Clique em "+ Adicionar Item" para registrar.
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-func')">Cancelar</button>
@@ -8557,138 +8571,150 @@ var vagaAprovados  = [];  // [{nome, tel, email, dtInicio, obs}]
 
 function rdVagas() {
   fillVagaFilters();
+  var busca = ((document.getElementById('vaga-busca')||{}).value||'').toLowerCase();
   var stF   = (document.getElementById('vaga-filter-status')||{value:''}).value||'';
   var empF  = (document.getElementById('vaga-filter-emp')||{value:''}).value||'';
-  var list  = DB.g('vagas');
-  if (stF)  list = list.filter(function(v){return v.status===stF;});
-  if (empF) list = list.filter(function(v){return v.emp===empF;});
-  list = [...list].sort(function(a,b){return (b.aber||'').localeCompare(a.aber||'');});
+  var all   = DB.g('vagas');
+  var emps  = DB.g('empresas');
+  var deps  = DB.g('departamentos');
 
-  var emps = DB.g('empresas');
-  var deps = DB.g('departamentos');
-
-  // Stats
-  var all = DB.g('vagas');
-  var statsEl = document.getElementById('vaga-stats');
-  if (statsEl) {
-    // Somar qtd de vagas (cada cadastro pode ter mais de 1 vaga)
+  // KPI bar
+  var kpiEl = document.getElementById('vaga-kpi-bar');
+  if (kpiEl) {
     var abertas    = all.filter(function(v){return v.status==='Aberta';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
     var emSel      = all.filter(function(v){return v.status==='Em Seleção';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
     var encerradas = all.filter(function(v){return v.status==='Encerrada';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
     var totalCands = all.reduce(function(s,v){return s+(v.candidatos?v.candidatos.length:0);},0);
     var totalAprov = all.reduce(function(s,v){
-      var fromForm = (v.aprovados||[]).length;
-      var fromCand = (v.candidatos||[]).filter(function(c){return c.st==='Aprovado na etapa';}).length;
-      return s + Math.max(fromForm, fromCand);
+      return s+Math.max((v.aprovados||[]).length,(v.candidatos||[]).filter(function(c){return c.st==='Aprovado na etapa';}).length);
     },0);
-    statsEl.innerHTML = [
-      ['🟢 Vagas Abertas', abertas, 'var(--green)'],
-      ['🔵 Em Seleção', emSel, 'var(--blue)'],
-      ['⚫ Encerradas', encerradas, 'var(--gray-600)'],
-      ['👥 Candidatos', totalCands, 'var(--accent)'],
-      ['✅ Aprovados', totalAprov, '#2e7d5e']
-    ].map(function(r){
-      return '<div style="background:#fff;border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow);border-top:3px solid '+r[2]+';">'+
-        '<div style="font-size:22px;font-weight:700;color:'+r[2]+'">'+r[1]+'</div>'+
-        '<div style="font-size:12px;color:var(--gray-600);">'+r[0]+'</div></div>';
+    var kpis = [
+      { label:'Vagas Abertas',   val:abertas,    color:'#2e7d32', bg:'#e8f5e9', icon:'🟢' },
+      { label:'Em Seleção',      val:emSel,      color:'#1565c0', bg:'#e3f2fd', icon:'🔵' },
+      { label:'Encerradas',      val:encerradas, color:'#555',    bg:'#f5f5f5', icon:'⚫' },
+      { label:'Candidatos',      val:totalCands, color:'#e65100', bg:'#fff3e0', icon:'👥' },
+      { label:'Aprovados',       val:totalAprov, color:'#1a5c3a', bg:'#d4f0e0', icon:'✅' }
+    ];
+    kpiEl.innerHTML = kpis.map(function(k){
+      return '<div style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:16px 18px;border-left:4px solid '+k.color+';display:flex;align-items:center;gap:12px;">' +
+        '<div style="font-size:28px;">'+k.icon+'</div>' +
+        '<div>' +
+          '<div style="font-size:22px;font-weight:800;color:'+k.color+';line-height:1;">'+k.val+'</div>' +
+          '<div style="font-size:11.5px;color:#888;margin-top:2px;">'+k.label+'</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
   }
+
+  // Filter list
+  var list = all.slice();
+  if (stF)   list = list.filter(function(v){return v.status===stF;});
+  if (empF)  list = list.filter(function(v){return v.emp===empF;});
+  if (busca) list = list.filter(function(v){
+    var t = (v.titulo+' '+(v.unidade||'')+'  '+(v.desc||'')).toLowerCase();
+    return t.includes(busca);
+  });
+  list = list.sort(function(a,b){return (b.aber||'').localeCompare(a.aber||'');});
 
   var listEl  = document.getElementById('vaga-list');
   var emptyEl = document.getElementById('vaga-empty');
   listEl.innerHTML = '';
 
   if (!list.length) {
-    if (emptyEl) emptyEl.style.display='flex';
+    if (emptyEl) emptyEl.style.display = 'block';
     return;
   }
-  if (emptyEl) emptyEl.style.display='none';
+  if (emptyEl) emptyEl.style.display = 'none';
 
-  var ST_COLORS = {Aberta:'badge-green','Em Seleção':'badge-blue',Encerrada:'badge-gray',Cancelada:'badge-red'};
-  var ST_CLS    = {Aberta:'',           'Em Seleção':'em-selecao',Encerrada:'encerrada',  Cancelada:'cancelada'};
+  var ST = {
+    'Aberta':      { color:'#2e7d32', bg:'#e8f5e9', dot:'🟢' },
+    'Em Seleção':  { color:'#1565c0', bg:'#e3f2fd', dot:'🔵' },
+    'Encerrada':   { color:'#555',    bg:'#f5f5f5', dot:'⚫' },
+    'Cancelada':   { color:'#c62828', bg:'#ffebee', dot:'🔴' }
+  };
 
   list.forEach(function(vaga) {
-    var emp = emps.find(function(e){return e.id===vaga.emp;});
-    var dep = deps.find(function(d){return d.id===vaga.dep;});
-    var nCands = (vaga.candidatos||[]).length;
-    var nAprovForm = (vaga.aprovados||[]).length;
-    var nAprovCand = (vaga.candidatos||[]).filter(function(c){
-      return c.st === 'Aprovado na etapa';
-    }).length;
-    var nAprov = Math.max(nAprovForm, nAprovCand);
-    var stBc   = ST_COLORS[vaga.status]||'badge-gray';
-    var stCls  = ST_CLS[vaga.status]||'';
-    var benefHtml = (vaga.beneficios||[]).map(function(b){
-      return '<span class="vaga-benef-pill">'+b+'</span>';
-    }).join('');
-    if (vaga.benefOutros) benefHtml += '<span class="vaga-benef-pill">'+vaga.benefOutros+'</span>';
+    var emp     = emps.find(function(e){return e.id===vaga.emp;});
+    var dep     = deps.find(function(d){return d.id===vaga.dep;});
+    var st      = ST[vaga.status] || ST['Encerrada'];
+    var qtd     = parseInt(vaga.qtd)||1;
+    var nCands  = (vaga.candidatos||[]).length;
+    var nAprov  = Math.max((vaga.aprovados||[]).length,(vaga.candidatos||[]).filter(function(c){return c.st==='Aprovado na etapa';}).length);
+    var progPct = Math.min(Math.round(nCands/Math.max(qtd,1)*100),100);
+    var progClr = progPct>=100?'#2e7d32':progPct>=50?'#e65100':'#1565c0';
+    var prazoOk = !vaga.prazo || vaga.prazo >= td() || vaga.status === 'Encerrada' || vaga.status === 'Cancelada';
+    var prazoAlerta = (!prazoOk) ? '<span style="background:#fff3cd;color:#856404;font-size:10.5px;padding:2px 8px;border-radius:8px;font-weight:600;margin-left:6px;">⚠️ Prazo vencido</span>' : '';
 
-    // Progress bar: candidatos vs vagas disponíveis
-    var qtdVagas = parseInt(vaga.qtd)||1;
-    var progPct  = Math.min(Math.round((nCands/Math.max(qtdVagas,1))*100), 100);
-    var progColor = progPct >= 100 ? 'var(--green)' : progPct >= 50 ? 'var(--accent)' : 'var(--blue)';
+    var benefHtml = '';
+    (vaga.beneficios||[]).forEach(function(b){ benefHtml += '<span style="background:#f0f7ff;color:#1565c0;border-radius:8px;padding:2px 9px;font-size:11px;border:1px solid #b3d4fb;">'+b+'</span>'; });
+    if (vaga.benefOutros) benefHtml += '<span style="background:#f0f7ff;color:#1565c0;border-radius:8px;padding:2px 9px;font-size:11px;border:1px solid #b3d4fb;">'+vaga.benefOutros+'</span>';
+
+    var metaItems = [
+      emp   ? '<span>🏢 '+emp.razao+'</span>' : '',
+      dep   ? '<span>📁 '+dep.nome+'</span>' : '',
+      vaga.unidade ? '<span>📍 '+vaga.unidade+'</span>' : '',
+      vaga.ch      ? '<span>⏰ '+vaga.ch+'</span>' : '',
+      vaga.sal     ? '<span>💰 '+vaga.sal+'</span>' : '',
+      vaga.escala  ? '<span>🗓️ '+vaga.escala+'</span>' : '',
+      vaga.aber    ? '<span>📅 Abertura: '+fd(vaga.aber)+'</span>' : '',
+      vaga.prazo   ? '<span>⏳ Prazo: '+fd(vaga.prazo)+'</span>'+prazoAlerta : ''
+    ].filter(Boolean).join('');
 
     var card = document.createElement('div');
-    card.className = 'vaga-card ' + stCls;
+    card.style.cssText = 'background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #edf0f4;overflow:hidden;transition:box-shadow .2s,transform .2s;';
+    card.onmouseenter = function(){ this.style.boxShadow='0 8px 28px rgba(0,0,0,.12)'; this.style.transform='translateY(-2px)'; };
+    card.onmouseleave = function(){ this.style.boxShadow='0 2px 10px rgba(0,0,0,.07)'; this.style.transform=''; };
+
     card.innerHTML =
-      '<div class="vaga-card-top">' +
-        '<div class="vaga-card-stripe"></div>' +
-        '<div class="vaga-card-body">' +
-          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
-            '<div>' +
-              '<div class="vaga-titulo">'+vaga.titulo+'</div>' +
-              '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">' +
-                '<span class="badge '+stBc+'">'+vaga.status+'</span>' +
-                '<span class="badge badge-blue">'+qtdVagas+' vaga'+(qtdVagas>1?'s':'')+'</span>' +
-                (vaga.tipo?'<span class="badge badge-gray">'+vaga.tipo+'</span>':'') +
-              '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:6px;">' +
-              '<button class="btn btn-outline btn-sm" title="Editar" data-vid="'+vaga.id+'" onclick="editVaga(this.dataset.vid)" style="padding:5px 10px;">✏️ Editar</button>' +
-              '<button class="btn-icon danger" title="Excluir" data-vid="'+vaga.id+'" onclick="delVaga(this.dataset.vid)" style="margin-top:2px;">🗑️</button>' +
+      // Header stripe + title row
+      '<div style="border-left:5px solid '+st.color+';padding:16px 20px 12px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:16px;font-weight:800;color:#1a3a2a;margin-bottom:6px;">'+vaga.titulo+'</div>' +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
+              '<span style="background:'+st.bg+';color:'+st.color+';border-radius:14px;padding:3px 12px;font-size:12px;font-weight:700;border:1px solid '+st.color+'30;">'+st.dot+' '+vaga.status+'</span>' +
+              '<span style="background:#f5f5f5;color:#555;border-radius:14px;padding:3px 10px;font-size:12px;">💼 '+qtd+' vaga'+(qtd>1?'s':'')+'</span>' +
+              (vaga.tipo?'<span style="background:#f5f5f5;color:#555;border-radius:14px;padding:3px 10px;font-size:12px;">'+vaga.tipo+'</span>':'') +
             '</div>' +
           '</div>' +
-          '<div class="vaga-meta" style="margin-top:10px;">' +
-            (emp?'<span>🏢 '+emp.razao+'</span>':'') +
-            (dep?'<span>📁 '+dep.nome+'</span>':'') +
-            (vaga.unidade?'<span>📍 '+vaga.unidade+'</span>':'') +
-            (vaga.ch?'<span>⏰ '+vaga.ch+'</span>':'') +
-            (vaga.sal?'<span>💰 '+vaga.sal+'</span>':'') +
-            (vaga.escala?'<span>🗓️ '+vaga.escala+'</span>':'') +
-            (vaga.aber?'<span>📅 '+fd(vaga.aber)+'</span>':'') +
-            (vaga.prazo?'<span>⏳ Prazo: '+fd(vaga.prazo)+'</span>':'') +
-          '</div>' +
-          (vaga.desc?'<p style="font-size:12.5px;color:var(--gray-600);margin-top:10px;line-height:1.6;">'+vaga.desc+'</p>':'') +
-          (benefHtml?'<div class="vaga-benef-list">'+benefHtml+'</div>':'') +
-        '</div>' +
-        '<div class="vaga-card-side">' +
-          // Candidatos box
-          '<div class="vaga-cand-box" style="border-top:3px solid var(--blue);min-width:130px;">' +
-            '<div class="vaga-cand-num" style="color:var(--blue);">'+nCands+'</div>' +
-            '<div class="vaga-cand-label">candidato'+(nCands!==1?'s':'')+' inscritos</div>' +
-            // Progress bar
-            '<div class="vaga-prog-bar" style="margin-top:8px;">' +
-              '<div class="vaga-prog-fill" style="width:'+progPct+'%;background:'+progColor+';"></div>' +
-            '</div>' +
-            '<div style="font-size:10px;color:var(--gray-400);margin-top:3px;">'+progPct+'% das '+qtdVagas+' vaga'+(qtdVagas>1?'s':'')+'</div>' +
-          '</div>' +
-          // Aprovados box
-          '<div class="vaga-cand-box" style="border-top:3px solid var(--green);">' +
-            '<div class="vaga-cand-num" style="color:var(--green);">'+nAprov+'</div>' +
-            '<div class="vaga-cand-label">aprovado'+(nAprov!==1?'s':'')+'</div>' +
-          '</div>' +
-          // Actions
-          '<div style="display:flex;flex-direction:column;gap:6px;width:100%;">' +
-            (nCands?'<button class="btn btn-outline btn-sm" style="width:100%;font-size:12px;" data-vid="'+vaga.id+'" onclick="verCandidatos(this.dataset.vid)" >👥 Ver Candidatos</button>':'') +
-            (nAprov?'<button class="btn btn-primary btn-sm" style="width:100%;font-size:12px;" data-vid="'+vaga.id+'" onclick="verAprovados(this.dataset.vid)" >✅ Ver Aprovados</button>':'') +
+          '<div style="display:flex;gap:6px;align-items:flex-start;">' +
+            '<button data-vid="'+vaga.id+'" onclick="editVaga(this.dataset.vid)" style="background:#f0f7ff;color:#1565c0;border:1px solid #b3d4fb;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;font-weight:600;">✏️ Editar</button>' +
+            '<button data-vid="'+vaga.id+'" onclick="delVaga(this.dataset.vid)" style="background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer;">🗑️</button>' +
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="vaga-card-footer">' +
-        (nCands?'<button class="btn btn-outline btn-sm" data-vid="'+vaga.id+'" onclick="verCandidatos(this.dataset.vid)">👥 Ver Candidatos ('+nCands+')</button>':'') +
-        (nAprov?'<button class="btn btn-primary btn-sm" data-vid="'+vaga.id+'" onclick="verAprovados(this.dataset.vid)">✅ Aprovados ('+nAprov+')</button>':'') +
-        (!nCands&&!nAprov?'<span style="font-size:12px;color:var(--gray-400);">Sem candidatos ainda</span>':'') +
+
+      // Meta info row
+      '<div style="padding:0 20px 12px;display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#555;border-bottom:1px solid #f0f0f0;">'+metaItems+'</div>' +
+
+      // Description + benefits
+      (vaga.desc?'<div style="padding:10px 20px;font-size:13px;color:#444;line-height:1.6;border-bottom:1px solid #f0f0f0;">'+vaga.desc+'</div>':'') +
+      (benefHtml?'<div style="padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid #f0f0f0;">'+benefHtml+'</div>':'') +
+
+      // Progress + actions footer
+      '<div style="padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fafbfc;">' +
+        // Candidatos progress
+        '<div style="flex:1;min-width:160px;">' +
+          '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:#888;margin-bottom:4px;">' +
+            '<span>Candidatos</span><span style="font-weight:700;color:#1565c0;">'+nCands+'</span>' +
+          '</div>' +
+          '<div style="background:#e9ecef;border-radius:8px;height:7px;overflow:hidden;">' +
+            '<div style="background:'+progClr+';height:100%;width:'+progPct+'%;border-radius:8px;transition:width .4s;"></div>' +
+          '</div>' +
+          '<div style="font-size:10.5px;color:#aaa;margin-top:2px;">'+progPct+'% das '+qtd+' vaga'+(qtd>1?'s':'')+'</div>' +
+        '</div>' +
+        // Approved stat
+        '<div style="text-align:center;min-width:60px;">' +
+          '<div style="font-size:20px;font-weight:800;color:#2e7d32;">'+nAprov+'</div>' +
+          '<div style="font-size:11px;color:#888;">aprovado'+(nAprov!==1?'s':'')+'</div>' +
+        '</div>' +
+        // Action buttons
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+          '<button data-vid="'+vaga.id+'" onclick="verCandidatos(this.dataset.vid)" style="background:#fff;border:1.5px solid #1565c0;color:#1565c0;border-radius:8px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px;">👥 Candidatos '+( nCands?'('+nCands+')':'')+'</button>' +
+          (nAprov?'<button data-vid="'+vaga.id+'" onclick="verAprovados(this.dataset.vid)" style="background:#2e7d32;border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px;">✅ Aprovados ('+nAprov+')</button>':'') +
+        '</div>' +
       '</div>';
+
     listEl.appendChild(card);
   });
 }
