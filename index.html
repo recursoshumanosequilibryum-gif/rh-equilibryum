@@ -3229,13 +3229,13 @@ function initGIS(adminMode, promptMode) {
             if (wizTxt) wizTxt.value = driveToken;
             if (wizBox) wizBox.style.display = 'block';
           } else {
-            // If sync overlay is open, let it handle the UI transition
             var syncOv = document.getElementById('sync-overlay');
-            var wiz = document.getElementById('setup-wizard');
+            var wiz    = document.getElementById('setup-wizard');
             if (wiz) wiz.style.display = 'none';
-            if (!syncOv || !syncOv.classList.contains('open')) {
-              init();
+            if (syncOv && syncOv.classList.contains('open')) {
+              syncOv.classList.remove('open');
             }
+            init();
           }
           if (promptMode === '') toast('Drive renovado automaticamente ☁️');
         },
@@ -9098,51 +9098,24 @@ function verAprovados(id) {
 // TELA DE SINCRONIZAÇÃO INICIAL
 // ============================================================
 function showSyncOverlay() {
-  // Ensure CLIENT_ID is loaded before any checks
-  var _saved = localStorage.getItem('eq_client_id');
-  if (_saved) CLIENT_ID = _saved;
-  document.getElementById('sync-overlay').classList.add('open');
-  document.getElementById('sync-spinner').style.display = 'block';
-  document.getElementById('sync-actions').style.display = 'none';
-  document.getElementById('sync-done').style.display = 'none';
+  var saved = localStorage.getItem('eq_client_id');
+  if (saved) CLIENT_ID = saved;
+
+  var overlay = document.getElementById('sync-overlay');
+  overlay.classList.add('open');
+  document.getElementById('sync-spinner').style.display = 'none';
   document.getElementById('sync-status-box').style.display = 'none';
-  document.getElementById('sync-msg').textContent = 'Verificando conexão com o Google Drive...';
+  document.getElementById('sync-done').style.display = 'none';
 
-  // Test drive connection
-  setTimeout(async function() {
-    var statusBox = document.getElementById('sync-status-box');
-    var spinner   = document.getElementById('sync-spinner');
-    statusBox.style.display = 'block';
-
-    if (driveReady && driveToken) {
-      // Test token validity
-      try {
-        var r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
-          headers: { 'Authorization': 'Bearer ' + driveToken }
-        });
-        if (r.ok) {
-          var data = await r.json();
-          var email = data.user ? data.user.emailAddress : '';
-          setSyncRow('drive', 'ok', '✅ Drive conectado' + (email ? ' · ' + email : ''));
-          setSyncRow('data', 'warn', '🔄 Sincronizando dados...');
-          document.getElementById('sync-msg').textContent = 'Buscando dados atualizados...';
-          await syncFromDrive();
-          setSyncRow('data', 'ok', '✅ Dados sincronizados com sucesso!');
-          document.getElementById('sync-msg').textContent = 'Tudo pronto! Bem-vindo ao sistema.';
-          spinner.style.display = 'none';
-          document.getElementById('sync-done').style.display = 'block';
-          return;
-        }
-      } catch(e) {}
-    }
-
-    // Not connected
-    spinner.style.display = 'none';
-    setSyncRow('drive', 'err', '❌ Drive não conectado');
-    setSyncRow('data', 'warn', '⚠️ Usando dados locais (offline)');
-    document.getElementById('sync-msg').textContent = 'Conecte ao Drive para buscar os dados mais recentes.';
+  if (CLIENT_ID) {
+    // CID known — show connect button immediately, no waiting
+    document.getElementById('sync-msg').textContent = 'Clique para entrar com sua conta Google.';
     document.getElementById('sync-actions').style.display = 'flex';
-  }, 800);
+  } else {
+    // First time — show setup wizard
+    overlay.classList.remove('open');
+    document.getElementById('setup-wizard').style.display = 'flex';
+  }
 }
 
 function setSyncRow(key, type, text) {
@@ -9156,51 +9129,26 @@ function setSyncRow(key, type, text) {
 }
 
 function syncOverlayAction() {
-  // Always load CID from localStorage first
-  var saved = localStorage.getItem('eq_client_id');
-  if (saved) CLIENT_ID = saved;
-
-  if (!CLIENT_ID) {
-    // First time: show setup wizard to collect Client ID
-    closeSyncOverlay();
-    window._docAssinante = 'monica';
-    document.getElementById('setup-wizard').style.display = 'flex';
-    return;
-  }
-
-  // CID exists — do an explicit popup login (not silent)
-  var spinner = document.getElementById('sync-spinner');
-  spinner.style.display = 'block';
   document.getElementById('sync-actions').style.display = 'none';
+  document.getElementById('sync-spinner').style.display = 'block';
   document.getElementById('sync-msg').textContent = 'Abrindo login Google...';
-  setSyncRow('drive', 'warn', '🔄 Aguardando login...');
-  document.getElementById('sync-status-box').style.display = 'block';
 
-  // Use explicit popup so user can sign in
+  // initGIS opens the Google popup; on success its callback sets driveReady=true
+  // and calls init() — which will close the overlay and load the system
   initGIS(false, 'select_account');
 
-  // Monitor driveReady after login (initGIS callback calls init() when done)
-  // We just need to update the overlay UI once connected
+  // Timeout safety: if popup closed without login, show button again
   var checks = 0;
-  var interval = setInterval(async function() {
+  var guard = setInterval(function() {
     checks++;
     if (driveReady) {
-      clearInterval(interval);
-      setSyncRow('drive', 'ok', '✅ Drive conectado!');
-      setSyncRow('data', 'warn', '🔄 Sincronizando dados...');
-      document.getElementById('sync-msg').textContent = 'Sincronizando dados...';
-      await syncFromDrive();
-      setSyncRow('data', 'ok', '✅ Dados sincronizados!');
-      document.getElementById('sync-msg').textContent = 'Tudo pronto! Bem-vindo ao sistema.';
-      spinner.style.display = 'none';
-      document.getElementById('sync-done').style.display = 'block';
-    } else if (checks > 60) {
-      // 30 seconds — popup may have been closed
-      clearInterval(interval);
-      spinner.style.display = 'none';
-      setSyncRow('drive', 'err', '❌ Login cancelado ou expirou');
+      clearInterval(guard);
+      // initGIS callback already called init(), overlay will close
+    } else if (checks > 60) { // 30s
+      clearInterval(guard);
+      document.getElementById('sync-spinner').style.display = 'none';
+      document.getElementById('sync-msg').textContent = 'Login cancelado. Tente novamente.';
       document.getElementById('sync-actions').style.display = 'flex';
-      document.getElementById('sync-msg').textContent = 'Tente novamente ou continue sem Drive.';
     }
   }, 500);
 }
