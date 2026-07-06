@@ -2876,53 +2876,48 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 <div id="sig-modal-bg">
   <div id="sig-modal">
     <h3>✍️ Assinatura da Empresa</h3>
-    <p style="font-size:13px;color:var(--gray-600);margin-bottom:10px;">
-      Assine abaixo como <strong>representante da empresa</strong>. A assinatura será inserida no rodapé do documento como assinatura institucional.
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">
+      Registre as assinaturas dos responsáveis. Cada assinatura fica <strong>salva separadamente</strong> e é aplicada automaticamente nos próximos documentos.
     </p>
-    <!-- Seletor de assinante -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--green-dark);margin-bottom:8px;">🏢 Quem está assinando pela empresa?</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <label id="sig-opt-monica" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;background:var(--green-pale);border-radius:20px;border:2px solid var(--green);font-size:13px;transition:all .2s;">
-          <input type="radio" name="sig-assinante" value="monica" checked onchange="sigSelecionarAssinante('monica')" style="accent-color:var(--green);">
-          <span><strong>Mônica Santos</strong><br><span style="font-size:11px;color:var(--gray-500);">Coordenadora de RH</span></span>
-        </label>
-        <label id="sig-opt-bruno" style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;background:#fff;border-radius:20px;border:2px solid var(--gray-200);font-size:13px;transition:all .2s;">
-          <input type="radio" name="sig-assinante" value="bruno" onchange="sigSelecionarAssinante('bruno')" style="accent-color:var(--green);">
-          <span><strong>Bruno Nathan da Silva</strong><br><span style="font-size:11px;color:var(--gray-500);">Analista de RH</span></span>
-        </label>
+
+    <!-- Bloco Mônica -->
+    <div style="margin-bottom:14px;padding:12px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--green-dark);">✍️ Mônica Santos — Coordenadora de RH</div>
+        <div style="display:flex;gap:6px;">
+          <span id="sig-monica-status" style="font-size:11px;color:var(--green-dark);padding:2px 10px;background:#c8ecd4;border-radius:10px;display:none;">✅ Assinatura salva</span>
+          <button class="btn btn-outline btn-sm" style="font-size:11px;" onclick="sigLimparMonica()">🗑️ Limpar assinatura</button>
+        </div>
       </div>
-      <div id="sig-assinante-info" style="margin-top:8px;font-size:12px;color:var(--green-dark);padding:6px 12px;background:var(--green-pale);border-radius:6px;">
-        ✅ Assinando como: <strong id="sig-assinante-nome">Mônica Santos — Coordenadora de RH</strong>
+      <canvas id="sig-canvas-monica" width="540" height="100" style="border:1.5px solid #c3e6d4;border-radius:6px;background:#fff;cursor:crosshair;display:block;touch-action:none;"></canvas>
+    </div>
+
+    <!-- Bloco Bruno -->
+    <div style="margin-bottom:14px;padding:12px;background:#f0f7ff;border-radius:var(--radius-sm);border:1.5px solid #b3d4fb;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;color:#1565c0;">✍️ Bruno Nathan da Silva — Analista de RH</div>
+        <div style="display:flex;gap:6px;">
+          <span id="sig-bruno-status" style="font-size:11px;color:#1565c0;padding:2px 10px;background:#dce9ff;border-radius:10px;display:none;">✅ Assinatura salva</span>
+          <button class="btn btn-outline btn-sm" style="font-size:11px;" onclick="sigLimparBruno()">🗑️ Limpar assinatura</button>
+        </div>
       </div>
+      <canvas id="sig-canvas-bruno" width="540" height="100" style="border:1.5px solid #b3d4fb;border-radius:6px;background:#fff;cursor:crosshair;display:block;touch-action:none;"></canvas>
     </div>
-    <canvas id="sig-canvas-doc" width="580" height="120"></canvas>
-    <div class="sig-toolbar">
-      <div style="display:flex;gap:6px;">
-        <div class="sig-color active" style="background:#000;" data-color="#000000" onclick="sigSetColor(this)" title="Preto"></div>
-        <div class="sig-color" style="background:#1f5c44;" data-color="#1f5c44" onclick="sigSetColor(this)" title="Verde"></div>
-        <div class="sig-color" style="background:#1565c0;" data-color="#1565c0" onclick="sigSetColor(this)" title="Azul"></div>
-      </div>
-      <div class="sig-thickness">
-        Espessura:
-        <input type="range" id="sig-thickness" min="1" max="5" value="2" style="width:80px;" oninput="sigSetThickness(this.value)">
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="sigClear()" style="margin-left:auto;">🗑️ Limpar</button>
+
+    <!-- Toolbar compartilhada -->
+    <div style="display:none;"><!-- legacy canvas placeholder -->
+    <canvas id="sig-canvas-doc" width="1" height="1"></canvas>
     </div>
-    <div id="sig-preview-box">
-      <strong>Documento:</strong> <span id="sig-doc-name">—</span><br>
-      <strong>Funcionário:</strong> <span id="sig-func-name">—</span><br>
-      <strong>Data:</strong> <span id="sig-data-hoje">—</span>
+    <div style="margin-top:4px;padding:10px 14px;background:#f8faf9;border-radius:6px;font-size:12px;color:var(--green-dark);">
+      💡 Assine nos campos acima. As assinaturas ficam salvas e serão aplicadas automaticamente em todos os documentos.
     </div>
-    <div style="margin-top:8px;padding:8px 12px;background:var(--green-pale);border-radius:6px;font-size:12px;color:var(--green-dark);">
-      ✅ A assinatura será <strong>salva automaticamente</strong> após a primeira assinatura.<br>
-      Nos próximos documentos ela será aplicada sem abrir esta tela novamente.<br>
-      <button class="btn btn-outline btn-sm" style="margin-top:6px;font-size:11px;" onclick="clearSavedSignature();document.getElementById('sig-modal-bg').classList.remove('open');">🗑️ Apagar assinatura salva</button>
+    <div id="sig-preview-box" style="display:none;">
+      <span id="sig-doc-name"></span><span id="sig-func-name"></span><span id="sig-data-hoje"></span>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;">
       <button class="btn btn-outline" onclick="sigCancelar()">Cancelar</button>
       <button class="btn btn-outline btn-sm" onclick="sigSemAssinatura()">Gerar sem assinatura</button>
-      <button class="btn btn-primary" onclick="sigConfirmar()">✅ Assinar e Gerar Documento</button>
+      <button class="btn btn-primary" onclick="sigConfirmarAmbos()">✅ Salvar e Gerar Documento</button>
     </div>
   </div>
 </div>
@@ -6493,57 +6488,109 @@ function abrirEImprimirDoc(docHTML, filename, f) {
   _sigFilename = filename;
   _sigFuncObj  = f;
 
-  // Recarregar assinatura do assinante atual antes de verificar
-  var currentAssKey = window._sigAssinante === 'bruno' ? 'eq_bruno_assinatura' : 'eq_monica_assinatura';
-  try { var storedSig = localStorage.getItem(currentAssKey); if (storedSig) _savedSignature = storedSig; } catch(e){}
+  // Load current saved signatures
+  var sigMon = null, sigBru = null;
+  try { sigMon = localStorage.getItem('eq_monica_assinatura'); } catch(e){}
+  try { sigBru = localStorage.getItem('eq_bruno_assinatura');  } catch(e){}
 
-  // Se já tem assinatura salva para o assinante atual, usa direto sem abrir modal
-  if (_savedSignature) {
-    _abrirDocFinal(docHTML, filename, f, _savedSignature);
+  // If BOTH already saved → generate directly, no need to open modal
+  if (sigMon && sigBru) {
+    _abrirDocFinal(docHTML, filename, f, sigMon, sigBru);
     return;
   }
 
-  // Preencher preview do modal
+  // Otherwise open modal so user can sign the missing ones
   document.getElementById('sig-doc-name').textContent  = filename.replace(/_/g,' ');
   document.getElementById('sig-func-name').textContent = f ? f.n : '—';
   document.getElementById('sig-data-hoje').textContent = fd(td());
-  // Inicializar canvas
   sigInitCanvas();
-  // Abrir modal
   document.getElementById('sig-modal-bg').classList.add('open');
 }
 
 function sigInitCanvas() {
-  _sigCanvas = document.getElementById('sig-canvas-doc');
-  _sigCtx    = _sigCanvas.getContext('2d');
-  _sigCtx.strokeStyle = _sigColor;
-  _sigCtx.lineWidth   = _sigThick;
-  _sigCtx.lineCap     = 'round';
-  _sigCtx.lineJoin    = 'round';
-  _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+  // Initialize BOTH canvases
+  _sigInitOne('sig-canvas-monica', '#1f5c44');
+  _sigInitOne('sig-canvas-bruno',  '#1565c0');
+  // Load saved signatures into canvases
+  sigMostrarSalvas();
+}
 
+function _sigInitOne(canvasId, color) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 2;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  var drawing = false, last = {x:0,y:0};
   function getPos(e, rect) {
     if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
-  _sigCanvas.onmousedown = _sigCanvas.ontouchstart = function(e) {
-    e.preventDefault(); _sigDrawing = true;
-    var r = _sigCanvas.getBoundingClientRect();
-    _sigLast = getPos(e, r);
+  canvas.onmousedown = canvas.ontouchstart = function(e) {
+    e.preventDefault(); drawing = true;
+    var r = canvas.getBoundingClientRect(); last = getPos(e, r);
   };
-  _sigCanvas.onmousemove = _sigCanvas.ontouchmove = function(e) {
-    e.preventDefault(); if (!_sigDrawing) return;
-    var r = _sigCanvas.getBoundingClientRect();
-    var p = getPos(e, r);
-    _sigCtx.beginPath();
-    _sigCtx.moveTo(_sigLast.x, _sigLast.y);
-    _sigCtx.lineTo(p.x, p.y);
-    _sigCtx.stroke();
-    _sigLast = p;
+  canvas.onmousemove = canvas.ontouchmove = function(e) {
+    e.preventDefault(); if (!drawing) return;
+    var r = canvas.getBoundingClientRect(), p = getPos(e, r);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last = p;
   };
-  _sigCanvas.onmouseup = _sigCanvas.onmouseleave = _sigCanvas.ontouchend = function() {
-    _sigDrawing = false;
-  };
+  canvas.onmouseup = canvas.onmouseleave = canvas.ontouchend = function() { drawing = false; };
+}
+
+function sigMostrarSalvas() {
+  var sigMon = null, sigBru = null;
+  try { sigMon = localStorage.getItem('eq_monica_assinatura'); } catch(e){}
+  try { sigBru = localStorage.getItem('eq_bruno_assinatura');  } catch(e){}
+
+  // Show Monica saved signature in canvas
+  if (sigMon) {
+    var cMon = document.getElementById('sig-canvas-monica');
+    if (cMon) {
+      var img = new Image();
+      img.onload = function(){ cMon.getContext('2d').drawImage(img, 0, 0, cMon.width, cMon.height); };
+      img.src = sigMon;
+    }
+    var stM = document.getElementById('sig-monica-status'); if (stM) stM.style.display = 'inline-block';
+  }
+
+  // Show Bruno saved signature in canvas
+  if (sigBru) {
+    var cBru = document.getElementById('sig-canvas-bruno');
+    if (cBru) {
+      var img2 = new Image();
+      img2.onload = function(){ cBru.getContext('2d').drawImage(img2, 0, 0, cBru.width, cBru.height); };
+      img2.src = sigBru;
+    }
+    var stB = document.getElementById('sig-bruno-status'); if (stB) stB.style.display = 'inline-block';
+  }
+}
+
+function sigLimparMonica() {
+  var c = document.getElementById('sig-canvas-monica');
+  if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  localStorage.removeItem('eq_monica_assinatura');
+  _savedSignature = null;
+  var st = document.getElementById('sig-monica-status'); if (st) st.style.display = 'none';
+  toast('Assinatura da Mônica apagada.');
+}
+
+function sigLimparBruno() {
+  var c = document.getElementById('sig-canvas-bruno');
+  if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  localStorage.removeItem('eq_bruno_assinatura');
+  var st = document.getElementById('sig-bruno-status'); if (st) st.style.display = 'none';
+  toast('Assinatura do Bruno apagada.');
+}
+
+function _canvasHasContent(canvasId) {
+  var c = document.getElementById(canvasId); if (!c) return false;
+  var d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  for (var i = 3; i < d.length; i += 4) { if (d[i] > 0) return true; }
+  return false;
 }
 
 function sigSetColor(el) {
@@ -6563,89 +6610,62 @@ function sigCancelar() {
   document.getElementById('sig-modal-bg').classList.remove('open');
   _sigDocHTML = ''; _sigFilename = ''; _sigFuncObj = null;
 }
-
-// Continuar sem assinatura
 function sigSemAssinatura() {
   document.getElementById('sig-modal-bg').classList.remove('open');
-  _abrirDocFinal(_sigDocHTML, _sigFilename, _sigFuncObj, null);
+  _abrirDocFinal(_sigDocHTML, _sigFilename, _sigFuncObj, null, null);
 }
 
-// Confirmar com assinatura
-function sigConfirmar() {
-  // Verificar se assinou
-  var imgData = _sigCtx.getImageData(0, 0, _sigCanvas.width, _sigCanvas.height);
-  var hasContent = false;
-  for (var i = 3; i < imgData.data.length; i += 4) {
-    if (imgData.data[i] > 0) { hasContent = true; break; }
+function sigConfirmarAmbos() {
+  var hasMon = _canvasHasContent('sig-canvas-monica');
+  var hasBru = _canvasHasContent('sig-canvas-bruno');
+
+  // Save Monica if drawn
+  if (hasMon) {
+    var cMon = document.getElementById('sig-canvas-monica');
+    var sigMon = cMon.toDataURL('image/png');
+    localStorage.setItem('eq_monica_assinatura', sigMon);
+    var stM = document.getElementById('sig-monica-status'); if (stM) stM.style.display = 'inline-block';
   }
-  if (!hasContent) {
-    toast('Por favor, faça a assinatura antes de confirmar.', 'warn');
+
+  // Save Bruno if drawn
+  if (hasBru) {
+    var cBru = document.getElementById('sig-canvas-bruno');
+    var sigBru = cBru.toDataURL('image/png');
+    localStorage.setItem('eq_bruno_assinatura', sigBru);
+    var stB = document.getElementById('sig-bruno-status'); if (stB) stB.style.display = 'inline-block';
+  }
+
+  // Read final saved values (existing + newly drawn)
+  var finalMon = null, finalBru = null;
+  try { finalMon = localStorage.getItem('eq_monica_assinatura'); } catch(e){}
+  try { finalBru = localStorage.getItem('eq_bruno_assinatura');  } catch(e){}
+
+  if (!finalMon && !finalBru) {
+    toast('Assine pelo menos um dos campos antes de confirmar.', 'warn');
     return;
   }
-  var sigDataURL = _sigCanvas.toDataURL('image/png');
-  // Salvar assinatura para uso futuro
-  saveSignatureToStorage(sigDataURL);
-  var btnSig = document.getElementById('btn-clear-sig');
-  if (btnSig) btnSig.style.display = 'inline-block';
-  toast('Assinatura salva! Será usada automaticamente nos próximos documentos. ✅');
+
+  toast('Assinatura(s) salva(s) e aplicadas ao documento. ✅');
   document.getElementById('sig-modal-bg').classList.remove('open');
-  _abrirDocFinal(_sigDocHTML, _sigFilename, _sigFuncObj, sigDataURL);
+  _abrirDocFinal(_sigDocHTML, _sigFilename, _sigFuncObj, finalMon, finalBru);
 }
 
+// Legacy - kept for compatibility
+function sigConfirmar() { sigConfirmarAmbos(); }
+
 // Inserir assinatura no HTML do documento e abrir
-async function _abrirDocFinal(docHTML, filename, f, sigDataURL) {
+async function _abrirDocFinal(docHTML, filename, f, sigMonica, sigBruno) {
   var finalHTML = docHTML;
 
-  // Detectar empresa do documento pelo nome
+  // Detect company from document
   var docEmpresa = 'equilibryum';
-  if (finalHTML.indexOf('LONGHI') > 0 || finalHTML.indexOf('Longhi') > 0) {
-    docEmpresa = 'longhi';
-  }
+  if (finalHTML.indexOf('LONGHI') > 0 || finalHTML.indexOf('Longhi') > 0) docEmpresa = 'longhi';
 
-  // Inserir assinatura da empresa sempre
-  var compSig = gerarAssinaturaEmpresa(docEmpresa);
+  // Build company signature block with BOTH signatures
+  var compSig = gerarAssinaturaEmpresa(docEmpresa, sigMonica, sigBruno);
   finalHTML = finalHTML.replace('</body>', compSig + '</body>');
 
-  if (sigDataURL && false) {
-    // DISABLED: signature now embedded directly in gerarAssinaturaEmpresa via _savedSignature
-    var isEq2 = docEmpresa !== 'longhi';
-    var nomeEmp2 = isEq2 ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
-                         : 'Longhi Serviços de Terceirização a Empresas Ltda';
-    var cnpjEmp2 = isEq2 ? '05.441.897/0001-02' : '54.188.772/0001-28';
-    var sigBlock =
-      '<div style="page-break-inside:avoid;margin-top:24px;border-top:2px solid #1f5c44;padding-top:16px;">' +
-        '<div style="display:flex;align-items:flex-end;gap:40px;flex-wrap:wrap;">' +
-          // Assinatura da empresa
-          '<div style="text-align:center;min-width:220px;">' +
-            '<img src="' + sigDataURL + '" style="max-height:65px;max-width:220px;display:block;margin:0 auto;">' +
-            '<div style="border-top:1.5px solid #333;margin-top:4px;padding-top:5px;">' +
-              '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>' +
-              '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>' +
-              '<div style="font-size:8.5pt;color:#777;">' + nomeEmp2 + '</div>' +
-              '<div style="font-size:8pt;color:#aaa;">CNPJ: ' + cnpjEmp2 + '</div>' +
-            '</div>' +
-          '</div>' +
-          // Espaço para assinatura do funcionário (linha em branco)
-          '<div style="text-align:center;min-width:200px;">' +
-            '<div style="height:50px;"></div>' +
-            '<div style="border-top:1.5px solid #333;padding-top:5px;">' +
-              '<div style="font-size:10pt;font-weight:700;color:#333;">' + (f ? f.n : 'Funcionário') + '</div>' +
-              '<div style="font-size:9pt;color:#555;">' + (f ? f.car||'' : '') + '</div>' +
-              '<div style="font-size:8.5pt;color:#777;">CPF: ' + (f ? f.cpf||'' : '') + '</div>' +
-            '</div>' +
-          '</div>' +
-          // Data
-          '<div style="min-width:120px;">' +
-            '<div style="font-size:9pt;color:#555;font-weight:600;">DATA</div>' +
-            '<div style="font-size:11pt;font-weight:700;color:#1f5c44;margin-top:4px;">' + fd(td()) + '</div>' +
-            '<div style="font-size:8pt;color:#aaa;">Assinado digitalmente</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    finalHTML = finalHTML.replace('</body>', sigBlock + '</body>');
-  }
-
-  // Abrir em nova aba
+  // Open in new tab and print
   var win = window.open('', '_blank', 'width=960,height=750');
   if (win) {
     win.document.write(finalHTML);
@@ -6653,16 +6673,16 @@ async function _abrirDocFinal(docHTML, filename, f, sigDataURL) {
     setTimeout(function(){ win.focus(); win.print(); }, 700);
   }
 
-  // Salvar no Drive
+  // Save to Drive
   if (driveReady && f) {
     try {
       var blob = new Blob([finalHTML], { type: 'text/html;charset=utf-8' });
-      var file = new File([blob], filename + (sigDataURL?'_assinado':'') + '.html', { type: 'text/html' });
+      var file = new File([blob], filename + '_assinado.html', { type: 'text/html' });
       await uploadFileToDrive(file, f.n);
-      toast('Documento' + (sigDataURL?' assinado':'')+' salvo no Drive na pasta de ' + f.n + ' ☁️');
+      toast('Documento salvo no Drive na pasta de ' + f.n + ' ☁️');
     } catch(e) { console.warn('Drive save error:', e); }
   }
-  toast('Documento gerado' + (sigDataURL?' com assinatura ✍️':'') + '! Use Ctrl+P para salvar como PDF.');
+  toast('Documento gerado com assinaturas ✍️! Use Ctrl+P para PDF.');
 }
 
 // ── RECIBO EPI ─────────────────────────────────────────────
@@ -9003,7 +9023,7 @@ function clearSavedSignature() {
   toast('Assinatura apagada. Será solicitada novamente no próximo documento.');
 }
 
-function gerarAssinaturaEmpresa(empresa) {
+function gerarAssinaturaEmpresa(empresa, sigMonicaParam, sigBrunoParam) {
   var isEq    = !empresa || empresa === 'equilibryum';
   var nomeEmp = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde SC Ltda'
                      : 'Longhi Serviços de Terceirização a Empresas Ltda';
@@ -9011,49 +9031,38 @@ function gerarAssinaturaEmpresa(empresa) {
   var endEmp  = isEq ? 'Rua Dr Costa Júnior, 365 – Perdizes – São Paulo – SP'
                      : 'Rua Dr Germaine Burchard, 324 – Perdizes – São Paulo – SP';
 
-  // Determinar assinante selecionado no menu Gerar Documentos
-  var assinante = window._docAssinante || 'monica';
+  // Use passed signatures, or fall back to localStorage
+  var sigMonica = sigMonicaParam || null;
+  var sigBruno  = sigBrunoParam  || null;
+  if (!sigMonica) { try { sigMonica = localStorage.getItem('eq_monica_assinatura'); } catch(e){} }
+  if (!sigBruno)  { try { sigBruno  = localStorage.getItem('eq_bruno_assinatura');  } catch(e){} }
 
-  var sigHtml = _savedSignature
-    ? '<img src="' + _savedSignature + '" style="max-height:60px;max-width:200px;display:block;margin:0 auto;">'
-    : '<div style="height:60px;"></div>';
-
-  // Primeiro assinante: o selecionado (Mônica ou Bruno)
-  var nomeAss1, cargoAss1, sig1Html;
-  if (assinante === 'bruno') {
-    nomeAss1  = 'BRUNO NATHAN DA SILVA';
-    cargoAss1 = 'Analista de RH';
-    sig1Html  = sigHtml; // assinatura digital vai para Bruno
-  } else {
-    nomeAss1  = 'MÔNICA SANTOS';
-    cargoAss1 = 'Coordenadora de Recursos Humanos';
-    sig1Html  = sigHtml;
-  }
-
-  // Segundo assinante: sempre o outro (linha em branco)
-  var nomeAss2  = (assinante === 'bruno') ? 'MÔNICA SANTOS'          : 'BRUNO NATHAN DA SILVA';
-  var cargoAss2 = (assinante === 'bruno') ? 'Coordenadora de Recursos Humanos' : 'Analista de RH';
+  var imgStyle = 'max-height:56px;max-width:180px;display:block;margin:0 auto 2px;';
+  var sigMonHtml = sigMonica ? '<img src="' + sigMonica + '" style="' + imgStyle + '">' : '<div style="height:56px;"></div>';
+  var sigBruHtml = sigBruno  ? '<img src="' + sigBruno  + '" style="' + imgStyle + '">' : '<div style="height:56px;"></div>';
 
   return [
-    '<div style="page-break-inside:avoid;margin-top:24px;border-top:2px solid #1f5c44;padding-top:16px;font-family:Calibri,Arial,sans-serif;">',
-      '<div style="font-size:8.5pt;color:#777;margin-bottom:12px;text-align:center;">' + nomeEmp + ' &nbsp;|&nbsp; ' + cnpjEmp + ' &nbsp;|&nbsp; ' + endEmp + '</div>',
-      '<div style="display:flex;justify-content:flex-end;gap:24px;flex-wrap:wrap;">',
-        // Assinante 1 (com assinatura digital)
-        '<div style="text-align:center;min-width:190px;">',
-          sig1Html,
-          '<div style="border-top:1.5px solid #333;padding-top:5px;">',
-            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">' + nomeAss1 + '</div>',
-            '<div style="font-size:9pt;color:#555;">' + cargoAss1 + '</div>',
-            '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+    '<div style="page-break-inside:avoid;margin-top:28px;border-top:2px solid #1f5c44;padding-top:16px;font-family:Calibri,Arial,sans-serif;">',
+      '<div style="font-size:8.5pt;color:#777;margin-bottom:14px;text-align:center;">',
+        nomeEmp + ' &nbsp;|&nbsp; ' + cnpjEmp + ' &nbsp;|&nbsp; ' + endEmp,
+      '</div>',
+      '<div style="display:flex;justify-content:flex-end;gap:32px;flex-wrap:wrap;">',
+        // Mônica
+        '<div style="text-align:center;min-width:200px;">',
+          sigMonHtml,
+          '<div style="border-top:1.5px solid #333;padding-top:6px;">',
+            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">MÔNICA SANTOS</div>',
+            '<div style="font-size:9pt;color:#555;">Coordenadora de Recursos Humanos</div>',
+            '<div style="font-size:8pt;color:#888;">' + nomeEmp + '</div>',
           '</div>',
         '</div>',
-        // Assinante 2 (linha em branco)
-        '<div style="text-align:center;min-width:190px;">',
-          '<div style="height:60px;"></div>',
-          '<div style="border-top:1.5px solid #333;padding-top:5px;">',
-            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">' + nomeAss2 + '</div>',
-            '<div style="font-size:9pt;color:#555;">' + cargoAss2 + '</div>',
-            '<div style="font-size:8.5pt;color:#777;">' + nomeEmp + '</div>',
+        // Bruno
+        '<div style="text-align:center;min-width:200px;">',
+          sigBruHtml,
+          '<div style="border-top:1.5px solid #333;padding-top:6px;">',
+            '<div style="font-size:10pt;font-weight:700;color:#1f5c44;">BRUNO NATHAN DA SILVA</div>',
+            '<div style="font-size:9pt;color:#555;">Analista de RH</div>',
+            '<div style="font-size:8pt;color:#888;">' + nomeEmp + '</div>',
           '</div>',
         '</div>',
       '</div>',
@@ -10815,41 +10824,7 @@ function toggleEnvioGestor(el) {
   else             rdExpTab(allFuncs, 90, 'tb-e90');
   toast(curr ? 'Pendente.' : '✅ Marcado como enviado ao gestor!');
 }
-function sigSelecionarAssinante(valor) {
-  window._sigAssinante = valor;
 
-  // Update visual state
-  var optMon = document.getElementById('sig-opt-monica');
-  var optBru = document.getElementById('sig-opt-bruno');
-  var infoEl = document.getElementById('sig-assinante-info');
-  var nomeEl = document.getElementById('sig-assinante-nome');
-
-  if (optMon) optMon.style.cssText = optMon.style.cssText.replace(/border:[^;]+/, valor === 'monica' ? 'border:2px solid var(--green)' : 'border:2px solid var(--gray-200)');
-  if (optBru) optBru.style.cssText = optBru.style.cssText.replace(/border:[^;]+/, valor === 'bruno'  ? 'border:2px solid var(--green)' : 'border:2px solid var(--gray-200)');
-
-  var nome = valor === 'bruno' ? 'Bruno Nathan da Silva — Analista de RH' : 'Mônica Santos — Coordenadora de RH';
-  if (nomeEl) nomeEl.textContent = nome;
-
-  // Load saved signature for this signatory
-  var key = valor === 'bruno' ? 'eq_bruno_assinatura' : 'eq_monica_assinatura';
-  try {
-    var stored = localStorage.getItem(key);
-    _savedSignature = stored || null;
-  } catch(e) {}
-
-  // Show if this signatory already has a saved signature
-  if (infoEl) {
-    infoEl.innerHTML = _savedSignature
-      ? '✅ Assinando como: <strong>' + nome + '</strong> &nbsp;<span style="color:var(--green-dark);">(assinatura salva ✍️)</span>'
-      : '✍️ Assinando como: <strong>' + nome + '</strong> &nbsp;<span style="color:#e65100;">(sem assinatura salva — assine abaixo)</span>';
-  }
-
-  // Clear canvas for new signature
-  sigClear();
-
-  // Update _docAssinante too for document generation
-  window._docAssinante = valor;
-}
 </script>
 </body>
 </html>
