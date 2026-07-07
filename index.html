@@ -8150,14 +8150,15 @@ function renderFlashTable() {
         return kws.some(function(k){ return t.includes(k); });
       });
     }
-    var vtB     = findB(['VT','VALE TRANS']);
-    var vrB     = findB(['VR','VALE REFEI']);
-    var vaB     = findB(['VA','ALIMENTA']);
-    var combB   = findB(['COMBUST']);
-    var assimB  = findB(['ASSIDU']);
-    var bonusB  = findB(['BÔN','BON','PREM']);
-    var odontoB = findB(['ODONTO']);
-    var medB    = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
+    // Exact type matching to avoid 'VA' matching 'VALE TRANSPORTE'
+    var vtB     = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); });
+    var vrB     = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR'); });
+    var vaB     = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA'); });
+    var combB   = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return t.includes('COMBUST'); });
+    var assimB  = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return t.includes('ASSIDU'); });
+    var bonusB  = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return t.includes('BÔN')||t.includes('BON')||t.includes('PREM'); });
+    var odontoB = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return t.includes('ODONTO'); });
+    var medB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return t.includes('MÉD')||t.includes('MED')||t.includes('ASSIST.MED')||t.includes('ASSIST MED'); });
 
     var tr = document.createElement('tr');
 
@@ -8295,27 +8296,25 @@ async function gerarFlashXLSX() {
       var el = document.getElementById(id);
       return el ? (parseFloat(el.value)||0) : null;
     }
-    function findBenef(kws) {
+    function findBenef(matchFn) {
       var b = atribs.find(function(a){
         if (a.fid !== f.id || a.st !== 'Ativo') return false;
-        var t = (a.tipoBase||a.tipo||'').toUpperCase();
-        return kws.some(function(k){ return t.includes(k); });
+        return matchFn(a.tipoBase||a.tipo||'');
       });
       return b ? (parseFloat(b.valor)||0) : 0;
     }
 
-    // Dias: input da tela tem prioridade, fallback para diasEscala do cadastro ou 22
     var diasInp = getInp('dias-'+f.id);
     var dias = diasInp !== null ? diasInp : (parseInt(f.diasEscala)||22);
 
-    var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(['VT','VALE TRANS'])) : 0;
-    var vrDia  = chkVR    ? (getInp('vr-'+f.id)    !== null ? getInp('vr-'+f.id)    : findBenef(['VR','VALE REFEI'])) : 0;
-    var va     = chkVA    ? (getInp('va-'+f.id)    !== null ? getInp('va-'+f.id)    : findBenef(['VA','ALIMENTA']))   : 0;
-    var comb   = chkComb  ? (getInp('comb-'+f.id)  !== null ? getInp('comb-'+f.id)  : findBenef(['COMBUST']))         : 0;
-    var assim  = chkAssim ? (getInp('assim-'+f.id) !== null ? getInp('assim-'+f.id) : findBenef(['ASSIDU']))          : 0;
-    var bonus  = chkBonus ? (getInp('bonus-'+f.id) !== null ? getInp('bonus-'+f.id) : findBenef(['BÔN','BON','PREM'])): 0;
-    var odonto = chkOdonto? (getInp('odonto-'+f.id)!== null ? getInp('odonto-'+f.id): findBenef(['ODONTO']))          : 0;
-    var med    = chkMed   ? (getInp('med-'+f.id)   !== null ? getInp('med-'+f.id)   : findBenef(['MÉD','MED','ASSIST.MED','ASSIST MED'])): 0;
+    var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(function(t){ return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); })) : 0;
+    var vrDia  = chkVR    ? (getInp('vr-'+f.id)    !== null ? getInp('vr-'+f.id)    : findBenef(function(t){ return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR'); }))   : 0;
+    var va     = chkVA    ? (getInp('va-'+f.id)    !== null ? getInp('va-'+f.id)    : findBenef(function(t){ return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA'); })) : 0;
+    var comb   = chkComb  ? (getInp('comb-'+f.id)  !== null ? getInp('comb-'+f.id)  : findBenef(function(t){ return t.toUpperCase().includes('COMBUST'); }))  : 0;
+    var assim  = chkAssim ? (getInp('assim-'+f.id) !== null ? getInp('assim-'+f.id) : findBenef(function(t){ return t.toUpperCase().includes('ASSIDU'); }))   : 0;
+    var bonus  = chkBonus ? (getInp('bonus-'+f.id) !== null ? getInp('bonus-'+f.id) : findBenef(function(t){ return t.toUpperCase().includes('BÔN')||t.toUpperCase().includes('BON')||t.toUpperCase().includes('PREM'); })) : 0;
+    var odonto = chkOdonto? (getInp('odonto-'+f.id)!== null ? getInp('odonto-'+f.id): findBenef(function(t){ return t.toUpperCase().includes('ODONTO'); }))   : 0;
+    var med    = chkMed   ? (getInp('med-'+f.id)   !== null ? getInp('med-'+f.id)   : findBenef(function(t){ return t.toUpperCase().includes('MÉD')||t.toUpperCase().includes('MED')||t.toUpperCase().includes('ASSIST'); })) : 0;
 
     var row = ['"'+f.n+'"', '"'+(f.cpf||'')+'"', '"'+depNome+'"', '"'+dias+'"'];
     if (chkVT)    { row.push('"'+fmtN(vtDia)+'"'); row.push('"'+fmtN(vtDia*dias)+'"'); }
