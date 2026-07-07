@@ -988,11 +988,11 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         </div>
         <div class="form-group">
           <label>Período — De *</label>
-          <input type="date" id="flash-de" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <input type="date" id="flash-de" onchange="renderFlashTable()" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
         <div class="form-group">
           <label>Até *</label>
-          <input type="date" id="flash-ate" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <input type="date" id="flash-ate" onchange="renderFlashTable()" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
         <div class="form-group">
           <label>Unidade</label>
@@ -3641,7 +3641,7 @@ function fillFuncSel(selId, multi) {
   const s = document.getElementById(selId); if (!s) return;
   if (!multi) s.innerHTML = "<option value=''>Selecione</option>";
   else s.innerHTML = '';
-  DB.g('funcionarios').forEach(f => { const o = document.createElement('option'); o.value = f.id; o.textContent = f.n; s.appendChild(o); });
+  DB.g('funcionarios').filter(f => f.st !== 'Desligado').sort((a,b)=>a.n.localeCompare(b.n)).forEach(f => { const o = document.createElement('option'); o.value = f.id; o.textContent = f.n; s.appendChild(o); });
 }
 function fTab(id, btn) {
   ['ft1','ft2','ft3'].forEach(t => { const e = document.getElementById(t); if (e) e.style.display = 'none'; });
@@ -8445,6 +8445,19 @@ function renderFlashTable() {
   if (tbl)   tbl.style.display  = '';
 
   var funcs  = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
+
+  // Calcular dias úteis (seg-sex) do período selecionado
+  function calcDiasUteis(de, ate) {
+    if (!de || !ate) return 22;
+    var d1 = new Date(de + 'T12:00:00'); var d2 = new Date(ate + 'T12:00:00');
+    if (d1 > d2) return 22;
+    var count = 0; var cur = new Date(d1);
+    while (cur <= d2) { var dow = cur.getDay(); if (dow !== 0 && dow !== 6) count++; cur.setDate(cur.getDate()+1); }
+    return count || 22;
+  }
+  var flashDe = (document.getElementById('flash-de')||{}).value||'';
+  var flashAte = (document.getElementById('flash-ate')||{}).value||'';
+  var diasUteisPeriodo = calcDiasUteis(flashDe, flashAte);
   var deps   = DB.g('departamentos');
   var atribs = DB.g('benef-atrib');
   if (!tbody) return;
@@ -8497,7 +8510,7 @@ function renderFlashTable() {
     // Dias de escala — campo numérico editável
     var inpDias = document.createElement('input');
     inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
-    inpDias.id = 'dias-'+f.id; inpDias.value = f.diasEscala || '22';
+    inpDias.id = 'dias-'+f.id; inpDias.value = f.diasEscala || diasUteisPeriodo || '22';
     inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
     inpDias.title = 'Dias trabalhados no período';
     inpDias.oninput = function(){ updateCalcCell(f.id); };
