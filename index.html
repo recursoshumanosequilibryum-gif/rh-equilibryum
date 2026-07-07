@@ -1636,6 +1636,36 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 </div>
 
 
+<!-- MODAL LISTA PRESENÇA -->
+<div class="modal-bg" id="modal-lista-presenca">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title">&#128203; Gerar Lista de Presença</span>
+      <button class="modal-close" onclick="closeModal('modal-lista-presenca')">&#215;</button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;font-weight:600;">TREINAMENTO: <span id="lp-titulo" style="color:var(--green-dark);"></span></div>
+      <input type="text" id="lp-busca" placeholder="&#128269; Buscar funcionário..." oninput="lpFiltrar()"
+        style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;color:var(--gray-600);">
+          Selecionados: <strong id="lp-count" style="color:var(--green-dark);">0</strong>
+        </span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="lpSelecionarTodos()">Selecionar todos</button>
+          <button class="btn btn-outline btn-sm" onclick="lpLimpar()">Limpar</button>
+        </div>
+      </div>
+      <div id="lp-lista" style="max-height:320px;overflow-y:auto;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-lista-presenca')">Cancelar</button>
+      <button class="btn btn-primary" onclick="lpConfirmar()">&#128203; Gerar Lista</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- MODAL CRONOGRAMA -->
 <div class="modal-bg" id="modal-cronograma">
   <div class="modal" style="max-width:600px;">
@@ -10540,7 +10570,104 @@ function handleListaAssinada(inp) {
 function gerarListaPresenca(tid) {
   var t = DB.g('treinamentos').find(function(x){ return x.id === tid; });
   if (!t) return;
-  _gerarListaPresencaObj(t);
+
+  // Store training id for later
+  window._lpTid = tid;
+
+  // Pre-select participants already saved in training
+  var savedParts = t.parts || [];
+  window._lpSelecionados = savedParts.slice();
+
+  // Fill modal
+  var tituloEl = document.getElementById('lp-titulo');
+  if (tituloEl) tituloEl.textContent = t.titulo;
+
+  var buscaEl = document.getElementById('lp-busca');
+  if (buscaEl) buscaEl.value = '';
+
+  lpFiltrar();
+  document.getElementById('modal-lista-presenca').classList.add('open');
+}
+
+function lpFiltrar() {
+  var busca = ((document.getElementById('lp-busca')||{}).value||'').toLowerCase();
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+    .filter(function(f){ return !busca || f.n.toLowerCase().includes(busca) || (f.dep||'').toLowerCase().includes(busca); })
+    .sort(function(a,b){ return a.n.localeCompare(b.n); });
+
+  var lista = document.getElementById('lp-lista');
+  if (!lista) return;
+
+  if (!funcs.length) {
+    lista.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray-400);font-size:13px;">Nenhum funcionário encontrado</div>';
+    return;
+  }
+
+  lista.innerHTML = funcs.map(function(f) {
+    var sel = window._lpSelecionados && window._lpSelecionados.indexOf(f.id) >= 0;
+    var dept = f.dep ? (' <span style="font-size:11px;color:var(--gray-400);">· ' + f.dep + '</span>') : '';
+    return '<label style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gray-100);transition:.15s;" ' +
+      '> ' +
+      '<input type="checkbox" data-fid="' + f.id + '" ' + (sel?'checked':'') + ' onchange="lpToggle(this)" ' +
+        'style="width:16px;height:16px;cursor:pointer;accent-color:var(--green);">' +
+      '<div>' +
+        '<div style="font-size:13px;font-weight:' + (sel?'700':'500') + ';color:var(--gray-800);">' + f.n + dept + '</div>' +
+      '</div>' +
+    '</label>';
+  }).join('');
+
+  lpAtualizarCount();
+}
+
+function lpToggle(cb) {
+  var fid = cb.dataset.fid;
+  if (!window._lpSelecionados) window._lpSelecionados = [];
+  if (cb.checked) {
+    if (window._lpSelecionados.indexOf(fid) < 0) window._lpSelecionados.push(fid);
+  } else {
+    window._lpSelecionados = window._lpSelecionados.filter(function(id){ return id !== fid; });
+  }
+  // Bold the name when selected
+  var lbl = cb.closest('label');
+  if (lbl) lbl.querySelector('div div').style.fontWeight = cb.checked ? '700' : '500';
+  lpAtualizarCount();
+}
+
+function lpAtualizarCount() {
+  var el = document.getElementById('lp-count');
+  if (el) el.textContent = (window._lpSelecionados||[]).length;
+}
+
+function lpSelecionarTodos() {
+  var checks = document.querySelectorAll('#lp-lista input[type=checkbox]');
+  checks.forEach(function(cb) {
+    cb.checked = true;
+    var fid = cb.dataset.fid;
+    if (window._lpSelecionados.indexOf(fid) < 0) window._lpSelecionados.push(fid);
+    var lbl = cb.closest('label');
+    if (lbl) lbl.querySelector('div div').style.fontWeight = '700';
+  });
+  lpAtualizarCount();
+}
+
+function lpLimpar() {
+  window._lpSelecionados = [];
+  var checks = document.querySelectorAll('#lp-lista input[type=checkbox]');
+  checks.forEach(function(cb) {
+    cb.checked = false;
+    var lbl = cb.closest('label');
+    if (lbl) lbl.querySelector('div div').style.fontWeight = '500';
+  });
+  lpAtualizarCount();
+}
+
+function lpConfirmar() {
+  var t = DB.g('treinamentos').find(function(x){ return x.id === window._lpTid; });
+  if (!t) return;
+  // Generate with selected participants
+  var tCopy = Object.assign({}, t, { parts: window._lpSelecionados || [] });
+  closeModal('modal-lista-presenca');
+  _gerarListaPresencaObj(tCopy);
 }
 function _gerarListaPresencaObj(t) {
   var funcs = DB.g('funcionarios');
