@@ -6213,13 +6213,133 @@ function exportRelCSV() {
 
 
 function exportBenefCSV(){
-  var funcs=DB.g('funcionarios');var atribs=DB.g('benef-atrib');
-  var rows=[['Funcionário','CPF','Cargo','Tipo Benefício','Valor Mensal','Início','Status','Obs.']];
-  atribs.forEach(function(a){var f=funcs.find(function(x){return x.id===a.fid;});rows.push([f?f.n:'?',f?f.cpf:'',f?f.car||'':'',a.tipo,a.valor||'',a.ini||'',a.st||'Ativo',a.obs||'']);});
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='beneficios_'+td()+'.csv';a.click();
+  var funcs  = DB.g('funcionarios');
+  var atribs = DB.g('benef-atrib');
+  var deps   = DB.g('departamentos');
+  var emps   = DB.g('empresas');
+
+  // Filter by empresa if selected
+  var filterEmp = (document.getElementById('benef-emp-filter')||{}).value || '';
+
+  // Tipos na ordem certa
+  var TIPOS = [
+    'VT – Vale Transporte',
+    'VR – Vale Refeição',
+    'VA – Vale Alimentação',
+    'Combustível',
+    'Assiduidade',
+    'Bônus',
+    'Assistência Odontológica',
+    'Assistência Médica',
+    'Triênio'
+  ];
+
+  // Agrupar por funcionário
+  var byFunc = {};
+  atribs.forEach(function(a) {
+    if (a.st !== 'Ativo') return;
+    var f = funcs.find(function(x){ return x.id === a.fid; });
+    if (!f) return;
+    if (filterEmp && f.emp !== filterEmp) return;
+    if (!byFunc[a.fid]) byFunc[a.fid] = { func: f, benefs: {} };
+    // Use tipoBase for matching
+    var tipoKey = a.tipoBase || a.tipo || '';
+    byFunc[a.fid].benefs[tipoKey] = parseFloat(a.valor) || 0;
+  });
+
+  // Sort by name
+  var fids = Object.keys(byFunc).sort(function(a, b) {
+    return byFunc[a].func.n.localeCompare(byFunc[b].func.n);
+  });
+
+  if (!fids.length) { alert('Nenhum benefício ativo para exportar.'); return; }
+
+  // Build rows
+  var header = ['FUNCIONÁRIO','CPF','CARGO','DEPARTAMENTO','EMPRESA'].concat(
+    TIPOS.map(function(t) {
+      // Short label for column header
+      var lbl = { 'VT – Vale Transporte':'VT (R$)', 'VR – Vale Refeição':'VR (R$)',
+        'VA – Vale Alimentação':'VA (R$)', 'Combustível':'COMBUSTÍVEL (R$)',
+        'Assiduidade':'ASSIDUIDADE (R$)', 'Bônus':'BÔNUS (R$)',
+        'Assistência Odontológica':'ODONTO (R$)', 'Assistência Médica':'ASSIST. MÉD. (R$)',
+        'Triênio':'TRIÊNIO (R$)' };
+      return lbl[t] || t;
+    })
+  ).concat(['TOTAL (R$)']);
+
+  var wsData = [header];
+
+  fids.forEach(function(fid) {
+    var item = byFunc[fid];
+    var f    = item.func;
+    var dep  = deps.find(function(d){ return d.id === f.dep; });
+    var emp  = emps.find(function(e){ return e.id === f.emp; });
+    var total = 0;
+
+    var row = [
+      f.n || '',
+      f.cpf || '',
+      f.car || '',
+      dep ? dep.nome : '',
+      emp ? emp.razao : ''
+    ];
+
+    TIPOS.forEach(function(t) {
+      var val = item.benefs[t] || 0;
+      total += val;
+      row.push(val > 0 ? val : '');
+    });
+
+    row.push(total > 0 ? total : '');
+    wsData.push(row);
+  });
+
+  // Export as XLSX if available
+  if (typeof XLSX !== 'undefined') {
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths
+    ws['!cols'] = [
+      {wch:35},{wch:16},{wch:25},{wch:22},{wch:30},
+      {wch:12},{wch:12},{wch:12},{wch:16},{wch:16},
+      {wch:16},{wch:14},{wch:16},{wch:14},{wch:14}
+    ];
+
+    // Format numeric cells as currency
+    var range = XLSX.utils.decode_range(ws['!ref']);
+    for (var R = 1; R <= range.e.r; R++) {
+      for (var C = 5; C <= range.e.c; C++) {
+        var addr = XLSX.utils.encode_cell({r:R, c:C});
+        if (ws[addr] && typeof ws[addr].v === 'number') {
+          ws[addr].z = '#.##0,00';
+        }
+      }
+    }
+
+    var wb = XLSX.utils.book_new();
+    var empNome = filterEmp ? (emps.find(function(e){return e.id===filterEmp;})||{}).razao||'Geral' : 'Geral';
+    XLSX.utils.book_append_sheet(wb, ws, 'Benefícios');
+    XLSX.writeFile(wb, 'Beneficios_' + empNome + '_' + td() + '.xlsx');
+    toast('Planilha exportada! (' + fids.length + ' funcionários)');
+    return;
+  }
+
+  // Fallback: CSV com ponto-e-vírgula (padrão Brasil)
+  var sep = ';';
+  var lines = [header.join(sep)];
+  wsData.slice(1).forEach(function(row) {
+    lines.push(row.map(function(c) {
+      if (typeof c === 'number') return String(c).replace('.',',');
+      return '"' + String(c||'').replace(/"/g,'""') + '"';
+    }).join(sep));
+  });
+  var csv = '\uFEFF' + lines.join('\r\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Beneficios_' + td() + '.csv';
+  a.click();
+  toast('CSV exportado! (' + fids.length + ' funcionários)');
 }
 
 function rdBenef(){
