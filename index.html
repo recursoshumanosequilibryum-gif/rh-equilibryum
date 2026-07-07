@@ -1666,6 +1666,21 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 </div>
 
 
+<!-- MODAL PREVIEW DOCUMENTO -->
+<div class="modal-bg" id="modal-doc-preview">
+  <div class="modal" style="max-width:860px;padding:0;overflow:hidden;">
+    <div class="modal-header" style="padding:14px 20px;border-bottom:1px solid var(--gray-200);">
+      <span class="modal-title" id="doc-preview-title" style="font-size:14px;">📄 Documento</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <a id="doc-preview-download" download style="display:none;" class="btn btn-outline btn-sm">⬇️ Baixar</a>
+        <button class="modal-close" onclick="closeModal('modal-doc-preview')">&#215;</button>
+      </div>
+    </div>
+    <div id="doc-preview-body" style="height:70vh;overflow:auto;background:#f5f5f5;display:flex;align-items:center;justify-content:center;"></div>
+  </div>
+</div>
+
+
 <!-- MODAL CRONOGRAMA -->
 <div class="modal-bg" id="modal-cronograma">
   <div class="modal" style="max-width:600px;">
@@ -3665,7 +3680,15 @@ function addDocsCategoria(inp, cat, label) {
   if (!files.length) return;
   if (!pendingDocsCat[cat]) pendingDocsCat[cat] = [];
   files.forEach(function(f) {
-    pendingDocsCat[cat].push({ file: f, label: label, id: uid() });
+    var itemId = uid();
+    // Read base64 for local preview
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var item = pendingDocsCat[cat] && pendingDocsCat[cat].find(function(x){ return x.id === itemId; });
+      if (item) item.dataUrl = e.target.result;
+    };
+    reader.readAsDataURL(f);
+    pendingDocsCat[cat].push({ file: f, label: label, id: itemId, dataUrl: null });
   });
   renderDocsCat(cat);
   atualizarResumoDocsPendentes();
@@ -3890,6 +3913,12 @@ async function savFunc() {
       });
     });
     if (allCatFiles.length > 0) {
+      // Save base64 previews to localStorage before upload
+      allCatFiles.forEach(function(df) {
+        if (df.dataUrl) {
+          try { localStorage.setItem('eq_doc_preview_' + updated.id + '_' + df.file.name, df.dataUrl); } catch(e) {}
+        }
+      });
       if (driveReady) {
         try {
           for (var di = 0; di < allCatFiles.length; di++) {
@@ -3959,6 +3988,12 @@ async function savFunc() {
       });
     });
     if (allCatFiles2.length > 0) {
+      // Save base64 previews to localStorage
+      allCatFiles2.forEach(function(df2) {
+        if (df2.dataUrl) {
+          try { localStorage.setItem('eq_doc_preview_' + f.id + '_' + df2.file.name, df2.dataUrl); } catch(e) {}
+        }
+      });
       if (driveReady) {
         try {
           for (var di2 = 0; di2 < allCatFiles2.length; di2++) {
@@ -4315,12 +4350,27 @@ function renderViewDocs(funcId) {
           link.innerHTML = '<span>📄</span><span style="flex:1;">' + d.name + '</span>';
           row.appendChild(link);
 
+          // Check for local preview first, fall back to Drive URL
+          var previewKeyD = 'eq_doc_preview_' + funcId + '_' + d.name;
+          var previewDataD = null;
+          try { previewDataD = localStorage.getItem(previewKeyD); } catch(e) {}
+          if (previewDataD) {
+            var btnPrev = document.createElement('button');
+            btnPrev.className = 'btn btn-outline btn-sm';
+            btnPrev.style.cssText = 'font-size:11px;padding:3px 10px;';
+            btnPrev.textContent = '👁️ Ver';
+            (function(data, name) {
+              btnPrev.onclick = function() { abrirPreviewDoc(data, name); };
+            })(previewDataD, d.name);
+            row.appendChild(btnPrev);
+          }
+
           var btnOpen = document.createElement('a');
           btnOpen.href = d.url;
           btnOpen.target = '_blank';
           btnOpen.className = 'btn btn-outline btn-sm';
           btnOpen.style.cssText = 'font-size:11px;padding:3px 8px;';
-          btnOpen.textContent = '↗️ Abrir';
+          btnOpen.textContent = '↗️ Drive';
           row.appendChild(btnOpen);
         } else {
           var nameEl = document.createElement('span');
@@ -4328,10 +4378,25 @@ function renderViewDocs(funcId) {
           nameEl.innerHTML = '<span>📄</span><span>' + d.name + '</span>';
           row.appendChild(nameEl);
 
+          // Check for local preview in localStorage
+          var previewKey = 'eq_doc_preview_' + funcId + '_' + d.name;
+          var previewData = null;
+          try { previewData = localStorage.getItem(previewKey); } catch(e) {}
+          if (previewData) {
+            var btnPreview = document.createElement('button');
+            btnPreview.className = 'btn btn-outline btn-sm';
+            btnPreview.style.cssText = 'font-size:11px;padding:3px 10px;';
+            btnPreview.textContent = '👁️ Ver';
+            (function(data, name) {
+              btnPreview.onclick = function() { abrirPreviewDoc(data, name); };
+            })(previewData, d.name);
+            row.appendChild(btnPreview);
+          }
+
           var localBadge = document.createElement('span');
           localBadge.className = 'badge badge-gray';
           localBadge.style.fontSize = '10px';
-          localBadge.textContent = '💾 Local';
+          localBadge.textContent = previewData ? '💾 Local' : '⚠️ Sem preview';
           row.appendChild(localBadge);
         }
 
@@ -11637,6 +11702,49 @@ function trPartsUpdateCount() {
   var n = sel ? sel.selectedOptions.length : 0;
   var el = document.getElementById('tr-parts-count');
   if (el) el.textContent = n + ' selecionado' + (n !== 1 ? 's' : '');
+}
+
+function abrirPreviewDoc(dataUrl, nome) {
+  document.getElementById('doc-preview-title').textContent = '📄 ' + nome;
+  var body = document.getElementById('doc-preview-body');
+  var dlBtn = document.getElementById('doc-preview-download');
+  dlBtn.href = dataUrl;
+  dlBtn.download = nome;
+  dlBtn.style.display = 'inline-flex';
+
+  var ext = nome.split('.').pop().toLowerCase();
+  body.innerHTML = '';
+
+  if (['jpg','jpeg','png','gif','webp','bmp'].indexOf(ext) >= 0) {
+    // Image preview
+    var img = document.createElement('img');
+    img.src = dataUrl;
+    img.style.cssText = 'max-width:100%;max-height:68vh;object-fit:contain;border-radius:4px;';
+    body.style.padding = '16px';
+    body.appendChild(img);
+
+  } else if (ext === 'pdf') {
+    // PDF embed
+    body.style.padding = '0';
+    var embed = document.createElement('embed');
+    embed.src = dataUrl;
+    embed.type = 'application/pdf';
+    embed.style.cssText = 'width:100%;height:70vh;border:none;';
+    body.appendChild(embed);
+
+  } else {
+    // Unsupported — show download prompt
+    body.style.padding = '32px';
+    body.innerHTML =
+      '<div style="text-align:center;">' +
+        '<div style="font-size:52px;margin-bottom:12px;">📎</div>' +
+        '<div style="font-size:15px;font-weight:600;color:var(--gray-800);margin-bottom:6px;">' + nome + '</div>' +
+        '<div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">Pré-visualização não disponível para este tipo de arquivo.</div>' +
+        '<a href="' + dataUrl + '" download="' + nome + '" class="btn btn-primary">⬇️ Baixar arquivo</a>' +
+      '</div>';
+  }
+
+  document.getElementById('modal-doc-preview').classList.add('open');
 }
 </script>
 </body>
