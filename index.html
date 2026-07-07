@@ -5814,11 +5814,12 @@ function rdBenefFunc() {
     }
   }
 
-  // Agrupar atribuições por funcionário
+  // Agrupar atribuições por funcionário (apenas ativos/afastados)
   var byFunc = {};
   allAtribs.forEach(function(a) {
     var f = funcs.find(function(x){ return x.id===a.fid; });
     if (!f) return;
+    if (f.st === 'Desligado') return;
     if (filterEmp && f.emp !== filterEmp) return;
     if (filterFid && a.fid !== filterFid) return;
     if (!byFunc[a.fid]) byFunc[a.fid] = [];
