@@ -4393,10 +4393,49 @@ function renderViewDocs(funcId) {
             row.appendChild(btnPreview);
           }
 
+          if (!previewData) {
+            // Re-attach button: lets user pick the file again to enable preview
+            var reBtn = document.createElement('label');
+            reBtn.className = 'btn btn-outline btn-sm';
+            reBtn.style.cssText = 'font-size:11px;padding:3px 10px;cursor:pointer;';
+            reBtn.title = 'Selecione o arquivo para ativar o preview';
+            reBtn.innerHTML = '📎 Ativar preview';
+            var reInp = document.createElement('input');
+            reInp.type = 'file';
+            reInp.style.display = 'none';
+            (function(fid, dname, key, rowEl) {
+              reInp.onchange = function() {
+                var file = this.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                  try { localStorage.setItem(key, e.target.result); } catch(ex) {}
+                  // Update row: replace re-attach with preview button
+                  var oldLabel = rowEl.querySelector('label');
+                  if (oldLabel) oldLabel.remove();
+                  var badge = rowEl.querySelector('.badge-gray');
+                  if (badge) badge.textContent = '💾 Local';
+                  var newBtn = document.createElement('button');
+                  newBtn.className = 'btn btn-outline btn-sm';
+                  newBtn.style.cssText = 'font-size:11px;padding:3px 10px;';
+                  newBtn.textContent = '👁️ Ver';
+                  newBtn.onclick = function() { abrirPreviewDoc(e.target.result, dname); };
+                  // Insert before the badge
+                  var badgeEl = rowEl.querySelector('.badge');
+                  rowEl.insertBefore(newBtn, badgeEl);
+                  toast('Preview ativado para ' + dname + ' ✅');
+                };
+                reader.readAsDataURL(file);
+              };
+            })(funcId, d.name, previewKey, row);
+            reBtn.appendChild(reInp);
+            row.appendChild(reBtn);
+          }
+
           var localBadge = document.createElement('span');
           localBadge.className = 'badge badge-gray';
           localBadge.style.fontSize = '10px';
-          localBadge.textContent = previewData ? '💾 Local' : '⚠️ Sem preview';
+          localBadge.textContent = previewData ? '💾 Local' : '💾 Local';
           row.appendChild(localBadge);
         }
 
