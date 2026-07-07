@@ -920,7 +920,10 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div class="card">
       <div class="card-header">
         <span class="card-title">Benefícios por Funcionário</span>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <select id="benef-emp-filter" onchange="rdBenefFunc()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+            <option value="">Todas as empresas</option>
+          </select>
           <select id="benef-func-filter" onchange="rdBenefFunc()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
             <option value="">Todos os funcionários</option>
           </select>
@@ -5742,6 +5745,7 @@ async function savBenefAtr() {
 
 function rdBenefFunc() {
   var filterFid = (document.getElementById('benef-func-filter')||{}).value || '';
+  var filterEmp = (document.getElementById('benef-emp-filter')||{}).value || '';
   var allAtribs = DB.g('benef-atrib');
   var funcs     = DB.g('funcionarios');
   var deps      = DB.g('departamentos');
@@ -5750,9 +5754,43 @@ function rdBenefFunc() {
   var emptyEl   = document.getElementById('benef-func-empty');
   if (!container) return;
 
+  // Fill empresa filter
+  var empSel = document.getElementById('benef-emp-filter');
+  if (empSel && empSel.options.length <= 1) {
+    emps.forEach(function(e) {
+      var o = document.createElement('option');
+      o.value = e.id; o.textContent = e.razao || e.nome;
+      empSel.appendChild(o);
+    });
+  }
+
+  // Fill funcionário filter (respecting empresa filter)
+  var funcSel = document.getElementById('benef-func-filter');
+  if (funcSel) {
+    var prevFid = funcSel.value;
+    funcSel.innerHTML = '<option value="">Todos os funcionários</option>';
+    funcs.filter(function(f){ return !filterEmp || f.emp === filterEmp; })
+      .sort(function(a,b){ return a.n.localeCompare(b.n); })
+      .forEach(function(f) {
+        var o = document.createElement('option');
+        o.value = f.id; o.textContent = f.n;
+        if (f.id === prevFid) o.selected = true;
+        funcSel.appendChild(o);
+      });
+    // reset func filter if employee not in this company
+    if (filterEmp && prevFid) {
+      var stillValid = funcs.find(function(f){ return f.id===prevFid && f.emp===filterEmp; });
+      if (!stillValid) funcSel.value = '';
+      filterFid = funcSel.value;
+    }
+  }
+
   // Agrupar atribuições por funcionário
   var byFunc = {};
   allAtribs.forEach(function(a) {
+    var f = funcs.find(function(x){ return x.id===a.fid; });
+    if (!f) return;
+    if (filterEmp && f.emp !== filterEmp) return;
     if (filterFid && a.fid !== filterFid) return;
     if (!byFunc[a.fid]) byFunc[a.fid] = [];
     byFunc[a.fid].push(a);
@@ -6088,20 +6126,89 @@ function exportRelCSV() {
   if(stF)  list=list.filter(function(f){return f.st===stF;});
   if(diF)  list=list.filter(function(f){return (f.adm||'')>=diF;});
   if(dfF)  list=list.filter(function(f){return (f.adm||'')<=dfF;});
-  var deps=DB.g('departamentos');var emps=DB.g('empresas');
-  var sep=';';
+  var deps=DB.g('departamentos'); var emps=DB.g('empresas');
+
+  if(!list.length){alert('Nenhum funcionário para exportar.');return;}
+
+  // Use XLSX if available for proper column formatting
+  if(typeof XLSX !== 'undefined') {
+    var wsData = [];
+    // Header row
+    wsData.push(['Nº','Nome','CPF','RG','Nascimento','Sexo','Estado Civil',
+      'Telefone','Email','Endereço','Cargo','Departamento','Empresa',
+      'Admissão','Tipo Contrato','Salário','Gestor','Status']);
+    list.forEach(function(f,i){
+      var dep=deps.find(function(d){return d.id===f.dep;});
+      var emp=emps.find(function(e){return e.id===f.emp;});
+      wsData.push([
+        i+1,
+        f.n||'',
+        f.cpf||'',
+        f.rg||'',
+        f.nas ? f.nas.split('-').reverse().join('/') : '',
+        f.sex||'',
+        f.ec||'',
+        f.tel||'',
+        f.email||'',
+        f.end||'',
+        f.car||'',
+        dep?dep.nome:'',
+        emp?emp.razao:'',
+        f.adm ? f.adm.split('-').reverse().join('/') : '',
+        f.tip||'CLT',
+        f.sal ? parseFloat(f.sal)||f.sal : '',
+        f.ges||'',
+        f.st||'Ativo'
+      ]);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Column widths
+    ws['!cols'] = [
+      {wch:5},{wch:35},{wch:16},{wch:14},{wch:13},{wch:10},{wch:14},
+      {wch:16},{wch:28},{wch:35},{wch:22},{wch:22},{wch:30},
+      {wch:12},{wch:14},{wch:12},{wch:22},{wch:12}
+    ];
+    // Style header row (bold)
+    var range = XLSX.utils.decode_range(ws['!ref']);
+    for(var C=range.s.c; C<=range.e.c; C++){
+      var addr = XLSX.utils.encode_cell({r:0,c:C});
+      if(!ws[addr]) continue;
+      ws[addr].s = {font:{bold:true},fill:{fgColor:{rgb:'1F5C44'}},
+        font:{bold:true,color:{rgb:'FFFFFF'}}};
+    }
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Funcionários');
+    var empNome = empF ? (emps.find(function(e){return e.id===empF;})||{}).razao||'Geral' : 'Geral';
+    XLSX.writeFile(wb, 'Relatorio_Funcionarios_' + empNome + '.xlsx');
+    toast('Relatório Excel exportado! (' + list.length + ' funcionários)');
+    return;
+  }
+
+  // Fallback CSV
+  var sep='	'; // tab separator for better Excel compatibility
   var headers=['Nº','Nome','CPF','RG','Nascimento','Sexo','Estado Civil','Telefone','Email','Endereço','Cargo','Departamento','Empresa','Admissão','Tipo Contrato','Salário','Gestor','Status'];
   var rows=[headers.join(sep)];
   list.forEach(function(f,i){
     var dep=deps.find(function(d){return d.id===f.dep;});
     var emp=emps.find(function(e){return e.id===f.emp;});
-    var row=[i+1,f.n||'',f.cpf||'',f.rg||'',f.nas||'',f.sex||'',f.ec||'',f.tel||'',f.email||'',f.end||'',f.car||'',dep?dep.nome:'',emp?emp.razao:'',f.adm||'',f.tip||'CLT',f.sal||'',f.ges||'',f.st||'Ativo'];
-    rows.push(row.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(sep));
+    var row=[
+      i+1, f.n||'', f.cpf||'', f.rg||'',
+      f.nas ? f.nas.split('-').reverse().join('/') : '',
+      f.sex||'', f.ec||'', f.tel||'', f.email||'', f.end||'',
+      f.car||'', dep?dep.nome:'', emp?emp.razao:'',
+      f.adm ? f.adm.split('-').reverse().join('/') : '',
+      f.tip||'CLT', f.sal||'', f.ges||'', f.st||'Ativo'
+    ];
+    rows.push(row.map(function(c){return String(c);}).join(sep));
   });
   var csv='\uFEFF'+rows.join('\r\n');
+
   var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='relatorio_funcionarios_'+td()+'.csv';a.click();
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Relatorio_Funcionarios.csv';
+  a.click();
+  toast('CSV exportado! (' + list.length + ' funcionários)');
 }
 
 
