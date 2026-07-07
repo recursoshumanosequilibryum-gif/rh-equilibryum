@@ -1097,7 +1097,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <div id="benef-rel-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Funcionário</th><th>VR</th><th>VA</th><th>Combustível</th><th>Assist. Médica</th><th>Assist. Odonto</th><th>Assiduidade</th><th>Bônus</th><th>Triênio</th><th>Outros</th><th>Total</th></tr></thead>
+          <thead><tr><th>Funcionário</th><th>VT</th><th>VR</th><th>VA</th><th>Combustível</th><th>Assist. Médica</th><th>Assist. Odonto</th><th>Assiduidade</th><th>Bônus</th><th>Triênio</th><th>Outros</th><th>Total</th></tr></thead>
           <tbody id="tb-benef-rel"></tbody>
           <tfoot id="tf-benef-rel" style="font-weight:700;background:var(--green-pale);"></tfoot>
         </table>
@@ -6076,10 +6076,10 @@ function fillBenefRelMeses(){
 function rdBenefRel(){
   var funcs=DB.g('funcionarios').filter(function(f){return f.st==='Ativo';});
   var atribs=DB.g('benef-atrib').filter(function(a){return a.st==='Ativo';});
-  var COLS=['VR – Vale Refeição','VA – Vale Alimentação','Combustível','Assistência Médica','Assistência Odontológica','Assiduidade','Bônus','Triênio','Outros'];
+  var COLS=['VT – Vale Transporte','VR – Vale Refeição','VA – Vale Alimentação','Combustível','Assistência Médica','Assistência Odontológica','Assiduidade','Bônus','Triênio','Outros'];
   var totRow={};COLS.forEach(function(c){totRow[c]=0;});var grandTotal=0;
   var tb=document.getElementById('tb-benef-rel');
-  if(!funcs.length){tb.innerHTML='<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhum funcionário ativo.</td></tr>';return;}
+  if(!funcs.length){tb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhum funcionário ativo.</td></tr>';return;}
   tb.innerHTML='';
   funcs.forEach(function(f){
     var fBenefs=atribs.filter(function(a){return a.fid===f.id;});
@@ -6127,6 +6127,28 @@ function exportRelCSV() {
   if(diF)  list=list.filter(function(f){return (f.adm||'')>=diF;});
   if(dfF)  list=list.filter(function(f){return (f.adm||'')<=dfF;});
   var deps=DB.g('departamentos'); var emps=DB.g('empresas');
+  var atribs=DB.g('benef-atrib');
+
+  // Helper: get benefit value for a func by type
+  var BENEF_MAP = [
+    { col:'VT (R$)',           match:function(t){return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT');} },
+    { col:'VR (R$)',           match:function(t){return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR');} },
+    { col:'VA (R$)',           match:function(t){return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA');} },
+    { col:'COMBUSTÍVEL (R$)',  match:function(t){return t.toUpperCase().includes('COMBUST');} },
+    { col:'ASSIDUIDADE (R$)', match:function(t){return t.toUpperCase().includes('ASSIDU');} },
+    { col:'BÔNUS (R$)',       match:function(t){return t.toUpperCase().includes('BÔN')||t.toUpperCase().includes('BON')||t.toUpperCase().includes('PREM');} },
+    { col:'ODONTO (R$)',      match:function(t){return t.toUpperCase().includes('ODONTO');} },
+    { col:'ASSIST. MÉD. (R$)',match:function(t){return t.toUpperCase().includes('MÉD')||t.toUpperCase().includes('MED')||t.toUpperCase().includes('ASSIST');} },
+    { col:'TRIÊNIO (R$)',     match:function(t){return t.toUpperCase().includes('TRIEN')||t.toUpperCase().includes('TRIÊ');} }
+  ];
+
+  function getBenef(fid, matchFn) {
+    var b = atribs.find(function(a){
+      if(a.fid!==fid || a.st!=='Ativo') return false;
+      return matchFn(a.tipoBase||a.tipo||'');
+    });
+    return b ? (parseFloat(b.valor)||0) : '';
+  }
 
   if(!list.length){alert('Nenhum funcionário para exportar.');return;}
 
@@ -6136,10 +6158,13 @@ function exportRelCSV() {
     // Header row
     wsData.push(['Nº','Nome','CPF','RG','Nascimento','Sexo','Estado Civil',
       'Telefone','Email','Endereço','Cargo','Departamento','Empresa',
-      'Admissão','Tipo Contrato','Salário','Gestor','Status']);
+      'Admissão','Tipo Contrato','Salário','Gestor','Status',
+      'VT (R$)','VR (R$)','VA (R$)','COMBUSTÍVEL (R$)','ASSIDUIDADE (R$)',
+      'BÔNUS (R$)','ODONTO (R$)','ASSIST. MÉD. (R$)','TRIÊNIO (R$)']);
     list.forEach(function(f,i){
       var dep=deps.find(function(d){return d.id===f.dep;});
       var emp=emps.find(function(e){return e.id===f.emp;});
+      var benefVals = BENEF_MAP.map(function(b){ return getBenef(f.id, b.match); });
       wsData.push([
         i+1,
         f.n||'',
@@ -6159,14 +6184,15 @@ function exportRelCSV() {
         f.sal ? parseFloat(f.sal)||f.sal : '',
         f.ges||'',
         f.st||'Ativo'
-      ]);
+      ].concat(benefVals));
     });
     var ws = XLSX.utils.aoa_to_sheet(wsData);
     // Column widths
     ws['!cols'] = [
       {wch:5},{wch:35},{wch:16},{wch:14},{wch:13},{wch:10},{wch:14},
       {wch:16},{wch:28},{wch:35},{wch:22},{wch:22},{wch:30},
-      {wch:12},{wch:14},{wch:12},{wch:22},{wch:12}
+      {wch:12},{wch:14},{wch:12},{wch:22},{wch:12},
+      {wch:12},{wch:12},{wch:12},{wch:16},{wch:16},{wch:12},{wch:12},{wch:16},{wch:12}
     ];
     // Style header row (bold)
     var range = XLSX.utils.decode_range(ws['!ref']);
@@ -6186,11 +6212,12 @@ function exportRelCSV() {
 
   // Fallback CSV
   var sep='	'; // tab separator for better Excel compatibility
-  var headers=['Nº','Nome','CPF','RG','Nascimento','Sexo','Estado Civil','Telefone','Email','Endereço','Cargo','Departamento','Empresa','Admissão','Tipo Contrato','Salário','Gestor','Status'];
+  var headers=['Nº','Nome','CPF','RG','Nascimento','Sexo','Estado Civil','Telefone','Email','Endereço','Cargo','Departamento','Empresa','Admissão','Tipo Contrato','Salário','Gestor','Status','VT (R$)','VR (R$)','VA (R$)','COMBUSTÍVEL (R$)','ASSIDUIDADE (R$)','BÔNUS (R$)','ODONTO (R$)','ASSIST. MÉD. (R$)','TRIÊNIO (R$)'];
   var rows=[headers.join(sep)];
   list.forEach(function(f,i){
     var dep=deps.find(function(d){return d.id===f.dep;});
     var emp=emps.find(function(e){return e.id===f.emp;});
+    var benefVals2 = BENEF_MAP.map(function(b){ return getBenef(f.id, b.match); });
     var row=[
       i+1, f.n||'', f.cpf||'', f.rg||'',
       f.nas ? f.nas.split('-').reverse().join('/') : '',
@@ -6198,7 +6225,7 @@ function exportRelCSV() {
       f.car||'', dep?dep.nome:'', emp?emp.razao:'',
       f.adm ? f.adm.split('-').reverse().join('/') : '',
       f.tip||'CLT', f.sal||'', f.ges||'', f.st||'Ativo'
-    ];
+    ].concat(benefVals2);
     rows.push(row.map(function(c){return String(c);}).join(sep));
   });
   var csv='\uFEFF'+rows.join('\r\n');
