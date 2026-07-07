@@ -4341,109 +4341,77 @@ function renderViewDocs(funcId) {
         row.className = 'doc-item';
         row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gray-50);border-radius:6px;margin-bottom:5px;';
 
-        // File name / link
-        if (hasUrl) {
-          var link = document.createElement('a');
-          link.href = d.url;
-          link.target = '_blank';
-          link.style.cssText = 'flex:1;font-size:13px;color:var(--green-dark);text-decoration:none;display:flex;align-items:center;gap:6px;';
-          link.innerHTML = '<span>📄</span><span style="flex:1;">' + d.name + '</span>';
-          row.appendChild(link);
+        // ── Nome do arquivo ──
+        var driveUrl = d.url || (d.id ? 'https://drive.google.com/file/d/' + d.id + '/view' : null);
+        var nameEl2 = document.createElement('span');
+        nameEl2.style.cssText = 'flex:1;font-size:13px;color:var(--gray-800);display:flex;align-items:center;gap:6px;overflow:hidden;';
+        nameEl2.innerHTML = '<span style="flex-shrink:0;">📄</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + d.name + '</span>';
+        row.appendChild(nameEl2);
 
-          // Check for local preview first, fall back to Drive URL
-          var previewKeyD = 'eq_doc_preview_' + funcId + '_' + d.name;
-          var previewDataD = null;
-          try { previewDataD = localStorage.getItem(previewKeyD); } catch(e) {}
-          if (previewDataD) {
-            var btnPrev = document.createElement('button');
-            btnPrev.className = 'btn btn-outline btn-sm';
-            btnPrev.style.cssText = 'font-size:11px;padding:3px 10px;';
-            btnPrev.textContent = '👁️ Ver';
-            (function(data, name) {
-              btnPrev.onclick = function() { abrirPreviewDoc(data, name); };
-            })(previewDataD, d.name);
-            row.appendChild(btnPrev);
-          }
+        // ── Botão principal: abrir ──
+        var pKey = 'eq_doc_preview_' + funcId + '_' + d.name;
+        var pData = null;
+        try { pData = localStorage.getItem(pKey); } catch(e) {}
 
-          var btnOpen = document.createElement('a');
-          btnOpen.href = d.url;
-          btnOpen.target = '_blank';
-          btnOpen.className = 'btn btn-outline btn-sm';
-          btnOpen.style.cssText = 'font-size:11px;padding:3px 8px;';
-          btnOpen.textContent = '↗️ Drive';
-          row.appendChild(btnOpen);
+        if (pData) {
+          // Has local base64 → open inline
+          var btnVer = document.createElement('button');
+          btnVer.className = 'btn btn-primary btn-sm';
+          btnVer.style.cssText = 'font-size:12px;padding:5px 14px;white-space:nowrap;';
+          btnVer.innerHTML = '👁️ Visualizar';
+          (function(data, name) {
+            btnVer.onclick = function() { abrirPreviewDoc(data, name); };
+          })(pData, d.name);
+          row.appendChild(btnVer);
+        } else if (driveUrl) {
+          // Has Drive URL → open in new tab (Google Drive Viewer)
+          var btnDrive = document.createElement('a');
+          btnDrive.href = driveUrl;
+          btnDrive.target = '_blank';
+          btnDrive.className = 'btn btn-primary btn-sm';
+          btnDrive.style.cssText = 'font-size:12px;padding:5px 14px;white-space:nowrap;text-decoration:none;';
+          btnDrive.innerHTML = '👁️ Visualizar';
+          row.appendChild(btnDrive);
         } else {
-          var nameEl = document.createElement('span');
-          nameEl.style.cssText = 'flex:1;font-size:13px;color:var(--gray-600);display:flex;align-items:center;gap:6px;';
-          nameEl.innerHTML = '<span>📄</span><span>' + d.name + '</span>';
-          row.appendChild(nameEl);
-
-          // Check for local preview in localStorage
-          var previewKey = 'eq_doc_preview_' + funcId + '_' + d.name;
-          var previewData = null;
-          try { previewData = localStorage.getItem(previewKey); } catch(e) {}
-          if (previewData) {
-            var btnPreview = document.createElement('button');
-            btnPreview.className = 'btn btn-outline btn-sm';
-            btnPreview.style.cssText = 'font-size:11px;padding:3px 10px;';
-            btnPreview.textContent = '👁️ Ver';
-            (function(data, name) {
-              btnPreview.onclick = function() { abrirPreviewDoc(data, name); };
-            })(previewData, d.name);
-            row.appendChild(btnPreview);
-          }
-
-          if (!previewData) {
-            // Re-attach button: lets user pick the file again to enable preview
-            var reBtn = document.createElement('label');
-            reBtn.className = 'btn btn-outline btn-sm';
-            reBtn.style.cssText = 'font-size:11px;padding:3px 10px;cursor:pointer;';
-            reBtn.title = 'Selecione o arquivo para ativar o preview';
-            reBtn.innerHTML = '📎 Ativar preview';
-            var reInp = document.createElement('input');
-            reInp.type = 'file';
-            reInp.style.display = 'none';
-            (function(fid, dname, key, rowEl) {
-              reInp.onchange = function() {
-                var file = this.files[0];
-                if (!file) return;
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                  try { localStorage.setItem(key, e.target.result); } catch(ex) {}
-                  // Update row: replace re-attach with preview button
-                  var oldLabel = rowEl.querySelector('label');
-                  if (oldLabel) oldLabel.remove();
-                  var badge = rowEl.querySelector('.badge-gray');
-                  if (badge) badge.textContent = '💾 Local';
-                  var newBtn = document.createElement('button');
-                  newBtn.className = 'btn btn-outline btn-sm';
-                  newBtn.style.cssText = 'font-size:11px;padding:3px 10px;';
-                  newBtn.textContent = '👁️ Ver';
-                  newBtn.onclick = function() { abrirPreviewDoc(e.target.result, dname); };
-                  // Insert before the badge
-                  var badgeEl = rowEl.querySelector('.badge');
-                  rowEl.insertBefore(newBtn, badgeEl);
-                  toast('Preview ativado para ' + dname + ' ✅');
-                };
-                reader.readAsDataURL(file);
+          // No preview available → re-attach
+          var reBtn2 = document.createElement('label');
+          reBtn2.className = 'btn btn-outline btn-sm';
+          reBtn2.style.cssText = 'font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;';
+          reBtn2.title = 'Selecione o arquivo para ativar o preview';
+          reBtn2.innerHTML = '📎 Ativar preview';
+          var reInp2 = document.createElement('input');
+          reInp2.type = 'file';
+          reInp2.style.display = 'none';
+          (function(fid2, dname2, key2, rowEl2) {
+            reInp2.onchange = function() {
+              var file2 = this.files[0];
+              if (!file2) return;
+              var reader2 = new FileReader();
+              reader2.onload = function(ev) {
+                try { localStorage.setItem(key2, ev.target.result); } catch(ex) {}
+                var oldLbl = rowEl2.querySelector('label');
+                if (oldLbl) oldLbl.remove();
+                var newBtn2 = document.createElement('button');
+                newBtn2.className = 'btn btn-primary btn-sm';
+                newBtn2.style.cssText = 'font-size:12px;padding:5px 14px;';
+                newBtn2.innerHTML = '👁️ Visualizar';
+                newBtn2.onclick = function() { abrirPreviewDoc(ev.target.result, dname2); };
+                rowEl2.insertBefore(newBtn2, rowEl2.querySelector('.badge'));
+                toast('Preview ativado: ' + dname2 + ' ✅');
               };
-            })(funcId, d.name, previewKey, row);
-            reBtn.appendChild(reInp);
-            row.appendChild(reBtn);
-          }
-
-          var localBadge = document.createElement('span');
-          localBadge.className = 'badge badge-gray';
-          localBadge.style.fontSize = '10px';
-          localBadge.textContent = previewData ? '💾 Local' : '💾 Local';
-          row.appendChild(localBadge);
+              reader2.readAsDataURL(file2);
+            };
+          })(funcId, d.name, pKey, row);
+          reBtn2.appendChild(reInp2);
+          row.appendChild(reBtn2);
         }
 
-        // Drive badge
+        // Status badge
         var driveBadge = document.createElement('span');
-        driveBadge.className = 'badge ' + (hasUrl ? 'badge-green' : 'badge-gray');
-        driveBadge.style.fontSize = '10px';
-        driveBadge.textContent = hasUrl ? '☁️ Drive' : '💾 Local';
+        var _dUrl = d.url || (d.id ? 'x' : null);
+        driveBadge.className = 'badge ' + (_dUrl ? 'badge-green' : 'badge-gray');
+        driveBadge.style.cssText = 'font-size:10px;white-space:nowrap;';
+        driveBadge.textContent = _dUrl ? '☁️ Drive' : '💾 Local';
         row.appendChild(driveBadge);
 
         // Delete button
