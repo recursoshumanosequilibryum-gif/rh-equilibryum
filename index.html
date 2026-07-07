@@ -1087,11 +1087,14 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div class="card">
       <div class="card-header">
         <span class="card-title">Relatório Geral de Benefícios</span>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <select id="benef-rel-mes" onchange="rdBenefRel()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
             <option value="">Todos os meses</option>
           </select>
-          <button class="btn btn-outline btn-sm" onclick="exportBenefCSV()">📄 Exportar CSV</button>
+          <select id="benef-rel-emp" onchange="rdBenefRel()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:180px;">
+            <option value="">Todas as empresas</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="exportBenefCSV()" style="white-space:nowrap;">📥 Exportar Excel</button>
         </div>
       </div>
       <div id="benef-rel-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px;"></div>
@@ -6087,7 +6090,17 @@ function fillBenefRelMeses(){
 }
 
 function rdBenefRel(){
-  var funcs=DB.g('funcionarios').filter(function(f){return f.st!=='Desligado';});
+  // Fill empresa selector
+  var relEmpSel = document.getElementById('benef-rel-emp');
+  if (relEmpSel && relEmpSel.options.length <= 1) {
+    DB.g('empresas').sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
+      .forEach(function(e){
+        var o = document.createElement('option'); o.value = e.id; o.textContent = e.razao||e.nome;
+        relEmpSel.appendChild(o);
+      });
+  }
+  var filterRelEmp = (relEmpSel||{}).value || '';
+  var funcs=DB.g('funcionarios').filter(function(f){ return f.st!=='Desligado' && (!filterRelEmp || f.emp===filterRelEmp); });
   var atribs=DB.g('benef-atrib').filter(function(a){return a.st==='Ativo';});
   var COLS=['VT – Vale Transporte','VR – Vale Refeição','VA – Vale Alimentação','Combustível','Assistência Médica','Assistência Odontológica','Assiduidade','Bônus','Triênio','Outros'];
   var totRow={};COLS.forEach(function(c){totRow[c]=0;});var grandTotal=0;
@@ -6286,8 +6299,9 @@ function exportBenefCSV(){
   var deps   = DB.g('departamentos');
   var emps   = DB.g('empresas');
 
-  // Filter by empresa if selected
-  var filterEmp = (document.getElementById('benef-emp-filter')||{}).value || '';
+  // Filter by empresa - read from Relatório Geral selector first, fallback to Por Funcionário selector
+  var filterEmp = (document.getElementById('benef-rel-emp')||{}).value ||
+                  (document.getElementById('benef-emp-filter')||{}).value || '';
 
   // Tipos na ordem certa
   var TIPOS = [
@@ -6373,14 +6387,21 @@ function exportBenefCSV(){
       {wch:16},{wch:14},{wch:16},{wch:14},{wch:14}
     ];
 
-    // Format numeric cells as currency
-    var range = XLSX.utils.decode_range(ws['!ref']);
-    for (var R = 1; R <= range.e.r; R++) {
-      for (var C = 5; C <= range.e.c; C++) {
-        var addr = XLSX.utils.encode_cell({r:R, c:C});
-        if (ws[addr] && typeof ws[addr].v === 'number') {
-          ws[addr].z = '#.##0,00';
-        }
+    // Format numeric cells as R$ currency
+    var rangeB = XLSX.utils.decode_range(ws['!ref']);
+    // Header style
+    for (var Ch = 0; Ch <= rangeB.e.c; Ch++) {
+      var hAddr = XLSX.utils.encode_cell({r:0, c:Ch});
+      if (ws[hAddr]) ws[hAddr].s = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1F5C44'}}};
+    }
+    // Data rows — currency from col 5 onward
+    for (var Rb = 1; Rb <= rangeB.e.r; Rb++) {
+      for (var Cb = 5; Cb <= rangeB.e.c; Cb++) {
+        var bAddr2 = XLSX.utils.encode_cell({r:Rb, c:Cb});
+        if (!ws[bAddr2]) { ws[bAddr2] = {t:'n', v:0}; }
+        if (typeof ws[bAddr2].v !== 'number') ws[bAddr2].v = parseFloat(ws[bAddr2].v) || 0;
+        ws[bAddr2].t = 'n';
+        ws[bAddr2].z = '"R$"\ #.##0,00';
       }
     }
 
