@@ -8660,7 +8660,7 @@ async function gerarFlashXLSX() {
   var periodo = deFmt + ' a ' + ateFmt;
 
   // Column order: Funcionário, CPF, Departamento, Dias Escala, then selected benefits
-  var headers = ['FUNCIONÁRIO','CPF','DEPARTAMENTO','DIAS ESCALA'];
+  var headers = ['CNPJ EMPRESA','FUNCIONÁRIO','CPF','DEPARTAMENTO','DIAS ESCALA'];
   if (chkVT)    { headers.push('VT/DIA (R$)'); headers.push('VT MENSAL (R$)'); }
   if (chkVR)    { headers.push('VR/DIA (R$)'); headers.push('VR MENSAL (R$)'); }
   if (chkVA)    headers.push('VA MENSAL (R$)');
@@ -8710,7 +8710,8 @@ async function gerarFlashXLSX() {
     var odonto = chkOdonto? (getInp('odonto-'+f.id)!== null ? getInp('odonto-'+f.id): findBenef(function(t){ return t.toUpperCase().includes('ODONTO'); }))   : 0;
     var med    = chkMed   ? (getInp('med-'+f.id)   !== null ? getInp('med-'+f.id)   : findBenef(function(t){ return t.toUpperCase().includes('MÉD')||t.toUpperCase().includes('MED')||t.toUpperCase().includes('ASSIST'); })) : 0;
 
-    var row = ['"'+f.n+'"', '"'+(f.cpf||'')+'"', '"'+depNome+'"', '"'+dias+'"'];
+    var cnpjEmpRow = emp ? (emp.cnpj||'') : '';
+    var row = ['"'+cnpjEmpRow+'"', '"'+f.n+'"', '"'+(f.cpf||'')+'"', '"'+depNome+'"', '"'+dias+'"'];
     if (chkVT)    { row.push('"'+fmtN(vtDia)+'"'); row.push('"'+fmtN(vtDia*dias)+'"'); }
     if (chkVR)    { row.push('"'+fmtN(vrDia)+'"'); row.push('"'+fmtN(vrDia*dias)+'"'); }
     if (chkVA)    row.push('"'+fmtN(va)+'"');
