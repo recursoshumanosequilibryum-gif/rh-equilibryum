@@ -2493,8 +2493,23 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
       <div class="form-group"><label>Instrutor</label><input id="tr-inst" type="text" placeholder="Nome do instrutor"></div>
       <div class="form-group"><label>Carga Horária (h)</label><input id="tr-ch" type="number" min="1" value="4"></div>
       <div class="form-group"><label>Status</label><select id="tr-st"><option>Agendado</option><option>Em andamento</option><option>Concluído</option><option>Cancelado</option></select></div>
-      <div class="form-group form-full"><label>Participantes (selecione)</label>
-        <select id="tr-parts" multiple="" style="min-height:100px;"></select>
+      <div class="form-group form-full">
+        <label>Participantes</label>
+        <div style="border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);overflow:hidden;">
+          <div style="padding:8px 10px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;gap:8px;align-items:center;">
+            <span style="font-size:14px;">🔍</span>
+            <input type="text" id="tr-parts-busca" placeholder="Buscar funcionário..." oninput="trPartsFiltrar()"
+              style="border:none;outline:none;background:transparent;font-size:13px;font-family:inherit;flex:1;">
+            <span id="tr-parts-count" style="font-size:11.5px;color:var(--green-dark);font-weight:700;white-space:nowrap;">0 selecionados</span>
+          </div>
+          <div style="display:flex;gap:6px;padding:6px 10px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+            <button type="button" onclick="trPartsSelectAll()" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">✅ Todos</button>
+            <button type="button" onclick="trPartsSelectNone()" class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px;">☐ Limpar</button>
+          </div>
+          <div id="tr-parts-list" style="max-height:200px;overflow-y:auto;"></div>
+        </div>
+        <!-- hidden select kept for compatibility with savTrein -->
+        <select id="tr-parts" multiple="" style="display:none;"></select>
       </div>
       <div class="form-group form-full">
         <label>📄 Materiais do Treinamento</label>
@@ -3575,7 +3590,7 @@ function openModal(id) {
       renderCandidatos(); renderAprovados();
     }
   }
-  if (id === 'modal-trein') { fillFuncSel('tr-parts',true); }
+  if (id === 'modal-trein') { fillFuncSel('tr-parts',true); trPartsFillPanel([]); }
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
   if (id === 'modal-benef-comp') { fillFuncSel('bcomp-funcs', true); fillBenefRelMeses(); }
@@ -6171,7 +6186,7 @@ function rdTrein(){
   renderList(conc,  'trein-conc-list');
   renderList(all,   'trein-todos-list');
 }
-function editTrein(id){var t=DB.g('treinamentos').find(function(x){return x.id===id;});if(!t)return;editingTreinId=id;fillFuncSel('tr-parts',true);document.getElementById('tr-titulo').value=t.titulo||'';document.getElementById('tr-desc').value=t.desc||'';document.getElementById('tr-data').value=t.data||'';document.getElementById('tr-hora').value=t.hora||'';document.getElementById('tr-local').value=t.local||'';document.getElementById('tr-inst').value=t.inst||'';document.getElementById('tr-ch').value=t.ch||4;document.getElementById('tr-st').value=t.st||'Agendado';Array.from(document.getElementById('tr-parts').options).forEach(function(o){o.selected=(t.parts||[]).includes(o.value);});document.getElementById('trein-modal-title').textContent='✏️ Editar Treinamento';document.getElementById('modal-trein').classList.add('open');}
+function editTrein(id){var t=DB.g('treinamentos').find(function(x){return x.id===id;});if(!t)return;editingTreinId=id;fillFuncSel('tr-parts',true);document.getElementById('tr-titulo').value=t.titulo||'';document.getElementById('tr-desc').value=t.desc||'';document.getElementById('tr-data').value=t.data||'';document.getElementById('tr-hora').value=t.hora||'';document.getElementById('tr-local').value=t.local||'';document.getElementById('tr-inst').value=t.inst||'';document.getElementById('tr-ch').value=t.ch||4;document.getElementById('tr-st').value=t.st||'Agendado';Array.from(document.getElementById('tr-parts').options).forEach(function(o){o.selected=(t.parts||[]).includes(o.value);});trPartsFillPanel(t.parts||[]);document.getElementById('trein-modal-title').textContent='✏️ Editar Treinamento';document.getElementById('modal-trein').classList.add('open');}
 async function delTrein(id){if(!confirm('Excluir treinamento?'))return;DB.s('treinamentos',DB.g('treinamentos').filter(function(t){return t.id!==id;}));if(driveReady) await driveSync('treinamentos');rdTrein();}
 
 // ============================================================
@@ -11477,6 +11492,89 @@ document.addEventListener('DOMContentLoaded', function() {
   // Always show sync overlay first
   showSyncOverlay();
 });
+
+// ── Treinamento: participants checkbox panel ──
+function trPartsFillPanel(selectedIds) {
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+    .sort(function(a,b){ return a.n.localeCompare(b.n); });
+  // Sync hidden select options
+  var sel = document.getElementById('tr-parts');
+  if (sel) {
+    sel.innerHTML = funcs.map(function(f){
+      return '<option value="'+f.id+'"'+(selectedIds.indexOf(f.id)>=0?' selected':'')+'>'+f.n+'</option>';
+    }).join('');
+  }
+  trPartsRenderList(funcs, selectedIds);
+}
+
+function trPartsRenderList(funcs, selectedIds) {
+  var container = document.getElementById('tr-parts-list');
+  if (!container) return;
+  var busca = ((document.getElementById('tr-parts-busca')||{}).value||'').toLowerCase();
+  var filtered = funcs.filter(function(f){ return !busca || f.n.toLowerCase().includes(busca); });
+  if (!filtered.length) {
+    container.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--gray-400);">Nenhum funcionário encontrado</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(function(f) {
+    var chk = selectedIds.indexOf(f.id) >= 0;
+    return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gray-100);background:'+(chk?'#f0faf5':'#fff')+';" ' +
+      'onclick="trPartsToggle(\''+f.id+'\',this)">' +
+      '<span style="width:18px;height:18px;border-radius:4px;border:2px solid '+(chk?'var(--green)':'var(--gray-200)')+';background:'+(chk?'var(--green)':'#fff')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:#fff;">'+(chk?'✓':'')+'</span>' +
+      '<span style="font-size:13px;font-weight:'+(chk?'700':'400')+';color:var(--gray-800);">'+f.n+'</span>' +
+      (f.dep?'<span style="font-size:11px;color:var(--gray-400);margin-left:auto;">'+f.dep+'</span>':'') +
+    '</label>';
+  }).join('');
+  trPartsUpdateCount();
+}
+
+function trPartsFiltrar() {
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; })
+    .sort(function(a,b){ return a.n.localeCompare(b.n); });
+  var sel = document.getElementById('tr-parts');
+  var selectedIds = sel ? Array.from(sel.selectedOptions).map(function(o){ return o.value; }) : [];
+  trPartsRenderList(funcs, selectedIds);
+}
+
+function trPartsToggle(fid, lbl) {
+  var sel = document.getElementById('tr-parts');
+  if (!sel) return;
+  var opt = Array.from(sel.options).find(function(o){ return o.value === fid; });
+  if (!opt) return;
+  opt.selected = !opt.selected;
+  var selectedIds = Array.from(sel.selectedOptions).map(function(o){ return o.value; });
+  // Update this label's appearance
+  var chk = opt.selected;
+  var box = lbl.querySelector('span:first-child');
+  if (box) { box.style.background = chk?'var(--green)':'#fff'; box.style.borderColor = chk?'var(--green)':'var(--gray-200)'; box.innerHTML = chk?'✓':''; }
+  var nameSpan = lbl.querySelectorAll('span')[1];
+  if (nameSpan) nameSpan.style.fontWeight = chk?'700':'400';
+  lbl.style.background = chk?'#f0faf5':'#fff';
+  trPartsUpdateCount();
+}
+
+function trPartsSelectAll() {
+  var sel = document.getElementById('tr-parts');
+  if (!sel) return;
+  Array.from(sel.options).forEach(function(o){ o.selected = true; });
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; }).sort(function(a,b){ return a.n.localeCompare(b.n); });
+  trPartsRenderList(funcs, Array.from(sel.selectedOptions).map(function(o){ return o.value; }));
+}
+
+function trPartsSelectNone() {
+  var sel = document.getElementById('tr-parts');
+  if (!sel) return;
+  Array.from(sel.options).forEach(function(o){ o.selected = false; });
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.st !== 'Desligado'; }).sort(function(a,b){ return a.n.localeCompare(b.n); });
+  trPartsRenderList(funcs, []);
+}
+
+function trPartsUpdateCount() {
+  var sel = document.getElementById('tr-parts');
+  var n = sel ? sel.selectedOptions.length : 0;
+  var el = document.getElementById('tr-parts-count');
+  if (el) el.textContent = n + ' selecionado' + (n !== 1 ? 's' : '');
+}
 </script>
 </body>
 </html>
