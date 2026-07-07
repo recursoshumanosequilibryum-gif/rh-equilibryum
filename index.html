@@ -1403,9 +1403,15 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 <div class="section-page" id="sec-relatorios">
   <div class="card">
     <div class="card-header"><span class="card-title">📊 Relatório de Funcionários</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-outline btn-sm" onclick="printRel()">🖶 Gerar PDF</button>
-        <button class="btn btn-primary btn-sm" onclick="exportRelCSV()">📄 Exportar Excel (CSV)</button>
+        <div style="display:flex;gap:6px;align-items:center;background:#f0f7f4;border:1.5px solid var(--green-light);border-radius:var(--radius-sm);padding:4px 10px;">
+          <span style="font-size:12px;color:var(--green-dark);font-weight:600;white-space:nowrap;">📥 Exportar:</span>
+          <select id="export-emp-sel" onchange="syncExportEmpFilter()" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;min-width:160px;">
+            <option value="">Todas as empresas</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="exportRelCSV()" style="white-space:nowrap;">📄 Gerar Excel</button>
+        </div>
       </div>
     </div>
     <div class="sort-bar">
@@ -5535,6 +5541,13 @@ function updDash() {
 // RELATÓRIO DE FUNCIONÁRIOS
 // ============================================================
 function rdRel() {
+  // Fill export empresa selector on first load
+  var expSel = document.getElementById('export-emp-sel');
+  if (expSel && expSel.options.length <= 1) {
+    DB.g('empresas').sort(function(a,b){return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||'');}).forEach(function(e){
+      var o = document.createElement('option'); o.value = e.id; o.textContent = e.razao||e.nome; expSel.appendChild(o);
+    });
+  }
   var empF = (document.getElementById('rel-emp') || {}).value || '';
   var depF = (document.getElementById('rel-dep') || {}).value || '';
   var stF  = (document.getElementById('rel-st')  || {}).value || '';
@@ -5769,7 +5782,7 @@ function rdBenefFunc() {
   if (funcSel) {
     var prevFid = funcSel.value;
     funcSel.innerHTML = '<option value="">Todos os funcionários</option>';
-    funcs.filter(function(f){ return !filterEmp || f.emp === filterEmp; })
+    funcs.filter(function(f){ return f.st !== 'Desligado' && (!filterEmp || f.emp === filterEmp); })
       .sort(function(a,b){ return a.n.localeCompare(b.n); })
       .forEach(function(f) {
         var o = document.createElement('option');
@@ -6074,7 +6087,7 @@ function fillBenefRelMeses(){
 }
 
 function rdBenefRel(){
-  var funcs=DB.g('funcionarios').filter(function(f){return f.st==='Ativo';});
+  var funcs=DB.g('funcionarios').filter(function(f){return f.st!=='Desligado';});
   var atribs=DB.g('benef-atrib').filter(function(a){return a.st==='Ativo';});
   var COLS=['VT – Vale Transporte','VR – Vale Refeição','VA – Vale Alimentação','Combustível','Assistência Médica','Assistência Odontológica','Assiduidade','Bônus','Triênio','Outros'];
   var totRow={};COLS.forEach(function(c){totRow[c]=0;});var grandTotal=0;
@@ -6114,8 +6127,20 @@ function rdBenefRel(){
   }).join('');
 }
 
+
+function syncExportEmpFilter() {
+  // Sync the export empresa selector with rel-emp filter for consistency
+  var expVal = (document.getElementById('export-emp-sel')||{}).value || '';
+  var relEmp = document.getElementById('rel-emp');
+  if (relEmp && expVal !== relEmp.value) {
+    relEmp.value = expVal;
+    rdRel();
+  }
+}
 function exportRelCSV() {
-  var empF=(document.getElementById('rel-emp')||{}).value||'';
+  // Read from export selector (primary) or rel-emp filter (fallback)
+  var empF = (document.getElementById('export-emp-sel')||{}).value ||
+             (document.getElementById('rel-emp')||{}).value || '';
   var depF=(document.getElementById('rel-dep')||{}).value||'';
   var stF=(document.getElementById('rel-st')||{}).value||'';
   var diF=(document.getElementById('rel-di')||{}).value||'';
@@ -6147,7 +6172,7 @@ function exportRelCSV() {
       if(a.fid!==fid || a.st!=='Ativo') return false;
       return matchFn(a.tipoBase||a.tipo||'');
     });
-    return b ? (parseFloat(b.valor)||0) : '';
+    return b ? (parseFloat(b.valor)||0) : 0;
   }
 
   if(!list.length){alert('Nenhum funcionário para exportar.');return;}
@@ -6191,16 +6216,32 @@ function exportRelCSV() {
     ws['!cols'] = [
       {wch:5},{wch:35},{wch:16},{wch:14},{wch:13},{wch:10},{wch:14},
       {wch:16},{wch:28},{wch:35},{wch:22},{wch:22},{wch:30},
-      {wch:12},{wch:14},{wch:12},{wch:22},{wch:12},
+      {wch:12},{wch:14},{wch:14},{wch:22},{wch:12},
       {wch:12},{wch:12},{wch:12},{wch:16},{wch:16},{wch:12},{wch:12},{wch:16},{wch:12}
     ];
+    // Apply currency format to benefit columns (cols 18 onward = index 18+)
+    var rangeAll = XLSX.utils.decode_range(ws['!ref']);
+    var benefStartCol = 18; // after: Nº,Nome,CPF,RG,Nasc,Sexo,EstCivil,Tel,Email,End,Cargo,Dep,Emp,Adm,TipoCont,Sal,Gestor,Status
+    for(var Rr=1; Rr<=rangeAll.e.r; Rr++) {
+      // Format Salário (col 15) as currency too
+      var salAddr = XLSX.utils.encode_cell({r:Rr, c:15});
+      if(ws[salAddr] && typeof ws[salAddr].v === 'number') ws[salAddr].z = '"R$"#.##0,00';
+      // Format benefit columns
+      for(var Cc=benefStartCol; Cc<=rangeAll.e.c; Cc++) {
+        var bAddr = XLSX.utils.encode_cell({r:Rr, c:Cc});
+        if(ws[bAddr]) {
+          if(typeof ws[bAddr].v !== 'number') ws[bAddr].v = 0;
+          ws[bAddr].t = 'n';
+          ws[bAddr].z = '"R$"\ #.##0,00';
+        }
+      }
+    }
     // Style header row (bold)
     var range = XLSX.utils.decode_range(ws['!ref']);
     for(var C=range.s.c; C<=range.e.c; C++){
       var addr = XLSX.utils.encode_cell({r:0,c:C});
       if(!ws[addr]) continue;
-      ws[addr].s = {font:{bold:true},fill:{fgColor:{rgb:'1F5C44'}},
-        font:{bold:true,color:{rgb:'FFFFFF'}}};
+      ws[addr].s = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1F5C44'}}};
     }
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Funcionários');
