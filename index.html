@@ -3807,6 +3807,21 @@ function editFunc(id) {
   var modalAv = document.getElementById('func-modal-avatar');
   if (modalAv) { modalAv.innerHTML = '👤'; }
   checkDriveDocs();
+  // Render existing docs per category
+  resetDocsCat();
+  (f.docs||[]).forEach(function(d) {
+    var cat = d.cat || 'outros';
+    var listEl = document.getElementById('docs-list-' + cat);
+    if (!listEl) listEl = document.getElementById('docs-list-outros');
+    if (!listEl) return;
+    var div = document.createElement('div');
+    div.className = 'doc-pending-item';
+    var link = d.url
+      ? '<a href="'+d.url+'" target="_blank" class="doc-name" title="'+d.name+'">📎 '+d.name+'</a>'
+      : '<span class="doc-name" title="'+d.name+'">📎 '+d.name+'</span>';
+    div.innerHTML = link + '<span class="doc-size">'+(d.cat?d.label||d.cat:'')+'</span>';
+    listEl.appendChild(div);
+  });
   // Set uniforme tab context
   _uniformeEditFid = f.id;
   renderUniformeModal(f.id);
@@ -3867,20 +3882,44 @@ async function savFunc() {
       adm: v('fadm'), tip: v('ftip'), ges: v('fges'), geswha: v('fgeswha'),
       st: v('fst')
     };
-    // Upload new docs if any
-    if (driveReady && pendingFiles.length > 0) {
-      try {
-        for (const file of pendingFiles) {
-          const uploaded = await uploadFileToDrive(file, nome);
-          updated.docs.push({ name: uploaded.name, id: uploaded.id, url: uploaded.webViewLink });
-          toast('📎 ' + file.name + ' enviado ao Drive!');
+    // Collect all files from pendingDocsCat
+    var allCatFiles = [];
+    Object.keys(pendingDocsCat).forEach(function(cat) {
+      (pendingDocsCat[cat]||[]).forEach(function(item) {
+        allCatFiles.push({ file: item.file, cat: cat, label: item.label });
+      });
+    });
+    if (allCatFiles.length > 0) {
+      if (driveReady) {
+        try {
+          for (var di = 0; di < allCatFiles.length; di++) {
+            var df = allCatFiles[di];
+            const uploaded = await uploadFileToDrive(df.file, nome);
+            updated.docs.push({ name: df.file.name, id: uploaded.id, url: uploaded.webViewLink, cat: df.cat, label: df.label });
+            toast('📎 ' + df.file.name + ' enviado ao Drive!');
+          }
+        } catch(e) {
+          toast('Erro no upload: ' + e.message, 'warn');
+          allCatFiles.forEach(function(df) { updated.docs.push({ name: df.file.name, id: null, url: null, cat: df.cat, label: df.label }); });
         }
-      } catch(e) {
-        toast('Erro no upload: ' + e.message, 'warn');
+      } else {
+        allCatFiles.forEach(function(df) { updated.docs.push({ name: df.file.name, id: null, url: null, cat: df.cat, label: df.label }); });
+      }
+    }
+    // Legacy pendingFiles support
+    if (pendingFiles.length > 0) {
+      if (driveReady) {
+        try {
+          for (const file of pendingFiles) {
+            const uploaded = await uploadFileToDrive(file, nome);
+            updated.docs.push({ name: uploaded.name, id: uploaded.id, url: uploaded.webViewLink });
+          }
+        } catch(e) {
+          pendingFiles.forEach(file => updated.docs.push({ name: file.name, id: null, url: null }));
+        }
+      } else {
         pendingFiles.forEach(file => updated.docs.push({ name: file.name, id: null, url: null }));
       }
-    } else {
-      pendingFiles.forEach(file => updated.docs.push({ name: file.name, id: null, url: null }));
     }
     list[idx] = updated;
     DB.s('funcionarios', list);
@@ -3912,20 +3951,44 @@ async function savFunc() {
       tamCalcado: v('ftam-calcado'), tamJaleco: v('ftam-jaleco'),
       docs: []
     };
-    // Upload docs to Drive
-    if (driveReady && pendingFiles.length > 0) {
-      try {
-        for (const file of pendingFiles) {
-          const uploaded = await uploadFileToDrive(file, nome);
-          f.docs.push({ name: uploaded.name, id: uploaded.id, url: uploaded.webViewLink });
-          toast('📎 ' + file.name + ' enviado ao Drive!');
+    // Collect all files from pendingDocsCat
+    var allCatFiles2 = [];
+    Object.keys(pendingDocsCat).forEach(function(cat) {
+      (pendingDocsCat[cat]||[]).forEach(function(item) {
+        allCatFiles2.push({ file: item.file, cat: cat, label: item.label });
+      });
+    });
+    if (allCatFiles2.length > 0) {
+      if (driveReady) {
+        try {
+          for (var di2 = 0; di2 < allCatFiles2.length; di2++) {
+            var df2 = allCatFiles2[di2];
+            const uploaded = await uploadFileToDrive(df2.file, nome);
+            f.docs.push({ name: df2.file.name, id: uploaded.id, url: uploaded.webViewLink, cat: df2.cat, label: df2.label });
+            toast('📎 ' + df2.file.name + ' enviado ao Drive!');
+          }
+        } catch(e) {
+          toast('Erro no upload de docs: ' + e.message, 'warn');
+          allCatFiles2.forEach(function(df2) { f.docs.push({ name: df2.file.name, id: null, url: null, cat: df2.cat, label: df2.label }); });
         }
-      } catch(e) {
-        toast('Erro no upload de docs: ' + e.message, 'warn');
+      } else {
+        allCatFiles2.forEach(function(df2) { f.docs.push({ name: df2.file.name, id: null, url: null, cat: df2.cat, label: df2.label }); });
+      }
+    }
+    // Legacy pendingFiles support
+    if (pendingFiles.length > 0) {
+      if (driveReady) {
+        try {
+          for (const file of pendingFiles) {
+            const uploaded = await uploadFileToDrive(file, nome);
+            f.docs.push({ name: uploaded.name, id: uploaded.id, url: uploaded.webViewLink });
+          }
+        } catch(e) {
+          pendingFiles.forEach(file => f.docs.push({ name: file.name, id: null, url: null }));
+        }
+      } else {
         pendingFiles.forEach(file => f.docs.push({ name: file.name, id: null, url: null }));
       }
-    } else {
-      pendingFiles.forEach(file => f.docs.push({ name: file.name, id: null, url: null }));
     }
     pendingFiles = [];
     list.push(f);
