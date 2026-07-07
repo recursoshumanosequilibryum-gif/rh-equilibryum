@@ -8284,20 +8284,40 @@ async function gerarFlashXLSX() {
 
   var fmtN = function(v){ return v > 0 ? v.toFixed(2).replace('.',',') : ''; };
 
+  var atribs = DB.g('benef-atrib');
+
   funcs.forEach(function(f) {
     var dep     = deps.find(function(d){ return d.id===f.dep; });
     var depNome = dep ? dep.nome : '';
-    var dias    = parseInt((document.getElementById('dias-'+f.id)||{}).value)||0;
-    var vtDia   = chkVT    ? (parseFloat((document.getElementById('vt-'+f.id)    ||{}).value)||0) : 0;
-    var vrDia   = chkVR    ? (parseFloat((document.getElementById('vr-'+f.id)    ||{}).value)||0) : 0;
-    var va      = chkVA    ? (parseFloat((document.getElementById('va-'+f.id)    ||{}).value)||0) : 0;
-    var comb    = chkComb  ? (parseFloat((document.getElementById('comb-'+f.id)  ||{}).value)||0) : 0;
-    var assim   = chkAssim ? (parseFloat((document.getElementById('assim-'+f.id) ||{}).value)||0) : 0;
-    var bonus   = chkBonus ? (parseFloat((document.getElementById('bonus-'+f.id) ||{}).value)||0) : 0;
-    var odonto  = chkOdonto? (parseFloat((document.getElementById('odonto-'+f.id)||{}).value)||0) : 0;
-    var med     = chkMed   ? (parseFloat((document.getElementById('med-'+f.id)   ||{}).value)||0) : 0;
 
-    var row = ['"'+f.n+'"', '"'+(f.cpf||'')+'"', '"'+depNome+'"', '"'+(dias||'')+'"'];
+    // Prioridade: input da tela (se existir) → benefício cadastrado → 0
+    function getInp(id) {
+      var el = document.getElementById(id);
+      return el ? (parseFloat(el.value)||0) : null;
+    }
+    function findBenef(kws) {
+      var b = atribs.find(function(a){
+        if (a.fid !== f.id || a.st !== 'Ativo') return false;
+        var t = (a.tipoBase||a.tipo||'').toUpperCase();
+        return kws.some(function(k){ return t.includes(k); });
+      });
+      return b ? (parseFloat(b.valor)||0) : 0;
+    }
+
+    // Dias: input da tela tem prioridade, fallback para diasEscala do cadastro ou 22
+    var diasInp = getInp('dias-'+f.id);
+    var dias = diasInp !== null ? diasInp : (parseInt(f.diasEscala)||22);
+
+    var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(['VT','VALE TRANS'])) : 0;
+    var vrDia  = chkVR    ? (getInp('vr-'+f.id)    !== null ? getInp('vr-'+f.id)    : findBenef(['VR','VALE REFEI'])) : 0;
+    var va     = chkVA    ? (getInp('va-'+f.id)    !== null ? getInp('va-'+f.id)    : findBenef(['VA','ALIMENTA']))   : 0;
+    var comb   = chkComb  ? (getInp('comb-'+f.id)  !== null ? getInp('comb-'+f.id)  : findBenef(['COMBUST']))         : 0;
+    var assim  = chkAssim ? (getInp('assim-'+f.id) !== null ? getInp('assim-'+f.id) : findBenef(['ASSIDU']))          : 0;
+    var bonus  = chkBonus ? (getInp('bonus-'+f.id) !== null ? getInp('bonus-'+f.id) : findBenef(['BÔN','BON','PREM'])): 0;
+    var odonto = chkOdonto? (getInp('odonto-'+f.id)!== null ? getInp('odonto-'+f.id): findBenef(['ODONTO']))          : 0;
+    var med    = chkMed   ? (getInp('med-'+f.id)   !== null ? getInp('med-'+f.id)   : findBenef(['MÉD','MED','ASSIST.MED','ASSIST MED'])): 0;
+
+    var row = ['"'+f.n+'"', '"'+(f.cpf||'')+'"', '"'+depNome+'"', '"'+dias+'"'];
     if (chkVT)    { row.push('"'+fmtN(vtDia)+'"'); row.push('"'+fmtN(vtDia*dias)+'"'); }
     if (chkVR)    { row.push('"'+fmtN(vrDia)+'"'); row.push('"'+fmtN(vrDia*dias)+'"'); }
     if (chkVA)    row.push('"'+fmtN(va)+'"');
