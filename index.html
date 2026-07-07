@@ -8460,12 +8460,63 @@ function renderFlashTable() {
   var funcs  = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
 
   // Calcular dias úteis (seg-sex) do período selecionado
+  function getFeriadosSP(ano) {
+    // Cálculo da Páscoa (algoritmo de Meeus/Jones/Butcher)
+    var a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4;
+    var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
+    var i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+    var m=Math.floor((a+11*h+22*l)/451);
+    var mes=Math.floor((h+l-7*m+114)/31)-1; // 0-based
+    var dia=(h+l-7*m+114)%31+1;
+    var pascoa=new Date(ano,mes,dia);
+    // Datas derivadas da Páscoa
+    var carnaval1=new Date(pascoa); carnaval1.setDate(pascoa.getDate()-48);
+    var carnaval2=new Date(pascoa); carnaval2.setDate(pascoa.getDate()-47);
+    var sextaSanta=new Date(pascoa); sextaSanta.setDate(pascoa.getDate()-2);
+    var corpusChristi=new Date(pascoa); corpusChristi.setDate(pascoa.getDate()+60);
+
+    function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+    var feriados = [
+      // Nacionais fixos
+      ano+'-01-01', // Confraternização Universal
+      ano+'-04-21', // Tiradentes
+      ano+'-05-01', // Dia do Trabalho
+      ano+'-09-07', // Independência
+      ano+'-10-12', // Nossa Sra. Aparecida
+      ano+'-11-02', // Finados
+      ano+'-11-15', // Proclamação da República
+      ano+'-11-20', // Consciência Negra (nacional desde 2023)
+      ano+'-12-25', // Natal
+      // Nacionais móveis
+      fmt(carnaval1),   // Carnaval segunda
+      fmt(carnaval2),   // Carnaval terça
+      fmt(sextaSanta),  // Sexta-feira Santa
+      fmt(pascoa),      // Páscoa
+      fmt(corpusChristi), // Corpus Christi
+      // Estaduais SP
+      ano+'-01-25', // Aniversário de São Paulo
+      ano+'-07-09', // Revolução Constitucionalista
+    ];
+    return new Set(feriados);
+  }
+
   function calcDiasUteis(de, ate) {
     if (!de || !ate) return 22;
     var d1 = new Date(de + 'T12:00:00'); var d2 = new Date(ate + 'T12:00:00');
     if (d1 > d2) return 22;
+    // Collect years in range to get all feriados
+    var feriados = new Set();
+    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) {
+      getFeriadosSP(y).forEach(function(f){ feriados.add(f); });
+    }
     var count = 0; var cur = new Date(d1);
-    while (cur <= d2) { var dow = cur.getDay(); if (dow !== 0 && dow !== 6) count++; cur.setDate(cur.getDate()+1); }
+    while (cur <= d2) {
+      var dow = cur.getDay();
+      var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      if (dow !== 0 && dow !== 6 && !feriados.has(ds)) count++;
+      cur.setDate(cur.getDate()+1);
+    }
     return count || 22;
   }
   var flashDe = (document.getElementById('flash-de')||{}).value||'';
@@ -12322,6 +12373,41 @@ function exportHistFlash() {
   var label = filterAno ? filterAno : 'Todos';
   XLSX.writeFile(wb, 'Historico_Flash_' + label + '.xlsx');
   toast('Relatório consolidado exportado! ' + hist.length + ' período(s)');
+}
+
+// ── Feriados SP + Dias Úteis (global) ──
+function getFeriadosSPGlobal(ano) {
+  var a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4;
+  var f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
+  var i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  var m=Math.floor((a+11*h+22*l)/451);
+  var mes=Math.floor((h+l-7*m+114)/31)-1;
+  var dia=(h+l-7*m+114)%31+1;
+  var pascoa=new Date(ano,mes,dia);
+  function mv(base,offset){ var d2=new Date(base); d2.setDate(base.getDate()+offset); return d2; }
+  function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  return new Set([
+    ano+'-01-01', ano+'-04-21', ano+'-05-01', ano+'-09-07',
+    ano+'-10-12', ano+'-11-02', ano+'-11-15', ano+'-11-20', ano+'-12-25',
+    fmt(mv(pascoa,-48)), fmt(mv(pascoa,-47)), fmt(mv(pascoa,-2)),
+    fmt(pascoa), fmt(mv(pascoa,60)),
+    ano+'-01-25', ano+'-07-09'
+  ]);
+}
+function calcDiasUteisGlobal(de, ate) {
+  if (!de || !ate) return 22;
+  var d1=new Date(de+'T12:00:00'), d2=new Date(ate+'T12:00:00');
+  if (d1>d2) return 22;
+  var feriados=new Set();
+  for (var y=d1.getFullYear(); y<=d2.getFullYear(); y++) getFeriadosSPGlobal(y).forEach(function(f){ feriados.add(f); });
+  var count=0, cur=new Date(d1);
+  while (cur<=d2) {
+    var dow=cur.getDay();
+    var ds=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+    if (dow!==0 && dow!==6 && !feriados.has(ds)) count++;
+    cur.setDate(cur.getDate()+1);
+  }
+  return count||22;
 }
 </script>
 </body>
