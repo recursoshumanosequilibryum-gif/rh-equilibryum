@@ -913,6 +913,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
     <div class="tab" onclick="benefTab(&#39;bt-flash&#39;,this)">⚡ Gerar Arquivo Flash</div>
     <div class="tab" onclick="benefTab(&#39;bt-rel&#39;,this)">📊 Relatório Geral</div>
+    <div class="tab" onclick="benefTab(&#39;bt-hist&#39;,this)">📁 Histórico Flash</div>
   </div>
 
   <!-- ABA: POR FUNCIONÁRIO -->
@@ -1034,20 +1035,6 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         </div>
       </div>
 
-      <!-- Escalas de trabalho -->
-      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
-        <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;">⏰ Dias úteis por escala (para cálculo diário)</div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;">
-          <div class="form-group">
-            <label>Seg a Sex (dias no mês)</label>
-            <input type="number" id="flash-dias-55" value="22" min="1" max="27" style="width:80px;">
-          </div>
-          <div class="form-group">
-            <label>Seg a Sab (dias no mês)</label>
-            <input type="number" id="flash-dias-56" value="26" min="1" max="31" style="width:80px;">
-          </div>
-        </div>
-      </div>
 
       <!-- Tabela de funcionários com benefícios editáveis -->
       <div style="font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;">
@@ -1107,6 +1094,31 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       </div>
     </div>
   </div>
+
+  <!-- ABA: HISTÓRICO FLASH -->
+  <div id="bt-hist" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📁 Histórico de Arquivos Flash</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="hist-flash-emp" onchange="rdHistFlash()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:180px;">
+            <option value="">Todas as empresas</option>
+          </select>
+          <select id="hist-flash-ano" onchange="rdHistFlash()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+            <option value="">Todos os anos</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="exportHistFlash()">📊 Exportar Consolidado</button>
+        </div>
+      </div>
+      <div id="hist-flash-lista" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="hist-flash-vazio" style="text-align:center;padding:48px;color:var(--gray-400);">
+        <div style="font-size:40px;margin-bottom:10px;">📂</div>
+        <div style="font-weight:600;margin-bottom:4px;">Nenhum Flash salvo ainda</div>
+        <div style="font-size:13px;">Gere um Arquivo Flash e ele aparecerá aqui automaticamente.</div>
+      </div>
+    </div>
+  </div>
+
 
 </div>
 
@@ -5710,7 +5722,7 @@ function fmtMoney(val) {
 }
 
 function benefTab(id, btn) {
-  ['bt-func','bt-compras','bt-flash','bt-rel'].forEach(function(t) {
+  ['bt-func','bt-compras','bt-flash','bt-rel','bt-hist'].forEach(function(t) {
     var el = document.getElementById(t); if(el) el.style.display='none';
   });
   if(id==='bt-flash') rdFlash();
@@ -5720,6 +5732,7 @@ function benefTab(id, btn) {
   if(id==='bt-func')    rdBenefFunc();
   if(id==='bt-compras') rdBenefCompras();
   if(id==='bt-rel')     rdBenefRel();
+  if(id==='bt-hist')    rdHistFlash();
 }
 
 function benefTipoChange(sel) {
@@ -8670,7 +8683,37 @@ async function gerarFlashXLSX() {
       toast('Arquivo salvo no Drive ☁️');
     } catch(e) { console.warn(e); }
   }
-  toast('Arquivo gerado! ' + funcs.length + ' funcionário(s) — ' + periodo);
+  // ── Salvar snapshot no histórico ──
+  var snapshot = {
+    id: uid(),
+    empId: empId,
+    empNome: emp ? (emp.razao || emp.nome) : '',
+    de: de, ate: ate, periodo: periodo,
+    unid: unid,
+    geradoEm: new Date().toISOString(),
+    linhas: funcs.map(function(f) {
+      var dep2 = deps.find(function(d){ return d.id===f.dep; });
+      var dias2 = (function(){ var el=document.getElementById('dias-'+f.id); return el?(parseFloat(el.value)||0):0; })();
+      var vt2   = chkVT    ? (function(){ var el=document.getElementById('vt-'+f.id);   return el?(parseFloat(el.value)||0):0; })() : 0;
+      var vr2   = chkVR    ? (function(){ var el=document.getElementById('vr-'+f.id);   return el?(parseFloat(el.value)||0):0; })() : 0;
+      var va2   = chkVA    ? (function(){ var el=document.getElementById('va-'+f.id);   return el?(parseFloat(el.value)||0):0; })() : 0;
+      var cb2   = chkComb  ? (function(){ var el=document.getElementById('comb-'+f.id); return el?(parseFloat(el.value)||0):0; })() : 0;
+      var as2   = chkAssim ? (function(){ var el=document.getElementById('assim-'+f.id);return el?(parseFloat(el.value)||0):0; })() : 0;
+      var bn2   = chkBonus ? (function(){ var el=document.getElementById('bonus-'+f.id);return el?(parseFloat(el.value)||0):0; })() : 0;
+      var od2   = chkOdonto? (function(){ var el=document.getElementById('odonto-'+f.id);return el?(parseFloat(el.value)||0):0; })() : 0;
+      var md2   = chkMed   ? (function(){ var el=document.getElementById('med-'+f.id);  return el?(parseFloat(el.value)||0):0; })() : 0;
+      return { nome:f.n, cpf:f.cpf||'', dep:dep2?dep2.nome:'', dias:dias2,
+        vt:vt2, vr:vr2, va:va2, comb:cb2, assim:as2, bonus:bn2, odonto:od2, med:md2 };
+    })
+  };
+  var hist = DB.g('flash-hist');
+  // Replace if same empresa+periodo already exists
+  var existIdx = hist.findIndex(function(h){ return h.empId===empId && h.de===de && h.ate===ate; });
+  if (existIdx >= 0) hist[existIdx] = snapshot; else hist.push(snapshot);
+  DB.s('flash-hist', hist);
+  if (driveReady) driveSync('flash-hist');
+
+  toast('Arquivo gerado e salvo no histórico! ' + funcs.length + ' funcionário(s) — ' + periodo);
 }
 
 // ============================================================
@@ -12100,6 +12143,185 @@ function abrirPreviewDoc(dataUrl, nome) {
   }
 
   document.getElementById('modal-doc-preview').classList.add('open');
+}
+
+// ============================================================
+// HISTÓRICO FLASH
+// ============================================================
+function rdHistFlash() {
+  var lista    = document.getElementById('hist-flash-lista');
+  var vazio    = document.getElementById('hist-flash-vazio');
+  var empSel   = document.getElementById('hist-flash-emp');
+  var anoSel   = document.getElementById('hist-flash-ano');
+  if (!lista) return;
+
+  var hist = DB.g('flash-hist');
+  var emps = DB.g('empresas');
+
+  // Fill empresa select
+  if (empSel && empSel.options.length <= 1) {
+    emps.sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
+      .forEach(function(e){
+        var o = document.createElement('option'); o.value = e.id; o.textContent = e.razao||e.nome;
+        empSel.appendChild(o);
+      });
+  }
+
+  // Fill ano select
+  if (anoSel) {
+    var anos = [...new Set(hist.map(function(h){ return h.de ? h.de.substr(0,4) : ''; }).filter(Boolean))].sort().reverse();
+    var curAno = anoSel.value;
+    anoSel.innerHTML = '<option value="">Todos os anos</option>';
+    anos.forEach(function(a){ var o=document.createElement('option'); o.value=a; o.textContent=a; if(a===curAno)o.selected=true; anoSel.appendChild(o); });
+  }
+
+  var filterEmp = (empSel||{}).value || '';
+  var filterAno = (anoSel||{}).value || '';
+
+  var filtered = hist.filter(function(h){
+    if (filterEmp && h.empId !== filterEmp) return false;
+    if (filterAno && (!h.de || !h.de.startsWith(filterAno))) return false;
+    return true;
+  }).sort(function(a,b){ return (b.de||'').localeCompare(a.de||''); });
+
+  lista.innerHTML = '';
+  if (!filtered.length) { if(vazio) vazio.style.display='block'; return; }
+  if (vazio) vazio.style.display = 'none';
+
+  filtered.forEach(function(h) {
+    var totalVT = h.linhas.reduce(function(s,l){ return s + (l.vt*l.dias); }, 0);
+    var totalVR = h.linhas.reduce(function(s,l){ return s + (l.vr*l.dias); }, 0);
+    var totalVA = h.linhas.reduce(function(s,l){ return s + l.va; }, 0);
+    var totalComb = h.linhas.reduce(function(s,l){ return s + l.comb; }, 0);
+    var totalGeral = totalVT + totalVR + totalVA + totalComb +
+      h.linhas.reduce(function(s,l){ return s + l.assim + l.bonus + l.odonto + l.med; }, 0);
+    var dataGer = h.geradoEm ? new Date(h.geradoEm).toLocaleDateString('pt-BR') : '';
+
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:12px;border:1.5px solid #e8ecef;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);';
+    card.innerHTML =
+      '<div style="background:linear-gradient(90deg,#e8f5ee,#fff);padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:14px;color:var(--green-dark);">📅 ' + h.periodo + '</div>' +
+          '<div style="font-size:12px;color:#666;margin-top:2px;">' + h.empNome + (h.unid?' · '+h.unid:'') + ' · ' + h.linhas.length + ' funcionários · Gerado em ' + dataGer + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<button data-hid="'+h.id+'" onclick="reexportFlash(this.dataset.hid)" class="btn btn-outline btn-sm">📥 Re-exportar</button>' +
+          '<button data-hid="'+h.id+'" onclick="delHistFlash(this.dataset.hid)" style="background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;">🗑️</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="padding:12px 18px;display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#555;">' +
+        (totalVT  ?'<span>🚌 VT: <strong>'+fmtMoney(totalVT)+'</strong></span>':'') +
+        (totalVR  ?'<span>🍽️ VR: <strong>'+fmtMoney(totalVR)+'</strong></span>':'') +
+        (totalVA  ?'<span>🛒 VA: <strong>'+fmtMoney(totalVA)+'</strong></span>':'') +
+        (totalComb?'<span>⛽ Comb: <strong>'+fmtMoney(totalComb)+'</strong></span>':'') +
+        '<span style="margin-left:auto;font-weight:700;color:var(--green-dark);">Total: '+fmtMoney(totalGeral)+'</span>' +
+      '</div>';
+    lista.appendChild(card);
+  });
+}
+
+function delHistFlash(hid) {
+  if (!confirm('Excluir este registro do histórico?')) return;
+  DB.s('flash-hist', DB.g('flash-hist').filter(function(h){ return h.id !== hid; }));
+  if (driveReady) driveSync('flash-hist');
+  rdHistFlash();
+}
+
+function reexportFlash(hid) {
+  var h = DB.g('flash-hist').find(function(x){ return x.id === hid; });
+  if (!h) return;
+
+  if (typeof XLSX !== 'undefined') {
+    var headers = ['FUNCIONÁRIO','CPF','DEPARTAMENTO','DIAS ESCALA',
+      'VT/DIA (R$)','VT MENSAL (R$)','VR/DIA (R$)','VR MENSAL (R$)',
+      'VA (R$)','COMBUSTÍVEL (R$)','ASSIDUIDADE (R$)','BÔNUS (R$)','ODONTO (R$)','ASSIST. MÉDICA (R$)'];
+    var wsData = [headers];
+    h.linhas.forEach(function(l) {
+      wsData.push([l.nome,l.cpf,l.dep,l.dias,
+        l.vt||'', l.vt?(l.vt*l.dias):'',
+        l.vr||'', l.vr?(l.vr*l.dias):'',
+        l.va||'', l.comb||'', l.assim||'', l.bonus||'', l.odonto||'', l.med||'']);
+    });
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{wch:35},{wch:16},{wch:22},{wch:10},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14}];
+    var rangeR = XLSX.utils.decode_range(ws['!ref']);
+    for (var Rr=1; Rr<=rangeR.e.r; Rr++) {
+      for (var Cc=4; Cc<=rangeR.e.c; Cc++) {
+        var addr = XLSX.utils.encode_cell({r:Rr,c:Cc});
+        if (ws[addr] && ws[addr].v) { ws[addr].t='n'; ws[addr].z='"R$"\\ #.##0,00'; }
+      }
+    }
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Flash');
+    XLSX.writeFile(wb, 'Flash_' + h.empNome.replace(/\s+/g,'_') + '_' + h.de + '_' + h.ate + '.xlsx');
+    toast('Re-exportado! ✅');
+  } else {
+    toast('XLSX não disponível. Tente recarregar a página.', 'warn');
+  }
+}
+
+function exportHistFlash() {
+  var filterEmp = (document.getElementById('hist-flash-emp')||{}).value || '';
+  var filterAno = (document.getElementById('hist-flash-ano')||{}).value || '';
+  var hist = DB.g('flash-hist').filter(function(h){
+    if (filterEmp && h.empId !== filterEmp) return false;
+    if (filterAno && (!h.de || !h.de.startsWith(filterAno))) return false;
+    return true;
+  }).sort(function(a,b){ return (a.de||'').localeCompare(b.de||''); });
+
+  if (!hist.length) { alert('Nenhum registro no histórico para exportar.'); return; }
+  if (typeof XLSX === 'undefined') { alert('XLSX não disponível.'); return; }
+
+  var wb = XLSX.utils.book_new();
+
+  // Sheet 1: Resumo por período
+  var resumo = [['EMPRESA','PERÍODO','FUNCIONÁRIOS','VT TOTAL','VR TOTAL','VA TOTAL','COMBUSTÍVEL','ASSIDUIDADE','BÔNUS','ODONTO','ASSIST. MÉD.','TOTAL GERAL']];
+  hist.forEach(function(h) {
+    var vt   = h.linhas.reduce(function(s,l){ return s+l.vt*l.dias;},0);
+    var vr   = h.linhas.reduce(function(s,l){ return s+l.vr*l.dias;},0);
+    var va   = h.linhas.reduce(function(s,l){ return s+l.va;},0);
+    var cb   = h.linhas.reduce(function(s,l){ return s+l.comb;},0);
+    var as   = h.linhas.reduce(function(s,l){ return s+l.assim;},0);
+    var bn   = h.linhas.reduce(function(s,l){ return s+l.bonus;},0);
+    var od   = h.linhas.reduce(function(s,l){ return s+l.odonto;},0);
+    var md   = h.linhas.reduce(function(s,l){ return s+l.med;},0);
+    resumo.push([h.empNome, h.periodo, h.linhas.length, vt, vr, va, cb, as, bn, od, md, vt+vr+va+cb+as+bn+od+md]);
+  });
+  var wsRes = XLSX.utils.aoa_to_sheet(resumo);
+  wsRes['!cols'] = [{wch:30},{wch:25},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14},{wch:14}];
+  var rRes = XLSX.utils.decode_range(wsRes['!ref']);
+  for (var Rr2=1; Rr2<=rRes.e.r; Rr2++) {
+    for (var Cc2=3; Cc2<=rRes.e.c; Cc2++) {
+      var addr2 = XLSX.utils.encode_cell({r:Rr2,c:Cc2});
+      if (wsRes[addr2]) { wsRes[addr2].t='n'; wsRes[addr2].z='"R$"\\ #.##0,00'; }
+    }
+  }
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumo por Período');
+
+  // Sheet 2+: one per period
+  hist.forEach(function(h) {
+    var sheetName = (h.periodo||'').replace(/[\/\\?*\[\]]/g,'-').substring(0,31);
+    var rows = [['FUNCIONÁRIO','CPF','DEPARTAMENTO','DIAS','VT/DIA','VT TOTAL','VR/DIA','VR TOTAL','VA','COMBUSTÍVEL','ASSIDUIDADE','BÔNUS','ODONTO','ASSIST. MÉD.','TOTAL']];
+    h.linhas.forEach(function(l) {
+      var tot = l.vt*l.dias + l.vr*l.dias + l.va + l.comb + l.assim + l.bonus + l.odonto + l.med;
+      rows.push([l.nome,l.cpf,l.dep,l.dias,l.vt,l.vt*l.dias,l.vr,l.vr*l.dias,l.va,l.comb,l.assim,l.bonus,l.odonto,l.med,tot]);
+    });
+    var ws2 = XLSX.utils.aoa_to_sheet(rows);
+    ws2['!cols'] = [{wch:35},{wch:16},{wch:22},{wch:8},{wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12},{wch:12}];
+    var r2 = XLSX.utils.decode_range(ws2['!ref']);
+    for (var Rr3=1; Rr3<=r2.e.r; Rr3++) {
+      for (var Cc3=4; Cc3<=r2.e.c; Cc3++) {
+        var addr3 = XLSX.utils.encode_cell({r:Rr3,c:Cc3});
+        if (ws2[addr3]) { ws2[addr3].t='n'; ws2[addr3].z='"R$"\\ #.##0,00'; }
+      }
+    }
+    XLSX.utils.book_append_sheet(wb, ws2, sheetName);
+  });
+
+  var label = filterAno ? filterAno : 'Todos';
+  XLSX.writeFile(wb, 'Historico_Flash_' + label + '.xlsx');
+  toast('Relatório consolidado exportado! ' + hist.length + ' período(s)');
 }
 </script>
 </body>
