@@ -1809,23 +1809,21 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 
 <!-- MODAL AJUSTE EM MASSA -->
 <div class="modal-bg" id="modal-ajuste-massa">
-  <div class="modal" style="max-width:640px;">
+  <div class="modal" style="max-width:660px;">
     <div class="modal-header">
-      <span class="modal-title">⚡ Ajuste de Benefícios em Massa</span>
+      <span class="modal-title">&#9889; Ajuste de Beneficios em Massa</span>
       <button class="modal-close" onclick="closeModal('modal-ajuste-massa')">&#215;</button>
     </div>
     <div style="padding:0 24px 16px;">
       <div style="background:#fff3cd;border-radius:8px;padding:10px 14px;border:1px solid #ffc107;font-size:12.5px;color:#856404;margin-bottom:16px;">
-        &#9888; Será aplicado a <strong id="massa-info-count">0</strong> funcionário(s) selecionado(s).
-        Deixe o campo em branco para não alterar aquele benefício.
+        &#9888; Sera aplicado a <strong id="massa-info-count">0</strong> funcionario(s) selecionado(s).
+        O valor atual e exibido em cada linha. Marque e informe o novo valor.
       </div>
-
-      <!-- Tabela de benefícios -->
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
           <tr style="background:var(--green-pale);">
-            <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Benefício</th>
-            <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Alterar?</th>
+            <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Beneficio</th>
+            <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);width:40px;">Alt.</th>
             <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Novo Valor (R$)</th>
             <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Tipo</th>
             <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Status</th>
@@ -1833,22 +1831,21 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         </thead>
         <tbody id="massa-benef-rows"></tbody>
       </table>
-
-      <div style="margin-top:14px;border-top:1px solid var(--gray-200);padding-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="margin-top:12px;border-top:1px solid var(--gray-200);padding-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
         <div style="flex:1;">
-          <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px;">Observação (aplicada em todos)</label>
-          <input type="text" id="massa-obs" placeholder="Ex.: Reajuste julho/2026"
+          <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px;">Observacao</label>
+          <input type="text" id="massa-obs" placeholder="Ex.: Reajuste anual 2026"
             style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;white-space:nowrap;">
           <input type="checkbox" id="massa-criar-se-nao-tem" style="width:16px;height:16px;accent-color:var(--green);">
-          Criar se não tiver
+          Criar se nao tiver
         </label>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-ajuste-massa')">Cancelar</button>
-      <button class="btn btn-primary" style="background:#e65100;" onclick="aplicarAjusteMassa()">⚡ Aplicar Ajuste em Massa</button>
+      <button class="btn btn-primary" style="background:#e65100;" onclick="aplicarAjusteMassa()">&#9889; Aplicar Ajuste em Massa</button>
     </div>
   </div>
 </div>
@@ -12842,49 +12839,67 @@ function benefMassaToggleAll() {
 
 function abrirAjusteMassa() {
   var chks = document.querySelectorAll('.benef-massa-chk:checked');
-  if (!chks.length) { alert('Selecione pelo menos um funcionário.'); return; }
+  if (!chks.length) { alert('Selecione pelo menos um funcionario.'); return; }
+  var fidsSelected = Array.from(chks).map(function(c){ return c.dataset.fid; });
   var infoEl = document.getElementById('massa-info-count');
-  if (infoEl) infoEl.textContent = chks.length;
+  if (infoEl) infoEl.textContent = fidsSelected.length;
   document.getElementById('massa-obs').value = '';
   document.getElementById('massa-criar-se-nao-tem').checked = false;
 
   var TIPOS = [
-    { tipo: 'VT – Vale Transporte',     icon: '🚌', tipoVal: 'Por dia' },
-    { tipo: 'VR – Vale Refeição',       icon: '🍽️', tipoVal: 'Por dia' },
-    { tipo: 'VA – Vale Alimentação',    icon: '🛒', tipoVal: 'Mensal fixo' },
-    { tipo: 'Combustível',              icon: '⛽', tipoVal: 'Mensal fixo' },
-    { tipo: 'Assiduidade',              icon: '⭐', tipoVal: 'Mensal' },
-    { tipo: 'Bônus',                    icon: '💰', tipoVal: 'Mensal' },
-    { tipo: 'Assistência Odontológica', icon: '🦷', tipoVal: 'Mensal fixo' },
-    { tipo: 'Assistência Médica',       icon: '🏥', tipoVal: 'Mensal fixo' },
-    { tipo: 'Triênio',                  icon: '📅', tipoVal: 'Mensal fixo' }
+    { tipo: 'VT – Vale Transporte',     icon: '&#x1F68C;', tipoVal: 'Por dia' },
+    { tipo: 'VR – Vale Refeição',       icon: '&#x1F37D;', tipoVal: 'Por dia' },
+    { tipo: 'VA – Vale Alimentação',    icon: '&#x1F6D2;', tipoVal: 'Mensal fixo' },
+    { tipo: 'Combustível',              icon: '&#x26FD;',  tipoVal: 'Mensal fixo' },
+    { tipo: 'Assiduidade',                   icon: '&#x2B50;',  tipoVal: 'Mensal' },
+    { tipo: 'Bônus',                    icon: '&#x1F4B0;', tipoVal: 'Mensal' },
+    { tipo: 'Assistência Odontológica', icon: '&#x1F9B7;', tipoVal: 'Mensal fixo' },
+    { tipo: 'Assistência Médica',  icon: '&#x1F3E5;', tipoVal: 'Mensal fixo' },
+    { tipo: 'Triênio',                  icon: '&#x1F4C5;', tipoVal: 'Mensal fixo' }
   ];
 
+  var atribsAll = DB.g('benef-atrib');
   var tbody = document.getElementById('massa-benef-rows');
   tbody.innerHTML = TIPOS.map(function(t, i) {
     var slug = 'mb' + i;
+    var valores = fidsSelected.map(function(fid) {
+      var a = atribsAll.find(function(x){
+        return x.fid === fid && (x.tipoBase||x.tipo||'') === t.tipo && x.st !== 'Encerrado';
+      });
+      return a ? parseFloat(a.valor)||0 : null;
+    }).filter(function(v){ return v !== null; });
+    var temBenef = valores.length > 0;
+    var valorMedio = temBenef ? valores.reduce(function(s,v){ return s+v; },0)/valores.length : 0;
+    var currentStr = temBenef ? 'Atual: R$ ' + valorMedio.toFixed(2).replace('.',',') : 'Nao cadastrado';
+    var border = temBenef ? 'var(--green)' : 'var(--gray-200)';
+    var bg     = temBenef ? '#fff'         : 'var(--gray-50)';
     return '<tr style="border-bottom:1px solid var(--gray-100);">' +
-      '<td style="padding:7px 10px;">' + t.icon + ' <strong>' + t.tipo + '</strong></td>' +
+      '<td style="padding:7px 10px;">' +
+        t.icon + ' <strong>' + t.tipo + '</strong>' +
+        '<br><span style="font-size:11px;color:' + (temBenef?'var(--green-dark)':'var(--gray-400)') + ';">' + currentStr + '</span>' +
+      '</td>' +
       '<td style="padding:7px 10px;text-align:center;">' +
-        '<input type="checkbox" id="' + slug + '-ck" ' +
-        'onchange="massaToggleLine(this)" ' +
+        '<input type="checkbox" id="' + slug + '-ck" onchange="massaToggleLine(this)" ' +
+        (temBenef ? 'checked ' : '') +
+        'style="width:16px;height:16px;cursor:pointer;accent-color:var(--green);">' +
       '</td>' +
       '<td style="padding:7px 10px;">' +
-        '<input type="number" id="' + slug + '-val" min="0" step="0.01" placeholder="0,00" disabled ' +
+        '<input type="number" id="' + slug + '-val" min="0" step="0.01" placeholder="Novo valor" ' +
+        (temBenef ? '' : 'disabled ') +
         'data-tipo="' + t.tipo + '" ' +
-        'style="width:90px;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:13px;font-family:inherit;background:var(--gray-50);">' +
+        'style="width:110px;padding:5px 8px;border:1.5px solid ' + border + ';border-radius:4px;font-size:13px;font-family:inherit;background:' + bg + ';">' +
       '</td>' +
       '<td style="padding:7px 10px;">' +
-        '<select id="' + slug + '-tv" disabled style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:var(--gray-50);">' +
+        '<select id="' + slug + '-tv" ' + (temBenef?'':'disabled ') + 'style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:' + bg + ';">' +
           '<option value="Por dia"' + (t.tipoVal==='Por dia'?' selected':'') + '>Por dia</option>' +
           '<option value="Mensal fixo"' + (t.tipoVal==='Mensal fixo'?' selected':'') + '>Mensal fixo</option>' +
           '<option value="Mensal"' + (t.tipoVal==='Mensal'?' selected':'') + '>Mensal</option>' +
         '</select>' +
       '</td>' +
       '<td style="padding:7px 10px;">' +
-        '<select id="' + slug + '-st" disabled style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:var(--gray-50);">' +
-          '<option value="Ativo">✅ Ativo</option>' +
-          '<option value="Suspenso">⏸️ Suspenso</option>' +
+        '<select id="' + slug + '-st" ' + (temBenef?'':'disabled ') + 'style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:' + bg + ';">' +
+          '<option value="Ativo">Ativo</option>' +
+          '<option value="Suspenso">Suspenso</option>' +
         '</select>' +
       '</td>' +
     '</tr>';
@@ -12912,7 +12927,6 @@ function aplicarAjusteMassa() {
   var obs = (document.getElementById('massa-obs').value||'').trim();
   var criarSeNaoTem = document.getElementById('massa-criar-se-nao-tem').checked;
 
-  // Collect which benefit lines are checked
   var linhas = [];
   for (var i = 0; i < 9; i++) {
     var slug = 'mb' + i;
@@ -12924,29 +12938,28 @@ function aplicarAjusteMassa() {
     var tipo  = valEl ? valEl.dataset.tipo : '';
     var valor = valEl ? parseFloat(valEl.value) : NaN;
     if (!tipo || isNaN(valor)) continue;
-    linhas.push({ tipo: tipo, valor: valor, tipoVal: tvEl?tvEl.value:'Mensal fixo', st: stEl?stEl.value:'Ativo' });
+    linhas.push({ tipo: tipo, valor: valor,
+      tipoVal: tvEl ? tvEl.value : 'Mensal fixo',
+      st: stEl ? stEl.value : 'Ativo' });
   }
-
-  if (!linhas.length) { alert('Marque pelo menos um benefício e informe o valor.'); return; }
+  if (!linhas.length) { alert('Marque pelo menos um beneficio e informe o novo valor.'); return; }
 
   var chks = document.querySelectorAll('.benef-massa-chk:checked');
   var fids = Array.from(chks).map(function(c){ return c.dataset.fid; });
-  if (!fids.length) { alert('Nenhum funcionário selecionado.'); return; }
+  if (!fids.length) { alert('Nenhum funcionario selecionado.'); return; }
 
   var atribs = DB.g('benef-atrib');
-  var atualizados = 0;
-  var criados = 0;
+  var atualizados = 0, criados = 0;
 
   fids.forEach(function(fid) {
     linhas.forEach(function(linha) {
       var idx = atribs.findIndex(function(a){
-        if (a.fid !== fid) return false;
-        return (a.tipoBase||a.tipo||'') === linha.tipo;
+        return a.fid === fid && (a.tipoBase||a.tipo||'') === linha.tipo;
       });
       if (idx >= 0) {
-        atribs[idx].valor  = linha.valor;
+        atribs[idx].valor   = linha.valor;
         atribs[idx].tipoVal = linha.tipoVal;
-        atribs[idx].st     = linha.st;
+        atribs[idx].st      = linha.st;
         if (obs) atribs[idx].obs = obs;
         atualizados++;
       } else if (criarSeNaoTem) {
@@ -12964,7 +12977,7 @@ function aplicarAjusteMassa() {
   document.querySelectorAll('.benef-massa-chk').forEach(function(c){ c.checked = false; });
   benefMassaUpdateCount();
   rdBenefFunc();
-  var msg = '✅ Ajuste aplicado! ' + atualizados + ' benefício(s) atualizado(s)';
+  var msg = 'Ajuste aplicado! ' + atualizados + ' beneficio(s) atualizado(s)';
   if (criados) msg += ', ' + criados + ' criado(s)';
   toast(msg);
 }
