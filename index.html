@@ -8611,6 +8611,24 @@ function renderFlashTable() {
   var flashDe = (document.getElementById('flash-de')||{}).value||'';
   var flashAte = (document.getElementById('flash-ate')||{}).value||'';
   var diasUteisPeriodo = calcDiasUteis(flashDe, flashAte);
+
+  // Calcular dias para escala Seg-Sab (inclui sábados, exclui domingos e feriados)
+  function calcDiasUteisComSab(de, ate) {
+    if (!de || !ate) return 26;
+    var d1 = new Date(de + 'T12:00:00'); var d2 = new Date(ate + 'T12:00:00');
+    if (d1 > d2) return 26;
+    var feriados = new Set();
+    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) getFeriadosSP(y).forEach(function(f){ feriados.add(f); });
+    var count = 0; var cur = new Date(d1);
+    while (cur <= d2) {
+      var dow = cur.getDay();
+      var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      if (dow !== 0 && !feriados.has(ds)) count++; // 0=domingo, exclui só domingo
+      cur.setDate(cur.getDate()+1);
+    }
+    return count || 26;
+  }
+  var diasUteisComSab = calcDiasUteisComSab(flashDe, flashAte);
   var deps   = DB.g('departamentos');
   var atribs = DB.g('benef-atrib');
   if (!tbody) return;
@@ -8663,7 +8681,9 @@ function renderFlashTable() {
     // Dias de escala — campo numérico editável
     var inpDias = document.createElement('input');
     inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
-    inpDias.id = 'dias-'+f.id; inpDias.value = f.diasEscala || diasUteisPeriodo || '22';
+    inpDias.id = 'dias-'+f.id; // Use escala do cadastro para determinar dias: "55"=Seg-Sex, "56"=Seg-Sab
+    var diasCalc = (f.escala === '56') ? diasUteisComSab : diasUteisPeriodo;
+    inpDias.value = diasCalc || '22';
     inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
     inpDias.title = 'Dias trabalhados no período';
     inpDias.oninput = function(){ updateCalcCell(f.id); };
@@ -8794,7 +8814,8 @@ async function gerarFlashXLSX() {
     }
 
     var diasInp = getInp('dias-'+f.id);
-    var dias = diasInp !== null ? diasInp : (parseInt(f.diasEscala)||22);
+    var diasFallback = (f.escala === '56') ? (diasUteisComSab||26) : (diasUteisPeriodo||22);
+    var dias = diasInp !== null ? diasInp : diasFallback;
 
     var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(function(t){ return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); })) : 0;
     var vrDia  = chkVR    ? (getInp('vr-'+f.id)    !== null ? getInp('vr-'+f.id)    : findBenef(function(t){ return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR'); }))   : 0;
