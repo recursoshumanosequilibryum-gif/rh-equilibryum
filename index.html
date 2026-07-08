@@ -928,6 +928,8 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <select id="benef-func-filter" onchange="rdBenefFunc()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
             <option value="">Todos os funcionários</option>
           </select>
+          <button class="btn btn-outline btn-sm" onclick="benefMassaToggleAll()" id="benef-selall-btn" title="Selecionar / desmarcar todos">☐ Selecionar todos</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirAjusteMassa()" id="benef-massa-btn" style="display:none;background:#e65100;">⚡ Ajuste em massa (<span id="benef-massa-count">0</span>)</button>
           <button class="btn btn-primary btn-sm" onclick="openModal(&#39;modal-benef-atr&#39;)">+ Atribuir Benefício</button>
         </div>
       </div>
@@ -1800,6 +1802,75 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-termo-aditivo')">Cancelar</button>
       <button class="btn btn-primary" onclick="gerarTermoAditivo()">📋 Gerar Documento</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL AJUSTE EM MASSA -->
+<div class="modal-bg" id="modal-ajuste-massa">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title">⚡ Ajuste de Benefício em Massa</span>
+      <button class="modal-close" onclick="closeModal('modal-ajuste-massa')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <div style="background:#fff3cd;border-radius:8px;padding:10px 14px;border:1px solid #ffc107;font-size:12.5px;color:#856404;">
+          &#9888; O ajuste será aplicado a <strong id="massa-info-count">0</strong> funcionário(s) selecionado(s).
+          Somente funcionários que já possuem o benefício selecionado serão atualizados.
+        </div>
+      </div>
+      <div class="form-group form-full">
+        <label>Tipo de Benefício *</label>
+        <select id="massa-tipo" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Selecione o benefício</option>
+          <option value="VT – Vale Transporte">🚌 VT – Vale Transporte</option>
+          <option value="VR – Vale Refeição">🍽️ VR – Vale Refeição</option>
+          <option value="VA – Vale Alimentação">🛒 VA – Vale Alimentação</option>
+          <option value="Combustível">⛽ Combustível</option>
+          <option value="Assiduidade">⭐ Assiduidade</option>
+          <option value="Bônus">💰 Bônus / Premiação</option>
+          <option value="Assistência Odontológica">🦷 Assist. Odontológica</option>
+          <option value="Assistência Médica">🏥 Assist. Médica</option>
+          <option value="Triênio">📅 Triênio</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Novo Valor (R$) *</label>
+        <input type="number" id="massa-valor" min="0" step="0.01" placeholder="Ex.: 18,76"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group">
+        <label>Tipo de cálculo</label>
+        <select id="massa-tipo-val" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="Por dia">Por dia</option>
+          <option value="Mensal fixo">Mensal fixo</option>
+          <option value="Mensal">Mensal</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Novo Status</label>
+        <select id="massa-status" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="Ativo">✅ Ativo</option>
+          <option value="Suspenso">⏸️ Suspenso</option>
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label>Observação (opcional)</label>
+        <input type="text" id="massa-obs" placeholder="Ex.: Reajuste julho/2026"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group form-full" style="border-top:1px solid var(--gray-200);padding-top:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="massa-criar-se-nao-tem" style="width:16px;height:16px;accent-color:var(--green);">
+          Criar benefício para funcionários que ainda não têm esse tipo
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-ajuste-massa')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#e65100;" onclick="aplicarAjusteMassa()">⚡ Aplicar Ajuste</button>
     </div>
   </div>
 </div>
@@ -6026,12 +6097,24 @@ function rdBenefFunc() {
     toggleEl.className = 'bfc-toggle';
     toggleEl.textContent = '▼';
 
+    // Checkbox for mass selection
+    var chkEl = document.createElement('input');
+    chkEl.type = 'checkbox';
+    chkEl.className = 'benef-massa-chk';
+    chkEl.dataset.fid = fid;
+    chkEl.style.cssText = 'width:18px;height:18px;cursor:pointer;accent-color:var(--green);flex-shrink:0;margin-right:4px;';
+    chkEl.onclick = function(e) { e.stopPropagation(); benefMassaUpdateCount(); };
+
+    header.appendChild(chkEl);
     header.appendChild(avatarEl);
     header.appendChild(infoEl);
     header.appendChild(totalEl);
     header.appendChild(actionsEl);
-    header.appendChild(toggleEl)
-    header.onclick = function() { toggleBenefCard(fid); };
+    header.appendChild(toggleEl);
+    header.onclick = function(e) {
+      if (e.target === chkEl) return;
+      toggleBenefCard(fid);
+    };
 
     // Body — tabela de benefícios
     var body = document.createElement('div');
@@ -12753,6 +12836,105 @@ function gerarTermoAditivo() {
 
   closeModal('modal-termo-aditivo');
   abrirEImprimirDoc(doc, 'Termo_Aditivo_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+// ============================================================
+// AJUSTE EM MASSA DE BENEFÍCIOS
+// ============================================================
+function benefMassaUpdateCount() {
+  var chks = document.querySelectorAll('.benef-massa-chk:checked');
+  var n = chks.length;
+  var countEl = document.getElementById('benef-massa-count');
+  var massaBtn = document.getElementById('benef-massa-btn');
+  var selAllBtn = document.getElementById('benef-selall-btn');
+  if (countEl) countEl.textContent = n;
+  if (massaBtn) massaBtn.style.display = n > 0 ? 'inline-flex' : 'none';
+  if (selAllBtn) {
+    var total = document.querySelectorAll('.benef-massa-chk').length;
+    selAllBtn.textContent = (n === total && total > 0) ? '☑ Desmarcar todos' : '☐ Selecionar todos';
+  }
+}
+
+function benefMassaToggleAll() {
+  var all = document.querySelectorAll('.benef-massa-chk');
+  var allChecked = Array.from(all).every(function(c){ return c.checked; });
+  all.forEach(function(c){ c.checked = !allChecked; });
+  benefMassaUpdateCount();
+}
+
+function abrirAjusteMassa() {
+  var chks = document.querySelectorAll('.benef-massa-chk:checked');
+  if (!chks.length) { alert('Selecione pelo menos um funcionário.'); return; }
+  var infoEl = document.getElementById('massa-info-count');
+  if (infoEl) infoEl.textContent = chks.length;
+  document.getElementById('massa-tipo').value = '';
+  document.getElementById('massa-valor').value = '';
+  document.getElementById('massa-obs').value = '';
+  document.getElementById('massa-status').value = 'Ativo';
+  document.getElementById('massa-criar-se-nao-tem').checked = false;
+  openModal('modal-ajuste-massa');
+}
+
+function aplicarAjusteMassa() {
+  var tipo  = document.getElementById('massa-tipo').value;
+  var valor = parseFloat(document.getElementById('massa-valor').value);
+  var tipoVal = document.getElementById('massa-tipo-val').value;
+  var status = document.getElementById('massa-status').value;
+  var obs   = (document.getElementById('massa-obs').value||'').trim();
+  var criarSeNaoTem = document.getElementById('massa-criar-se-nao-tem').checked;
+
+  if (!tipo)          { alert('Selecione o tipo de benefício.'); return; }
+  if (isNaN(valor))   { alert('Informe o novo valor.'); return; }
+
+  var chks = document.querySelectorAll('.benef-massa-chk:checked');
+  var fids = Array.from(chks).map(function(c){ return c.dataset.fid; });
+  if (!fids.length)   { alert('Nenhum funcionário selecionado.'); return; }
+
+  var atribs = DB.g('benef-atrib');
+  var atualizados = 0;
+  var criados = 0;
+
+  fids.forEach(function(fid) {
+    // Find existing benefit of this type for this employee
+    var idx = atribs.findIndex(function(a){
+      if (a.fid !== fid) return false;
+      var t = a.tipoBase || a.tipo || '';
+      return t === tipo;
+    });
+
+    if (idx >= 0) {
+      // Update existing
+      atribs[idx].valor   = valor;
+      atribs[idx].tipoVal = tipoVal;
+      atribs[idx].st      = status;
+      if (obs) atribs[idx].obs = obs;
+      atualizados++;
+    } else if (criarSeNaoTem) {
+      // Create new benefit for this employee
+      atribs.push({
+        id: uid(), fid: fid,
+        tipo: tipo, tipoBase: tipo,
+        valor: valor, tipoVal: tipoVal,
+        st: status, ini: td(),
+        obs: obs || 'Criado via ajuste em massa'
+      });
+      criados++;
+    }
+  });
+
+  DB.s('benef-atrib', atribs);
+  if (driveReady) driveSync('benef-atrib');
+  closeModal('modal-ajuste-massa');
+
+  // Uncheck all
+  document.querySelectorAll('.benef-massa-chk').forEach(function(c){ c.checked = false; });
+  benefMassaUpdateCount();
+  rdBenefFunc();
+
+  var msg = '✅ Ajuste aplicado! ' + atualizados + ' atualizado(s)';
+  if (criados) msg += ', ' + criados + ' criado(s)';
+  msg += '.';
+  toast(msg);
 }
 </script>
 </body>
