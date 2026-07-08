@@ -930,6 +930,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           </select>
           <button class="btn btn-outline btn-sm" onclick="benefMassaToggleAll()" id="benef-selall-btn" title="Selecionar / desmarcar todos">☐ Selecionar todos</button>
           <button class="btn btn-primary btn-sm" onclick="abrirAjusteMassa()" id="benef-massa-btn" style="display:none;background:#e65100;">⚡ Ajuste em massa (<span id="benef-massa-count">0</span>)</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirReajusteAnual()" style="background:#1565c0;white-space:nowrap;">&#128200; Reajuste Anual</button>
           <button class="btn btn-primary btn-sm" onclick="openModal(&#39;modal-benef-atr&#39;)">+ Atribuir Benefício</button>
         </div>
       </div>
@@ -1846,6 +1847,68 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-ajuste-massa')">Cancelar</button>
       <button class="btn btn-primary" style="background:#e65100;" onclick="aplicarAjusteMassa()">&#9889; Aplicar Ajuste em Massa</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL REAJUSTE ANUAL -->
+<div class="modal-bg" id="modal-reajuste-anual">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-title">&#128200; Reajuste Anual de Beneficios</span>
+      <button class="modal-close" onclick="closeModal('modal-reajuste-anual')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <div style="background:#e3f2fd;border-radius:8px;padding:10px 14px;border:1px solid #90caf9;font-size:12.5px;color:#1565c0;">
+          &#128200; Informe os novos valores de cada beneficio. Sera aplicado em todos os funcionarios ativos da empresa selecionada (ou todos os selecionados).
+        </div>
+      </div>
+      <div class="form-group form-full">
+        <label>Empresa</label>
+        <select id="reaj-empresa" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os funcionarios com beneficio</option>
+        </select>
+      </div>
+      <div class="form-group form-full" style="background:var(--gray-50);border-radius:8px;padding:12px;margin-bottom:4px;">
+        <div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-bottom:10px;">NOVOS VALORES (deixe em branco para nao alterar)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label style="font-size:12px;">&#x1F68C; VT / dia (R$)</label>
+            <input type="number" id="reaj-vt" min="0" step="0.01" placeholder="Ex: 10,88"
+              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
+          <div><label style="font-size:12px;">&#x1F37D; VR / dia (R$)</label>
+            <input type="number" id="reaj-vr" min="0" step="0.01" placeholder="Ex: 30,00"
+              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
+          <div><label style="font-size:12px;">&#x1F6D2; VA mensal (R$)</label>
+            <input type="number" id="reaj-va" min="0" step="0.01" placeholder="Ex: 520,00"
+              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
+          <div><label style="font-size:12px;">&#x26FD; Combustivel (R$)</label>
+            <input type="number" id="reaj-comb" min="0" step="0.01" placeholder="Ex: 400,00"
+              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
+          <div><label style="font-size:12px;">&#x1F9B7; Odonto (R$)</label>
+            <input type="number" id="reaj-odonto" min="0" step="0.01" placeholder="Ex: 35,00"
+              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
+          <div><label style="font-size:12px;">&#x1F3E5; Assist. Medica (R$)</label>
+            <input type="number" id="reaj-med" min="0" step="0.01" placeholder="Ex: 150,00"
+              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
+        </div>
+      </div>
+      <div class="form-group form-full">
+        <label>Observacao</label>
+        <input type="text" id="reaj-obs" placeholder="Ex.: Reajuste anual 2026"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group form-full">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+          <input type="checkbox" id="reaj-apenas-ativos" checked style="width:16px;height:16px;accent-color:var(--green);">
+          Aplicar apenas em beneficios com status Ativo
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-reajuste-anual')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#1565c0;" onclick="aplicarReajusteAnual()">&#128200; Aplicar Reajuste</button>
     </div>
   </div>
 </div>
@@ -5931,14 +5994,19 @@ function rdBenefFunc() {
   var emptyEl   = document.getElementById('benef-func-empty');
   if (!container) return;
 
-  // Fill empresa filter
+  // Fill empresa filter (always refresh)
   var empSel = document.getElementById('benef-emp-filter');
-  if (empSel && empSel.options.length <= 1) {
-    emps.forEach(function(e) {
-      var o = document.createElement('option');
-      o.value = e.id; o.textContent = e.razao || e.nome;
-      empSel.appendChild(o);
-    });
+  if (empSel) {
+    var prevEmp = empSel.value;
+    empSel.innerHTML = '<option value="">Todas as empresas</option>';
+    emps.sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
+      .forEach(function(e) {
+        var o = document.createElement('option');
+        o.value = e.id; o.textContent = e.razao || e.nome;
+        if (e.id === prevEmp) o.selected = true;
+        empSel.appendChild(o);
+      });
+    filterEmp = empSel.value;
   }
 
   // Fill funcionário filter (respecting empresa filter)
@@ -12980,6 +13048,92 @@ function aplicarAjusteMassa() {
   var msg = 'Ajuste aplicado! ' + atualizados + ' beneficio(s) atualizado(s)';
   if (criados) msg += ', ' + criados + ' criado(s)';
   toast(msg);
+}
+
+function abrirReajusteAnual() {
+  // Fill empresa select
+  var sel = document.getElementById('reaj-empresa');
+  if (sel) {
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">Todos os funcionarios com beneficio</option>';
+    DB.g('empresas').sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
+      .forEach(function(e){
+        var o = document.createElement('option');
+        o.value = e.id; o.textContent = e.razao || e.nome;
+        if (e.id === prev) o.selected = true;
+        sel.appendChild(o);
+      });
+  }
+  // Pre-fill with current empresa filter
+  var empFilter = (document.getElementById('benef-emp-filter')||{}).value || '';
+  if (empFilter && sel) sel.value = empFilter;
+
+  // Clear value fields
+  ['reaj-vt','reaj-vr','reaj-va','reaj-comb','reaj-odonto','reaj-med'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('reaj-obs').value = 'Reajuste anual ' + new Date().getFullYear();
+  document.getElementById('reaj-apenas-ativos').checked = true;
+
+  openModal('modal-reajuste-anual');
+}
+
+function aplicarReajusteAnual() {
+  var empId = (document.getElementById('reaj-empresa')||{}).value || '';
+  var obs   = (document.getElementById('reaj-obs')||{}).value || '';
+  var apenasAtivos = document.getElementById('reaj-apenas-ativos').checked;
+
+  var MAPA = [
+    { id: 'reaj-vt',    tipo: 'VT \u2013 Vale Transporte',        tipoVal: 'Por dia' },
+    { id: 'reaj-vr',    tipo: 'VR \u2013 Vale Refei\u00e7\u00e3o', tipoVal: 'Por dia' },
+    { id: 'reaj-va',    tipo: 'VA \u2013 Vale Alimenta\u00e7\u00e3o', tipoVal: 'Mensal fixo' },
+    { id: 'reaj-comb',  tipo: 'Combust\u00edvel',                  tipoVal: 'Mensal fixo' },
+    { id: 'reaj-odonto',tipo: 'Assist\u00eancia Odontol\u00f3gica', tipoVal: 'Mensal fixo' },
+    { id: 'reaj-med',   tipo: 'Assist\u00eancia M\u00e9dica',       tipoVal: 'Mensal fixo' }
+  ];
+
+  // Collect which fields have values
+  var ajustes = MAPA.map(function(m){
+    var el = document.getElementById(m.id);
+    var v  = el ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? null : { tipo: m.tipo, valor: v, tipoVal: m.tipoVal };
+  }).filter(Boolean);
+
+  if (!ajustes.length) { alert('Informe pelo menos um valor para reajustar.'); return; }
+
+  // Get target employees
+  var funcs = DB.g('funcionarios').filter(function(f){
+    if (f.st === 'Desligado') return false;
+    if (empId && f.emp !== empId) return false;
+    return true;
+  });
+
+  if (!funcs.length) { alert('Nenhum funcionario encontrado para a empresa selecionada.'); return; }
+
+  var atribs = DB.g('benef-atrib');
+  var atualizados = 0;
+
+  funcs.forEach(function(f) {
+    ajustes.forEach(function(aj) {
+      var idx = atribs.findIndex(function(a){
+        if (a.fid !== f.id) return false;
+        if (apenasAtivos && a.st !== 'Ativo') return false;
+        return (a.tipoBase||a.tipo||'') === aj.tipo;
+      });
+      if (idx >= 0) {
+        atribs[idx].valor  = aj.valor;
+        atribs[idx].tipoVal = aj.tipoVal;
+        if (obs) atribs[idx].obs = obs;
+        atualizados++;
+      }
+    });
+  });
+
+  DB.s('benef-atrib', atribs);
+  if (driveReady) driveSync('benef-atrib');
+  closeModal('modal-reajuste-anual');
+  rdBenefFunc();
+  toast('Reajuste aplicado em ' + atualizados + ' beneficio(s) de ' + funcs.length + ' funcionario(s)!');
 }
 </script>
 </body>
