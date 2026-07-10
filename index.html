@@ -9021,12 +9021,14 @@ async function gerarFlashXLSX() {
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = nomeArq; a.click();
 
+  // Upload to Drive async (non-blocking)
   if (driveReady) {
-    try {
-      var file = new File([blob], nomeArq, {type:'text/csv'});
-      await uploadFileToDrive(file, 'Beneficios/Flash');
-      toast('Arquivo salvo no Drive ☁️');
-    } catch(e) { console.warn(e); }
+    (async function() {
+      try {
+        var file = new File([blob], nomeArq, {type:'text/csv'});
+        await uploadFileToDrive(file, 'Beneficios/Flash');
+      } catch(e) { console.warn(e); }
+    })();
   }
   // ── Salvar snapshot no histórico ──
   var snapshot = {
