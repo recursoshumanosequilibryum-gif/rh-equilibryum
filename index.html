@@ -8908,6 +8908,7 @@ function updateCalcCell(fid) {
 
 // ── Gerar XLSX Flash ─────────────────────────────────────────
 async function gerarFlashXLSX() {
+  try {
   var empId = (document.getElementById('flash-empresa')||{}).value||'';
   var de    = (document.getElementById('flash-de') ||{}).value||'';
   var ate   = (document.getElementById('flash-ate')||{}).value||'';
@@ -8921,6 +8922,30 @@ async function gerarFlashXLSX() {
   var funcs = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
   var deps  = DB.g('departamentos');
   if (!funcs.length) { alert('Nenhum funcionário ativo nesta empresa.'); return; }
+
+  // Calcular dias úteis do período (necessário aqui pois renderFlashTable pode não ter rodado)
+  var diasUteisPeriodo = (typeof calcDiasUteisGlobal === 'function')
+    ? calcDiasUteisGlobal(de, ate)
+    : calcDiasUteis ? calcDiasUteis(de, ate) : 22;
+  var diasUteisComSab = diasUteisPeriodo; // fallback
+  try {
+    // Seg-Sab: conta seg a sab excluindo domingos e feriados SP
+    if (de && ate) {
+      var d1x=new Date(de+'T12:00:00'), d2x=new Date(ate+'T12:00:00');
+      var ferx=new Set();
+      for(var yx=d1x.getFullYear();yx<=d2x.getFullYear();yx++){
+        if(typeof getFeriadosSP==='function') getFeriadosSP(yx).forEach(function(f){ ferx.add(f); });
+      }
+      var cx=0, curx=new Date(d1x);
+      while(curx<=d2x){
+        var dowx=curx.getDay();
+        var dsx=curx.getFullYear()+'-'+String(curx.getMonth()+1).padStart(2,'0')+'-'+String(curx.getDate()).padStart(2,'0');
+        if(dowx!==0&&!ferx.has(dsx)) cx++;
+        curx.setDate(curx.getDate()+1);
+      }
+      diasUteisComSab = cx||26;
+    }
+  } catch(ex){}
 
   var chkVT    = (document.getElementById('flash-chk-vt')    ||{checked:true}).checked;
   var chkVR    = (document.getElementById('flash-chk-vr')    ||{checked:true}).checked;
@@ -9061,6 +9086,8 @@ async function gerarFlashXLSX() {
   if (driveReady) driveSync('flash-hist');
 
   toast('Arquivo gerado e salvo no histórico! ' + funcs.length + ' funcionário(s) — ' + periodo);
+
+  } catch(err) { console.error('gerarFlashXLSX error:', err); alert('Erro ao gerar planilha: ' + err.message); }
 }
 
 // ============================================================
