@@ -610,7 +610,11 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="card">
     <div class="card-header">
       <span class="card-title">👥 Funcionários</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;" title="Importar ficha de admissão (JSON)">
+          📥 Importar Ficha
+          <input type="file" accept=".json" style="display:none;" onchange="importarFichaAdmissao(this)">
+        </label>
         <button class="btn btn-primary" onclick="openModal(&#39;modal-func&#39;)">+ Novo Funcionário</button>
       </div>
     </div>
@@ -2062,6 +2066,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
             <option value="">Selecione</option>
             <option value="55">Seg a Sex (55)</option>
             <option value="56">Seg a Sab (56)</option>
+            <option value="sabalt">Sab. Alternados</option>
             <option value="12x36">12x36</option>
             <option value="Outro">Outro</option>
           </select>
@@ -8786,10 +8791,30 @@ function renderFlashTable() {
     while (cur <= d2) {
       var dow = cur.getDay();
       var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-      if (dow !== 0 && !feriados.has(ds)) count++; // 0=domingo, exclui só domingo
+      if (dow !== 0 && !feriados.has(ds)) count++;
       cur.setDate(cur.getDate()+1);
     }
     return count || 26;
+  }
+
+  // Sábados alternados: conta seg-sex + sábados pares do período (semanas 1,3,5...)
+  function calcDiasUteisSabAlt(de, ate) {
+    if (!de || !ate) return 24;
+    var d1 = new Date(de + 'T12:00:00'); var d2 = new Date(ate + 'T12:00:00');
+    if (d1 > d2) return 24;
+    var feriados = new Set();
+    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) getFeriadosSP(y).forEach(function(f){ feriados.add(f); });
+    // Count all Saturdays in period
+    var sabCount = 0; var cur = new Date(d1);
+    while (cur <= d2) {
+      if (cur.getDay() === 6) sabCount++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    // Alternating: half the Saturdays (rounded up)
+    var sabsAlternados = Math.ceil(sabCount / 2);
+    // Weekdays (Mon-Fri) excluding holidays
+    var diasUteis = calcDiasUteis(de, ate);
+    return diasUteis + sabsAlternados;
   }
   var diasUteisComSab = calcDiasUteisComSab(flashDe, flashAte);
   var deps   = DB.g('departamentos');
@@ -8845,12 +8870,17 @@ function renderFlashTable() {
     var inpDias = document.createElement('input');
     inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
     inpDias.id = 'dias-'+f.id; // Use escala do cadastro para determinar dias: "55"=Seg-Sex, "56"=Seg-Sab
-    var diasCalc = (f.escala === '56') ? diasUteisComSab : diasUteisPeriodo;
+    var diasCalc = f.escala === '56' ? diasUteisComSab
+                 : f.escala === 'sabalt' ? calcDiasUteisSabAlt(flashDe, flashAte)
+                 : diasUteisPeriodo;
     inpDias.value = diasCalc || '22';
     inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
     inpDias.title = 'Dias trabalhados no período';
     // Show escala tag next to dias
-    var escalaTxt = f.escala === '56' ? 'Seg-Sab' : f.escala === '12x36' ? '12x36' : f.escala === '55' || f.escala === '' ? 'Seg-Sex' : (f.escala||'Seg-Sex');
+    var escalaTxt = f.escala === '56' ? 'Seg-Sab'
+                 : f.escala === 'sabalt' ? 'Sab.Alt'
+                 : f.escala === '12x36' ? '12x36'
+                 : 'Seg-Sex';
     var escalaTag = document.createElement('span');
     escalaTag.textContent = escalaTxt;
     escalaTag.style.cssText = 'font-size:10px;background:#e8f5ee;color:var(--green-dark);border-radius:4px;padding:2px 6px;margin-left:4px;font-weight:600;';
@@ -9007,7 +9037,9 @@ async function gerarFlashXLSX() {
     }
 
     var diasInp = getInp('dias-'+f.id);
-    var diasFallback = (f.escala === '56') ? (diasUteisComSab||26) : (diasUteisPeriodo||22);
+    var diasFallback = f.escala === '56'     ? (diasUteisComSab||26)
+                    : f.escala === 'sabalt' ? calcDiasUteisSabAltGlobal(de, ate)
+                    : (diasUteisPeriodo||22);
     var dias = diasInp !== null ? diasInp : diasFallback;
 
     var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(function(t){ return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); })) : 0;
@@ -13163,6 +13195,81 @@ function aplicarReajusteAnual() {
   closeModal('modal-reajuste-anual');
   rdBenefFunc();
   toast('Reajuste aplicado em ' + atualizados + ' beneficio(s) de ' + funcs.length + ' funcionario(s)!');
+}
+
+function importarFichaAdmissao(inp) {
+  var file = inp.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var dados = JSON.parse(e.target.result);
+
+      // Map JSON fields to employee modal fields
+      function sv(id, val) {
+        var el = document.getElementById(id);
+        if (el && val) el.value = val;
+      }
+
+      // Open new employee modal first
+      resetFuncModal();
+      openModal('modal-func');
+
+      // Fill fields after modal opens
+      setTimeout(function() {
+        sv('fnome', dados.n || '');
+        sv('fcpf',  dados.cpf || '');
+        sv('frg',   dados.rg || '');
+        sv('fnas',  dados.nas || '');
+        sv('fsex',  dados.sex || '');
+        sv('fec',   dados.ec || '');
+        sv('ftel',  dados.tel || '');
+        sv('femail',dados.email || '');
+        sv('fend',  dados.end || '');
+        sv('fcep',  dados.cep || '');
+        sv('fpis',  dados.pis || '');
+        sv('fctps', dados.ctps || '');
+        sv('ftam-camisa',  dados.tamCamisa || '');
+        sv('ftam-calca',   dados.tamCalca || '');
+        sv('ftam-calcado', dados.tamCalcado || '');
+        sv('ftam-jaleco',  dados.tamJaleco || '');
+        sv('fst', 'Ativo');
+        sv('ftip', 'CLT');
+
+        // Store doc previews for documents tab
+        if (dados.docs && dados.docs.length) {
+          dados.docs.forEach(function(d) {
+            if (d.dataUrl && d.name) {
+              // Will be linked after employee is saved via fid
+              // Store temporarily keyed by name
+              try {
+                sessionStorage.setItem('import_doc_' + d.name, JSON.stringify(d));
+              } catch(ex) {}
+            }
+          });
+          toast(dados.docs.length + ' documento(s) anexado(s) — salve o funcionário para vincular.');
+        }
+
+        toast('✅ Ficha importada: ' + (dados.n || 'candidato') + '. Verifique e complete os campos antes de salvar.');
+      }, 300);
+
+    } catch(err) {
+      alert('Erro ao ler o arquivo: ' + err.message + '\nVerifique se é um JSON gerado pelo formulário de admissão.');
+    }
+    inp.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// Sábados alternados (global) — usado em gerarFlashXLSX
+function calcDiasUteisSabAltGlobal(de, ate) {
+  if (!de || !ate) return 24;
+  var d1 = new Date(de+'T12:00:00'), d2 = new Date(ate+'T12:00:00');
+  if (d1 > d2) return 24;
+  var sabCount = 0, cur = new Date(d1);
+  while (cur <= d2) { if (cur.getDay()===6) sabCount++; cur.setDate(cur.getDate()+1); }
+  var sabsAlternados = Math.ceil(sabCount/2);
+  return (typeof calcDiasUteisGlobal === 'function' ? calcDiasUteisGlobal(de,ate) : 22) + sabsAlternados;
 }
 </script>
 </body>
