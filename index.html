@@ -612,9 +612,12 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <span class="card-title">👥 Funcionários</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;" title="Importar ficha de admissão (JSON)">
-          📥 Importar Ficha
+          📥 Importar JSON
           <input type="file" accept=".json" style="display:none;" onchange="importarFichaAdmissao(this)">
         </label>
+        <button class="btn btn-outline btn-sm" onclick="abrirImportSheets()" style="display:inline-flex;align-items:center;gap:5px;">
+          📊 Importar do Sheets
+        </button>
         <button class="btn btn-primary" onclick="openModal(&#39;modal-func&#39;)">+ Novo Funcionário</button>
       </div>
     </div>
@@ -1913,6 +1916,58 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-reajuste-anual')">Cancelar</button>
       <button class="btn btn-primary" style="background:#1565c0;" onclick="aplicarReajusteAnual()">&#128200; Aplicar Reajuste</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL IMPORTAR DO SHEETS -->
+<div class="modal-bg" id="modal-import-sheets">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <span class="modal-title">📊 Importar Ficha do Google Sheets</span>
+      <button class="modal-close" onclick="closeModal('modal-import-sheets')">&#215;</button>
+    </div>
+    <div style="padding:0 24px 20px;">
+
+      <!-- Step 1: configurar planilha -->
+      <div id="sheets-step1">
+        <div style="background:#e3f2fd;border-radius:8px;padding:12px 14px;border:1px solid #90caf9;font-size:12.5px;color:#1565c0;margin-bottom:16px;">
+          &#128203; Cole abaixo o <strong>ID da planilha</strong> de fichas de admissão.<br>
+          O ID fica na URL do Sheets: docs.google.com/spreadsheets/d/<strong style="background:#fff;padding:0 3px;border-radius:3px;">ID_AQUI</strong>/edit
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:700;color:#444;display:block;margin-bottom:5px;">ID da Planilha</label>
+          <input type="text" id="sheets-id-inp" placeholder="Ex.: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+            style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <div style="font-size:11px;color:#888;margin-top:4px;">Salvo automaticamente para próximas importações.</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="carregarCandidatos()">
+          &#128269; Buscar Candidatos
+        </button>
+      </div>
+
+      <!-- Step 2: lista de candidatos -->
+      <div id="sheets-step2" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:13px;font-weight:700;color:var(--green-dark);">Candidatos encontrados:</span>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('sheets-step2').style.display='none';document.getElementById('sheets-step1').style.display='block';">
+            &#8592; Voltar
+          </button>
+        </div>
+        <div style="margin-bottom:10px;">
+          <input type="text" id="sheets-busca" placeholder="&#128269; Filtrar por nome ou CPF..." oninput="filtrarCandidatos()"
+            style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        </div>
+        <div id="sheets-lista" style="max-height:380px;overflow-y:auto;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);"></div>
+      </div>
+
+      <!-- Loading -->
+      <div id="sheets-loading" style="display:none;text-align:center;padding:32px;">
+        <div style="font-size:32px;margin-bottom:8px;">&#9203;</div>
+        <div style="font-size:13px;color:#555;" id="sheets-loading-txt">Buscando candidatos...</div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -13270,6 +13325,197 @@ function calcDiasUteisSabAltGlobal(de, ate) {
   while (cur <= d2) { if (cur.getDay()===6) sabCount++; cur.setDate(cur.getDate()+1); }
   var sabsAlternados = Math.ceil(sabCount/2);
   return (typeof calcDiasUteisGlobal === 'function' ? calcDiasUteisGlobal(de,ate) : 22) + sabsAlternados;
+}
+
+// ============================================================
+// IMPORTAR DO GOOGLE SHEETS
+// ============================================================
+var _sheetsData = []; // cache dos candidatos carregados
+
+function abrirImportSheets() {
+  // Load saved sheet ID
+  var savedId = '';
+  try { savedId = localStorage.getItem('eq_sheets_admissao_id') || ''; } catch(e) {}
+  var inp = document.getElementById('sheets-id-inp');
+  if (inp && savedId) inp.value = savedId;
+  document.getElementById('sheets-step1').style.display = 'block';
+  document.getElementById('sheets-step2').style.display = 'none';
+  document.getElementById('sheets-loading').style.display = 'none';
+  openModal('modal-import-sheets');
+}
+
+async function carregarCandidatos() {
+  var sheetId = (document.getElementById('sheets-id-inp')||{}).value.trim();
+  if (!sheetId) { alert('Cole o ID da planilha.'); return; }
+
+  // Save sheet ID
+  try { localStorage.setItem('eq_sheets_admissao_id', sheetId); } catch(e) {}
+
+  // Show loading
+  document.getElementById('sheets-step1').style.display = 'none';
+  document.getElementById('sheets-step2').style.display = 'none';
+  document.getElementById('sheets-loading').style.display = 'block';
+  document.getElementById('sheets-loading-txt').textContent = 'Buscando candidatos...';
+
+  try {
+    // Use Google Sheets JSON API (public sheets only)
+    // For authenticated access, use Drive API with current token
+    var url;
+    if (driveReady && driveToken) {
+      url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/Cadastros!A:AH?key=&access_token=' + driveToken;
+    } else {
+      // Try public export URL
+      url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=Cadastros';
+    }
+
+    var resp = await fetch(url, { headers: driveToken ? { 'Authorization': 'Bearer ' + driveToken } : {} });
+    var data;
+
+    if (driveReady && driveToken) {
+      data = await resp.json();
+      parseSheetsAPI(data);
+    } else {
+      var txt = await resp.text();
+      // gviz returns: google.visualization.Query.setResponse({...});
+      var jsonStr = txt.replace(/^[^{]*/, '').replace(/\);?\s*$/, '');
+      var gviz = JSON.parse(jsonStr);
+      parseGViz(gviz);
+    }
+
+    document.getElementById('sheets-loading').style.display = 'none';
+    document.getElementById('sheets-step2').style.display = 'block';
+    filtrarCandidatos();
+
+  } catch(err) {
+    document.getElementById('sheets-loading').style.display = 'none';
+    document.getElementById('sheets-step1').style.display = 'block';
+    alert('Erro ao buscar planilha.\n\nVerifique:\n1. O ID está correto\n2. A planilha está compartilhada como "Qualquer pessoa com o link pode ver"\n\nDetalhe: ' + err.message);
+  }
+}
+
+function parseSheetsAPI(data) {
+  var rows = data.values || [];
+  if (rows.length < 2) { _sheetsData = []; return; }
+  var header = rows[0];
+  _sheetsData = rows.slice(1).map(function(row) {
+    var obj = {};
+    header.forEach(function(h, i) { obj[h] = row[i] || ''; });
+    return obj;
+  }).filter(function(r){ return r['Nome'] || r['nome']; });
+}
+
+function parseGViz(gviz) {
+  var cols = gviz.table.cols.map(function(c){ return c.label; });
+  _sheetsData = (gviz.table.rows||[]).map(function(row) {
+    var obj = {};
+    cols.forEach(function(h, i) {
+      obj[h] = (row.c && row.c[i] && row.c[i].v !== null) ? String(row.c[i].v) : '';
+    });
+    return obj;
+  }).filter(function(r){ return r['Nome'] || r['nome']; });
+}
+
+function filtrarCandidatos() {
+  var busca = ((document.getElementById('sheets-busca')||{}).value||'').toLowerCase();
+  var lista = document.getElementById('sheets-lista');
+  if (!lista) return;
+
+  var filtered = _sheetsData.filter(function(r) {
+    var nome = (r['Nome']||r['nome']||'').toLowerCase();
+    var cpf  = (r['CPF'] ||r['cpf'] ||'').toLowerCase();
+    return !busca || nome.includes(busca) || cpf.includes(busca);
+  });
+
+  if (!filtered.length) {
+    lista.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px;">Nenhum candidato encontrado.</div>';
+    return;
+  }
+
+  lista.innerHTML = filtered.map(function(r, i) {
+    var nome = r['Nome']||r['nome']||'';
+    var cpf  = r['CPF'] ||r['cpf'] ||'';
+    var tel  = r['Telefone']||r['telefone']||'';
+    var dt   = r['Data Envio']||r['data_envio']||'';
+    var dtFmt = dt ? new Date(dt).toLocaleDateString('pt-BR') : '';
+    return '<div style="padding:12px 16px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:.15s;" ' +
+      'onmouseenter="this.style.background=\'#f7faf8\'" onmouseleave="this.style.background=\'\'">' +
+      '<div>' +
+        '<div style="font-size:13.5px;font-weight:700;color:var(--gray-800);">&#128100; ' + nome + '</div>' +
+        '<div style="font-size:12px;color:#888;margin-top:2px;">CPF: ' + cpf + ' &nbsp;|&nbsp; Tel: ' + tel + (dtFmt?' &nbsp;|&nbsp; Enviado: '+dtFmt:'') + '</div>' +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm" style="font-size:12px;padding:6px 14px;white-space:nowrap;" ' +
+        'onclick="importarCandidatoSheets(' + i + ')">&#10004; Importar</button>' +
+    '</div>';
+  }).join('');
+}
+
+function importarCandidatoSheets(idx) {
+  var busca = ((document.getElementById('sheets-busca')||{}).value||'').toLowerCase();
+  var filtered = _sheetsData.filter(function(r) {
+    var nome = (r['Nome']||r['nome']||'').toLowerCase();
+    var cpf  = (r['CPF'] ||r['cpf'] ||'').toLowerCase();
+    return !busca || nome.includes(busca) || cpf.includes(busca);
+  });
+  var r = filtered[idx];
+  if (!r) return;
+
+  // Map Sheets columns to employee form fields
+  function fill(fieldId, value) {
+    var el = document.getElementById(fieldId);
+    if (el && value) el.value = value;
+  }
+
+  // Close modal and open employee modal
+  closeModal('modal-import-sheets');
+  resetFuncModal();
+
+  setTimeout(function() {
+    openModal('modal-func');
+    setTimeout(function() {
+      fill('fnome',     r['Nome']         || r['nome']         || '');
+      fill('fcpf',      r['CPF']          || r['cpf']          || '');
+      fill('frg',       r['RG']           || r['rg']           || '');
+      fill('fnas',      formatDateField(r['Nascimento'] || r['nascimento'] || ''));
+      fill('fsex',      r['Sexo']         || r['sexo']         || '');
+      fill('fec',       r['Estado Civil'] || r['estado_civil'] || '');
+      fill('ftel',      r['Telefone']     || r['telefone']     || '');
+      fill('femail',    r['Email']        || r['email']        || '');
+      fill('fend',      buildEndereco(r));
+      fill('fcep',      r['CEP']          || r['cep']          || '');
+      fill('fpis',      r['PIS']          || r['pis']          || '');
+      fill('fctps',     r['CTPS']         || r['ctps']         || '');
+      fill('ftam-camisa',  r['Tam. Camiseta'] || r['tam_camisa']  || '');
+      fill('ftam-calca',   r['Tam. Calca']    || r['tam_calca']   || '');
+      fill('ftam-calcado', r['Tam. Calcado']  || r['tam_calcado'] || '');
+      fill('ftam-jaleco',  r['Tam. Jaleco']   || r['tam_jaleco']  || '');
+      fill('fst',  'Ativo');
+      fill('ftip', 'CLT');
+
+      toast('✅ Dados de ' + (r['Nome']||r['nome']||'candidato') + ' importados! Complete empresa, cargo e salário.');
+    }, 350);
+  }, 150);
+}
+
+function formatDateField(val) {
+  if (!val) return '';
+  // If already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  // If DD/MM/YYYY
+  var m = val.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return m[3] + '-' + m[2] + '-' + m[1];
+  // Try Date parse
+  try { var d = new Date(val); if (!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){}
+  return '';
+}
+
+function buildEndereco(r) {
+  var end  = r['Endereco']  || r['endereco']  || '';
+  var num  = r['Numero']    || r['numero']    || '';
+  var bai  = r['Bairro']    || r['bairro']    || '';
+  var cid  = r['Cidade']    || r['cidade']    || '';
+  var comp = r['Complemento']||r['complemento']||'';
+  var parts = [end, num, comp, bai, cid].filter(Boolean);
+  return parts.join(', ');
 }
 </script>
 </body>
