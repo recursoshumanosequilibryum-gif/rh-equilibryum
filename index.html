@@ -611,13 +611,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div class="card-header">
       <span class="card-title">👥 Funcionários</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;" title="Importar ficha de admissão (JSON)">
-          📥 Importar JSON
-          <input type="file" accept=".json" style="display:none;" onchange="importarFichaAdmissao(this)">
-        </label>
-        <button class="btn btn-outline btn-sm" onclick="abrirImportSheets()" style="display:inline-flex;align-items:center;gap:5px;">
-          📊 Importar do Sheets
-        </button>
+        <button class="btn btn-outline btn-sm" onclick="abrirImportSheets()" style="display:inline-flex;align-items:center;gap:5px;">&#128202; Importar do Sheets</button>
         <button class="btn btn-primary" onclick="openModal(&#39;modal-func&#39;)">+ Novo Funcionário</button>
       </div>
     </div>
@@ -937,7 +931,6 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           </select>
           <button class="btn btn-outline btn-sm" onclick="benefMassaToggleAll()" id="benef-selall-btn" title="Selecionar / desmarcar todos">☐ Selecionar todos</button>
           <button class="btn btn-primary btn-sm" onclick="abrirAjusteMassa()" id="benef-massa-btn" style="display:none;background:#e65100;">⚡ Ajuste em massa (<span id="benef-massa-count">0</span>)</button>
-          <button class="btn btn-primary btn-sm" onclick="abrirReajusteAnual()" style="background:#1565c0;white-space:nowrap;">&#128200; Reajuste Anual</button>
           <button class="btn btn-primary btn-sm" onclick="openModal(&#39;modal-benef-atr&#39;)">+ Atribuir Benefício</button>
         </div>
       </div>
@@ -1817,21 +1810,23 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 
 <!-- MODAL AJUSTE EM MASSA -->
 <div class="modal-bg" id="modal-ajuste-massa">
-  <div class="modal" style="max-width:660px;">
+  <div class="modal" style="max-width:640px;">
     <div class="modal-header">
-      <span class="modal-title">&#9889; Ajuste de Beneficios em Massa</span>
+      <span class="modal-title">⚡ Ajuste de Benefícios em Massa</span>
       <button class="modal-close" onclick="closeModal('modal-ajuste-massa')">&#215;</button>
     </div>
     <div style="padding:0 24px 16px;">
       <div style="background:#fff3cd;border-radius:8px;padding:10px 14px;border:1px solid #ffc107;font-size:12.5px;color:#856404;margin-bottom:16px;">
-        &#9888; Sera aplicado a <strong id="massa-info-count">0</strong> funcionario(s) selecionado(s).
-        O valor atual e exibido em cada linha. Marque e informe o novo valor.
+        &#9888; Será aplicado a <strong id="massa-info-count">0</strong> funcionário(s) selecionado(s).
+        Deixe o campo em branco para não alterar aquele benefício.
       </div>
+
+      <!-- Tabela de benefícios -->
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
           <tr style="background:var(--green-pale);">
-            <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Beneficio</th>
-            <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);width:40px;">Alt.</th>
+            <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Benefício</th>
+            <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Alterar?</th>
             <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Novo Valor (R$)</th>
             <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Tipo</th>
             <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--green-dark);border-bottom:2px solid var(--green-light);">Status</th>
@@ -1839,83 +1834,22 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         </thead>
         <tbody id="massa-benef-rows"></tbody>
       </table>
-      <div style="margin-top:12px;border-top:1px solid var(--gray-200);padding-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+
+      <div style="margin-top:14px;border-top:1px solid var(--gray-200);padding-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
         <div style="flex:1;">
-          <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px;">Observacao</label>
-          <input type="text" id="massa-obs" placeholder="Ex.: Reajuste anual 2026"
+          <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px;">Observação (aplicada em todos)</label>
+          <input type="text" id="massa-obs" placeholder="Ex.: Reajuste julho/2026"
             style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;white-space:nowrap;">
           <input type="checkbox" id="massa-criar-se-nao-tem" style="width:16px;height:16px;accent-color:var(--green);">
-          Criar se nao tiver
+          Criar se não tiver
         </label>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-ajuste-massa')">Cancelar</button>
-      <button class="btn btn-primary" style="background:#e65100;" onclick="aplicarAjusteMassa()">&#9889; Aplicar Ajuste em Massa</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- MODAL REAJUSTE ANUAL -->
-<div class="modal-bg" id="modal-reajuste-anual">
-  <div class="modal" style="max-width:580px;">
-    <div class="modal-header">
-      <span class="modal-title">&#128200; Reajuste Anual de Beneficios</span>
-      <button class="modal-close" onclick="closeModal('modal-reajuste-anual')">&#215;</button>
-    </div>
-    <div class="form-grid">
-      <div class="form-group form-full">
-        <div style="background:#e3f2fd;border-radius:8px;padding:10px 14px;border:1px solid #90caf9;font-size:12.5px;color:#1565c0;">
-          &#128200; Informe os novos valores de cada beneficio. Sera aplicado em todos os funcionarios ativos da empresa selecionada (ou todos os selecionados).
-        </div>
-      </div>
-      <div class="form-group form-full">
-        <label>Empresa</label>
-        <select id="reaj-empresa" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-          <option value="">Todos os funcionarios com beneficio</option>
-        </select>
-      </div>
-      <div class="form-group form-full" style="background:var(--gray-50);border-radius:8px;padding:12px;margin-bottom:4px;">
-        <div style="font-weight:700;font-size:12px;color:var(--green-dark);margin-bottom:10px;">NOVOS VALORES (deixe em branco para nao alterar)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div><label style="font-size:12px;">&#x1F68C; VT / dia (R$)</label>
-            <input type="number" id="reaj-vt" min="0" step="0.01" placeholder="Ex: 10,88"
-              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
-          <div><label style="font-size:12px;">&#x1F37D; VR / dia (R$)</label>
-            <input type="number" id="reaj-vr" min="0" step="0.01" placeholder="Ex: 30,00"
-              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
-          <div><label style="font-size:12px;">&#x1F6D2; VA mensal (R$)</label>
-            <input type="number" id="reaj-va" min="0" step="0.01" placeholder="Ex: 520,00"
-              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
-          <div><label style="font-size:12px;">&#x26FD; Combustivel (R$)</label>
-            <input type="number" id="reaj-comb" min="0" step="0.01" placeholder="Ex: 400,00"
-              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
-          <div><label style="font-size:12px;">&#x1F9B7; Odonto (R$)</label>
-            <input type="number" id="reaj-odonto" min="0" step="0.01" placeholder="Ex: 35,00"
-              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
-          <div><label style="font-size:12px;">&#x1F3E5; Assist. Medica (R$)</label>
-            <input type="number" id="reaj-med" min="0" step="0.01" placeholder="Ex: 150,00"
-              style="width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-top:3px;"></div>
-        </div>
-      </div>
-      <div class="form-group form-full">
-        <label>Observacao</label>
-        <input type="text" id="reaj-obs" placeholder="Ex.: Reajuste anual 2026"
-          style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-      </div>
-      <div class="form-group form-full">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
-          <input type="checkbox" id="reaj-apenas-ativos" checked style="width:16px;height:16px;accent-color:var(--green);">
-          Aplicar apenas em beneficios com status Ativo
-        </label>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-reajuste-anual')">Cancelar</button>
-      <button class="btn btn-primary" style="background:#1565c0;" onclick="aplicarReajusteAnual()">&#128200; Aplicar Reajuste</button>
+      <button class="btn btn-primary" style="background:#e65100;" onclick="aplicarAjusteMassa()">⚡ Aplicar Ajuste em Massa</button>
     </div>
   </div>
 </div>
@@ -1923,51 +1857,36 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 
 <!-- MODAL IMPORTAR DO SHEETS -->
 <div class="modal-bg" id="modal-import-sheets">
-  <div class="modal" style="max-width:640px;">
+  <div class="modal" style="max-width:620px;">
     <div class="modal-header">
       <span class="modal-title">📊 Importar Ficha do Google Sheets</span>
       <button class="modal-close" onclick="closeModal('modal-import-sheets')">&#215;</button>
     </div>
     <div style="padding:0 24px 20px;">
-
-      <!-- Step 1: configurar planilha -->
       <div id="sheets-step1">
-        <div style="background:#e3f2fd;border-radius:8px;padding:12px 14px;border:1px solid #90caf9;font-size:12.5px;color:#1565c0;margin-bottom:16px;">
-          &#128203; Cole abaixo o <strong>ID da planilha</strong> de fichas de admissão.<br>
-          O ID fica na URL do Sheets: docs.google.com/spreadsheets/d/<strong style="background:#fff;padding:0 3px;border-radius:3px;">ID_AQUI</strong>/edit
+        <div style="background:#e3f2fd;border-radius:8px;padding:12px 14px;border:1px solid #90caf9;font-size:12.5px;color:#1565c0;margin-bottom:14px;">
+          Cole o <strong>ID da planilha</strong> abaixo. O ID fica na URL do Sheets entre /d/ e /edit.
         </div>
         <div style="margin-bottom:12px;">
           <label style="font-size:12px;font-weight:700;color:#444;display:block;margin-bottom:5px;">ID da Planilha</label>
-          <input type="text" id="sheets-id-inp" placeholder="Ex.: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+          <input type="text" id="sheets-id-inp" placeholder="Ex.: 1Q87JdV8djY12clmH0p1bYlivGB4jy4p7Dew3pM3p2S4"
             style="width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-          <div style="font-size:11px;color:#888;margin-top:4px;">Salvo automaticamente para próximas importações.</div>
         </div>
-        <button class="btn btn-primary" style="width:100%;" onclick="carregarCandidatos()">
-          &#128269; Buscar Candidatos
-        </button>
+        <button class="btn btn-primary" style="width:100%;" onclick="carregarCandidatos()">&#128269; Buscar Candidatos</button>
       </div>
-
-      <!-- Step 2: lista de candidatos -->
       <div id="sheets-step2" style="display:none;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <span style="font-size:13px;font-weight:700;color:var(--green-dark);">Candidatos encontrados:</span>
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('sheets-step2').style.display='none';document.getElementById('sheets-step1').style.display='block';">
-            &#8592; Voltar
-          </button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('sheets-step2').style.display='none';document.getElementById('sheets-step1').style.display='block';">&#8592; Voltar</button>
         </div>
-        <div style="margin-bottom:10px;">
-          <input type="text" id="sheets-busca" placeholder="&#128269; Filtrar por nome ou CPF..." oninput="filtrarCandidatos()"
-            style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
-        </div>
+        <input type="text" id="sheets-busca" placeholder="&#128269; Filtrar por nome ou CPF..." oninput="filtrarCandidatos()"
+          style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;margin-bottom:10px;">
         <div id="sheets-lista" style="max-height:380px;overflow-y:auto;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);"></div>
       </div>
-
-      <!-- Loading -->
       <div id="sheets-loading" style="display:none;text-align:center;padding:32px;">
         <div style="font-size:32px;margin-bottom:8px;">&#9203;</div>
         <div style="font-size:13px;color:#555;" id="sheets-loading-txt">Buscando candidatos...</div>
       </div>
-
     </div>
   </div>
 </div>
@@ -2121,7 +2040,6 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
             <option value="">Selecione</option>
             <option value="55">Seg a Sex (55)</option>
             <option value="56">Seg a Sab (56)</option>
-            <option value="sabalt">Sab. Alternados</option>
             <option value="12x36">12x36</option>
             <option value="Outro">Outro</option>
           </select>
@@ -3421,7 +3339,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 // CONFIGURAÇÃO GOOGLE
 // ============================================================
 let CLIENT_ID = '';
-const SCOPES = 'https://www.googleapis.com/auth/drive';
+const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets.readonly';
 let driveReady = false;
 let driveToken = null;
 let rootFolderId = null;
@@ -6054,19 +5972,14 @@ function rdBenefFunc() {
   var emptyEl   = document.getElementById('benef-func-empty');
   if (!container) return;
 
-  // Fill empresa filter (always refresh)
+  // Fill empresa filter
   var empSel = document.getElementById('benef-emp-filter');
-  if (empSel) {
-    var prevEmp = empSel.value;
-    empSel.innerHTML = '<option value="">Todas as empresas</option>';
-    emps.sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
-      .forEach(function(e) {
-        var o = document.createElement('option');
-        o.value = e.id; o.textContent = e.razao || e.nome;
-        if (e.id === prevEmp) o.selected = true;
-        empSel.appendChild(o);
-      });
-    filterEmp = empSel.value;
+  if (empSel && empSel.options.length <= 1) {
+    emps.forEach(function(e) {
+      var o = document.createElement('option');
+      o.value = e.id; o.textContent = e.razao || e.nome;
+      empSel.appendChild(o);
+    });
   }
 
   // Fill funcionário filter (respecting empresa filter)
@@ -8846,30 +8759,10 @@ function renderFlashTable() {
     while (cur <= d2) {
       var dow = cur.getDay();
       var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-      if (dow !== 0 && !feriados.has(ds)) count++;
+      if (dow !== 0 && !feriados.has(ds)) count++; // 0=domingo, exclui só domingo
       cur.setDate(cur.getDate()+1);
     }
     return count || 26;
-  }
-
-  // Sábados alternados: conta seg-sex + sábados pares do período (semanas 1,3,5...)
-  function calcDiasUteisSabAlt(de, ate) {
-    if (!de || !ate) return 24;
-    var d1 = new Date(de + 'T12:00:00'); var d2 = new Date(ate + 'T12:00:00');
-    if (d1 > d2) return 24;
-    var feriados = new Set();
-    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) getFeriadosSP(y).forEach(function(f){ feriados.add(f); });
-    // Count all Saturdays in period
-    var sabCount = 0; var cur = new Date(d1);
-    while (cur <= d2) {
-      if (cur.getDay() === 6) sabCount++;
-      cur.setDate(cur.getDate() + 1);
-    }
-    // Alternating: half the Saturdays (rounded up)
-    var sabsAlternados = Math.ceil(sabCount / 2);
-    // Weekdays (Mon-Fri) excluding holidays
-    var diasUteis = calcDiasUteis(de, ate);
-    return diasUteis + sabsAlternados;
   }
   var diasUteisComSab = calcDiasUteisComSab(flashDe, flashAte);
   var deps   = DB.g('departamentos');
@@ -8925,17 +8818,12 @@ function renderFlashTable() {
     var inpDias = document.createElement('input');
     inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
     inpDias.id = 'dias-'+f.id; // Use escala do cadastro para determinar dias: "55"=Seg-Sex, "56"=Seg-Sab
-    var diasCalc = f.escala === '56' ? diasUteisComSab
-                 : f.escala === 'sabalt' ? calcDiasUteisSabAlt(flashDe, flashAte)
-                 : diasUteisPeriodo;
+    var diasCalc = (f.escala === '56') ? diasUteisComSab : diasUteisPeriodo;
     inpDias.value = diasCalc || '22';
     inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
     inpDias.title = 'Dias trabalhados no período';
     // Show escala tag next to dias
-    var escalaTxt = f.escala === '56' ? 'Seg-Sab'
-                 : f.escala === 'sabalt' ? 'Sab.Alt'
-                 : f.escala === '12x36' ? '12x36'
-                 : 'Seg-Sex';
+    var escalaTxt = f.escala === '56' ? 'Seg-Sab' : f.escala === '12x36' ? '12x36' : f.escala === '55' || f.escala === '' ? 'Seg-Sex' : (f.escala||'Seg-Sex');
     var escalaTag = document.createElement('span');
     escalaTag.textContent = escalaTxt;
     escalaTag.style.cssText = 'font-size:10px;background:#e8f5ee;color:var(--green-dark);border-radius:4px;padding:2px 6px;margin-left:4px;font-weight:600;';
@@ -8993,7 +8881,6 @@ function updateCalcCell(fid) {
 
 // ── Gerar XLSX Flash ─────────────────────────────────────────
 async function gerarFlashXLSX() {
-  try {
   var empId = (document.getElementById('flash-empresa')||{}).value||'';
   var de    = (document.getElementById('flash-de') ||{}).value||'';
   var ate   = (document.getElementById('flash-ate')||{}).value||'';
@@ -9007,30 +8894,6 @@ async function gerarFlashXLSX() {
   var funcs = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
   var deps  = DB.g('departamentos');
   if (!funcs.length) { alert('Nenhum funcionário ativo nesta empresa.'); return; }
-
-  // Calcular dias úteis do período (necessário aqui pois renderFlashTable pode não ter rodado)
-  var diasUteisPeriodo = (typeof calcDiasUteisGlobal === 'function')
-    ? calcDiasUteisGlobal(de, ate)
-    : calcDiasUteis ? calcDiasUteis(de, ate) : 22;
-  var diasUteisComSab = diasUteisPeriodo; // fallback
-  try {
-    // Seg-Sab: conta seg a sab excluindo domingos e feriados SP
-    if (de && ate) {
-      var d1x=new Date(de+'T12:00:00'), d2x=new Date(ate+'T12:00:00');
-      var ferx=new Set();
-      for(var yx=d1x.getFullYear();yx<=d2x.getFullYear();yx++){
-        if(typeof getFeriadosSP==='function') getFeriadosSP(yx).forEach(function(f){ ferx.add(f); });
-      }
-      var cx=0, curx=new Date(d1x);
-      while(curx<=d2x){
-        var dowx=curx.getDay();
-        var dsx=curx.getFullYear()+'-'+String(curx.getMonth()+1).padStart(2,'0')+'-'+String(curx.getDate()).padStart(2,'0');
-        if(dowx!==0&&!ferx.has(dsx)) cx++;
-        curx.setDate(curx.getDate()+1);
-      }
-      diasUteisComSab = cx||26;
-    }
-  } catch(ex){}
 
   var chkVT    = (document.getElementById('flash-chk-vt')    ||{checked:true}).checked;
   var chkVR    = (document.getElementById('flash-chk-vr')    ||{checked:true}).checked;
@@ -9092,9 +8955,7 @@ async function gerarFlashXLSX() {
     }
 
     var diasInp = getInp('dias-'+f.id);
-    var diasFallback = f.escala === '56'     ? (diasUteisComSab||26)
-                    : f.escala === 'sabalt' ? calcDiasUteisSabAltGlobal(de, ate)
-                    : (diasUteisPeriodo||22);
+    var diasFallback = (f.escala === '56') ? (diasUteisComSab||26) : (diasUteisPeriodo||22);
     var dias = diasInp !== null ? diasInp : diasFallback;
 
     var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(function(t){ return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); })) : 0;
@@ -9133,14 +8994,12 @@ async function gerarFlashXLSX() {
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = nomeArq; a.click();
 
-  // Upload to Drive async (non-blocking)
   if (driveReady) {
-    (async function() {
-      try {
-        var file = new File([blob], nomeArq, {type:'text/csv'});
-        await uploadFileToDrive(file, 'Beneficios/Flash');
-      } catch(e) { console.warn(e); }
-    })();
+    try {
+      var file = new File([blob], nomeArq, {type:'text/csv'});
+      await uploadFileToDrive(file, 'Beneficios/Flash');
+      toast('Arquivo salvo no Drive ☁️');
+    } catch(e) { console.warn(e); }
   }
   // ── Salvar snapshot no histórico ──
   var snapshot = {
@@ -9173,8 +9032,6 @@ async function gerarFlashXLSX() {
   if (driveReady) driveSync('flash-hist');
 
   toast('Arquivo gerado e salvo no histórico! ' + funcs.length + ' funcionário(s) — ' + periodo);
-
-  } catch(err) { console.error('gerarFlashXLSX error:', err); alert('Erro ao gerar planilha: ' + err.message); }
 }
 
 // ============================================================
@@ -13023,67 +12880,49 @@ function benefMassaToggleAll() {
 
 function abrirAjusteMassa() {
   var chks = document.querySelectorAll('.benef-massa-chk:checked');
-  if (!chks.length) { alert('Selecione pelo menos um funcionario.'); return; }
-  var fidsSelected = Array.from(chks).map(function(c){ return c.dataset.fid; });
+  if (!chks.length) { alert('Selecione pelo menos um funcionário.'); return; }
   var infoEl = document.getElementById('massa-info-count');
-  if (infoEl) infoEl.textContent = fidsSelected.length;
+  if (infoEl) infoEl.textContent = chks.length;
   document.getElementById('massa-obs').value = '';
   document.getElementById('massa-criar-se-nao-tem').checked = false;
 
   var TIPOS = [
-    { tipo: 'VT – Vale Transporte',     icon: '&#x1F68C;', tipoVal: 'Por dia' },
-    { tipo: 'VR – Vale Refeição',       icon: '&#x1F37D;', tipoVal: 'Por dia' },
-    { tipo: 'VA – Vale Alimentação',    icon: '&#x1F6D2;', tipoVal: 'Mensal fixo' },
-    { tipo: 'Combustível',              icon: '&#x26FD;',  tipoVal: 'Mensal fixo' },
-    { tipo: 'Assiduidade',                   icon: '&#x2B50;',  tipoVal: 'Mensal' },
-    { tipo: 'Bônus',                    icon: '&#x1F4B0;', tipoVal: 'Mensal' },
-    { tipo: 'Assistência Odontológica', icon: '&#x1F9B7;', tipoVal: 'Mensal fixo' },
-    { tipo: 'Assistência Médica',  icon: '&#x1F3E5;', tipoVal: 'Mensal fixo' },
-    { tipo: 'Triênio',                  icon: '&#x1F4C5;', tipoVal: 'Mensal fixo' }
+    { tipo: 'VT – Vale Transporte',     icon: '🚌', tipoVal: 'Por dia' },
+    { tipo: 'VR – Vale Refeição',       icon: '🍽️', tipoVal: 'Por dia' },
+    { tipo: 'VA – Vale Alimentação',    icon: '🛒', tipoVal: 'Mensal fixo' },
+    { tipo: 'Combustível',              icon: '⛽', tipoVal: 'Mensal fixo' },
+    { tipo: 'Assiduidade',              icon: '⭐', tipoVal: 'Mensal' },
+    { tipo: 'Bônus',                    icon: '💰', tipoVal: 'Mensal' },
+    { tipo: 'Assistência Odontológica', icon: '🦷', tipoVal: 'Mensal fixo' },
+    { tipo: 'Assistência Médica',       icon: '🏥', tipoVal: 'Mensal fixo' },
+    { tipo: 'Triênio',                  icon: '📅', tipoVal: 'Mensal fixo' }
   ];
 
-  var atribsAll = DB.g('benef-atrib');
   var tbody = document.getElementById('massa-benef-rows');
   tbody.innerHTML = TIPOS.map(function(t, i) {
     var slug = 'mb' + i;
-    var valores = fidsSelected.map(function(fid) {
-      var a = atribsAll.find(function(x){
-        return x.fid === fid && (x.tipoBase||x.tipo||'') === t.tipo && x.st !== 'Encerrado';
-      });
-      return a ? parseFloat(a.valor)||0 : null;
-    }).filter(function(v){ return v !== null; });
-    var temBenef = valores.length > 0;
-    var valorMedio = temBenef ? valores.reduce(function(s,v){ return s+v; },0)/valores.length : 0;
-    var currentStr = temBenef ? 'Atual: R$ ' + valorMedio.toFixed(2).replace('.',',') : 'Nao cadastrado';
-    var border = temBenef ? 'var(--green)' : 'var(--gray-200)';
-    var bg     = temBenef ? '#fff'         : 'var(--gray-50)';
     return '<tr style="border-bottom:1px solid var(--gray-100);">' +
-      '<td style="padding:7px 10px;">' +
-        t.icon + ' <strong>' + t.tipo + '</strong>' +
-        '<br><span style="font-size:11px;color:' + (temBenef?'var(--green-dark)':'var(--gray-400)') + ';">' + currentStr + '</span>' +
-      '</td>' +
+      '<td style="padding:7px 10px;">' + t.icon + ' <strong>' + t.tipo + '</strong></td>' +
       '<td style="padding:7px 10px;text-align:center;">' +
-        '<input type="checkbox" id="' + slug + '-ck" onchange="massaToggleLine(this)" ' +
-        (temBenef ? 'checked ' : '') +
-        'style="width:16px;height:16px;cursor:pointer;accent-color:var(--green);">' +
+        '<input type="checkbox" id="' + slug + '-ck" ' +
+        'onchange="massaToggleLine(this)" ' +
       '</td>' +
       '<td style="padding:7px 10px;">' +
-        '<input type="number" id="' + slug + '-val" min="0" step="0.01" placeholder="Novo valor" ' +
-        (temBenef ? '' : 'disabled ') +
+        '<input type="number" id="' + slug + '-val" min="0" step="0.01" placeholder="0,00" disabled ' +
         'data-tipo="' + t.tipo + '" ' +
-        'style="width:110px;padding:5px 8px;border:1.5px solid ' + border + ';border-radius:4px;font-size:13px;font-family:inherit;background:' + bg + ';">' +
+        'style="width:90px;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:13px;font-family:inherit;background:var(--gray-50);">' +
       '</td>' +
       '<td style="padding:7px 10px;">' +
-        '<select id="' + slug + '-tv" ' + (temBenef?'':'disabled ') + 'style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:' + bg + ';">' +
+        '<select id="' + slug + '-tv" disabled style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:var(--gray-50);">' +
           '<option value="Por dia"' + (t.tipoVal==='Por dia'?' selected':'') + '>Por dia</option>' +
           '<option value="Mensal fixo"' + (t.tipoVal==='Mensal fixo'?' selected':'') + '>Mensal fixo</option>' +
           '<option value="Mensal"' + (t.tipoVal==='Mensal'?' selected':'') + '>Mensal</option>' +
         '</select>' +
       '</td>' +
       '<td style="padding:7px 10px;">' +
-        '<select id="' + slug + '-st" ' + (temBenef?'':'disabled ') + 'style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:' + bg + ';">' +
-          '<option value="Ativo">Ativo</option>' +
-          '<option value="Suspenso">Suspenso</option>' +
+        '<select id="' + slug + '-st" disabled style="padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:12px;font-family:inherit;background:var(--gray-50);">' +
+          '<option value="Ativo">✅ Ativo</option>' +
+          '<option value="Suspenso">⏸️ Suspenso</option>' +
         '</select>' +
       '</td>' +
     '</tr>';
@@ -13111,6 +12950,7 @@ function aplicarAjusteMassa() {
   var obs = (document.getElementById('massa-obs').value||'').trim();
   var criarSeNaoTem = document.getElementById('massa-criar-se-nao-tem').checked;
 
+  // Collect which benefit lines are checked
   var linhas = [];
   for (var i = 0; i < 9; i++) {
     var slug = 'mb' + i;
@@ -13122,28 +12962,29 @@ function aplicarAjusteMassa() {
     var tipo  = valEl ? valEl.dataset.tipo : '';
     var valor = valEl ? parseFloat(valEl.value) : NaN;
     if (!tipo || isNaN(valor)) continue;
-    linhas.push({ tipo: tipo, valor: valor,
-      tipoVal: tvEl ? tvEl.value : 'Mensal fixo',
-      st: stEl ? stEl.value : 'Ativo' });
+    linhas.push({ tipo: tipo, valor: valor, tipoVal: tvEl?tvEl.value:'Mensal fixo', st: stEl?stEl.value:'Ativo' });
   }
-  if (!linhas.length) { alert('Marque pelo menos um beneficio e informe o novo valor.'); return; }
+
+  if (!linhas.length) { alert('Marque pelo menos um benefício e informe o valor.'); return; }
 
   var chks = document.querySelectorAll('.benef-massa-chk:checked');
   var fids = Array.from(chks).map(function(c){ return c.dataset.fid; });
-  if (!fids.length) { alert('Nenhum funcionario selecionado.'); return; }
+  if (!fids.length) { alert('Nenhum funcionário selecionado.'); return; }
 
   var atribs = DB.g('benef-atrib');
-  var atualizados = 0, criados = 0;
+  var atualizados = 0;
+  var criados = 0;
 
   fids.forEach(function(fid) {
     linhas.forEach(function(linha) {
       var idx = atribs.findIndex(function(a){
-        return a.fid === fid && (a.tipoBase||a.tipo||'') === linha.tipo;
+        if (a.fid !== fid) return false;
+        return (a.tipoBase||a.tipo||'') === linha.tipo;
       });
       if (idx >= 0) {
-        atribs[idx].valor   = linha.valor;
+        atribs[idx].valor  = linha.valor;
         atribs[idx].tipoVal = linha.tipoVal;
-        atribs[idx].st      = linha.st;
+        atribs[idx].st     = linha.st;
         if (obs) atribs[idx].obs = obs;
         atualizados++;
       } else if (criarSeNaoTem) {
@@ -13161,179 +13002,15 @@ function aplicarAjusteMassa() {
   document.querySelectorAll('.benef-massa-chk').forEach(function(c){ c.checked = false; });
   benefMassaUpdateCount();
   rdBenefFunc();
-  var msg = 'Ajuste aplicado! ' + atualizados + ' beneficio(s) atualizado(s)';
+  var msg = '✅ Ajuste aplicado! ' + atualizados + ' benefício(s) atualizado(s)';
   if (criados) msg += ', ' + criados + ' criado(s)';
   toast(msg);
 }
 
-function abrirReajusteAnual() {
-  // Fill empresa select
-  var sel = document.getElementById('reaj-empresa');
-  if (sel) {
-    var prev = sel.value;
-    sel.innerHTML = '<option value="">Todos os funcionarios com beneficio</option>';
-    DB.g('empresas').sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
-      .forEach(function(e){
-        var o = document.createElement('option');
-        o.value = e.id; o.textContent = e.razao || e.nome;
-        if (e.id === prev) o.selected = true;
-        sel.appendChild(o);
-      });
-  }
-  // Pre-fill with current empresa filter
-  var empFilter = (document.getElementById('benef-emp-filter')||{}).value || '';
-  if (empFilter && sel) sel.value = empFilter;
-
-  // Clear value fields
-  ['reaj-vt','reaj-vr','reaj-va','reaj-comb','reaj-odonto','reaj-med'].forEach(function(id){
-    var el = document.getElementById(id); if(el) el.value = '';
-  });
-  document.getElementById('reaj-obs').value = 'Reajuste anual ' + new Date().getFullYear();
-  document.getElementById('reaj-apenas-ativos').checked = true;
-
-  openModal('modal-reajuste-anual');
-}
-
-function aplicarReajusteAnual() {
-  var empId = (document.getElementById('reaj-empresa')||{}).value || '';
-  var obs   = (document.getElementById('reaj-obs')||{}).value || '';
-  var apenasAtivos = document.getElementById('reaj-apenas-ativos').checked;
-
-  var MAPA = [
-    { id: 'reaj-vt',    tipo: 'VT \u2013 Vale Transporte',        tipoVal: 'Por dia' },
-    { id: 'reaj-vr',    tipo: 'VR \u2013 Vale Refei\u00e7\u00e3o', tipoVal: 'Por dia' },
-    { id: 'reaj-va',    tipo: 'VA \u2013 Vale Alimenta\u00e7\u00e3o', tipoVal: 'Mensal fixo' },
-    { id: 'reaj-comb',  tipo: 'Combust\u00edvel',                  tipoVal: 'Mensal fixo' },
-    { id: 'reaj-odonto',tipo: 'Assist\u00eancia Odontol\u00f3gica', tipoVal: 'Mensal fixo' },
-    { id: 'reaj-med',   tipo: 'Assist\u00eancia M\u00e9dica',       tipoVal: 'Mensal fixo' }
-  ];
-
-  // Collect which fields have values
-  var ajustes = MAPA.map(function(m){
-    var el = document.getElementById(m.id);
-    var v  = el ? parseFloat(el.value) : NaN;
-    return isNaN(v) ? null : { tipo: m.tipo, valor: v, tipoVal: m.tipoVal };
-  }).filter(Boolean);
-
-  if (!ajustes.length) { alert('Informe pelo menos um valor para reajustar.'); return; }
-
-  // Get target employees
-  var funcs = DB.g('funcionarios').filter(function(f){
-    if (f.st === 'Desligado') return false;
-    if (empId && f.emp !== empId) return false;
-    return true;
-  });
-
-  if (!funcs.length) { alert('Nenhum funcionario encontrado para a empresa selecionada.'); return; }
-
-  var atribs = DB.g('benef-atrib');
-  var atualizados = 0;
-
-  funcs.forEach(function(f) {
-    ajustes.forEach(function(aj) {
-      var idx = atribs.findIndex(function(a){
-        if (a.fid !== f.id) return false;
-        if (apenasAtivos && a.st !== 'Ativo') return false;
-        return (a.tipoBase||a.tipo||'') === aj.tipo;
-      });
-      if (idx >= 0) {
-        atribs[idx].valor  = aj.valor;
-        atribs[idx].tipoVal = aj.tipoVal;
-        if (obs) atribs[idx].obs = obs;
-        atualizados++;
-      }
-    });
-  });
-
-  DB.s('benef-atrib', atribs);
-  if (driveReady) driveSync('benef-atrib');
-  closeModal('modal-reajuste-anual');
-  rdBenefFunc();
-  toast('Reajuste aplicado em ' + atualizados + ' beneficio(s) de ' + funcs.length + ' funcionario(s)!');
-}
-
-function importarFichaAdmissao(inp) {
-  var file = inp.files[0];
-  if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var dados = JSON.parse(e.target.result);
-
-      // Map JSON fields to employee modal fields
-      function sv(id, val) {
-        var el = document.getElementById(id);
-        if (el && val) el.value = val;
-      }
-
-      // Open new employee modal first
-      resetFuncModal();
-      openModal('modal-func');
-
-      // Fill fields after modal opens
-      setTimeout(function() {
-        sv('fnome', dados.n || '');
-        sv('fcpf',  dados.cpf || '');
-        sv('frg',   dados.rg || '');
-        sv('fnas',  dados.nas || '');
-        sv('fsex',  dados.sex || '');
-        sv('fec',   dados.ec || '');
-        sv('ftel',  dados.tel || '');
-        sv('femail',dados.email || '');
-        sv('fend',  dados.end || '');
-        sv('fcep',  dados.cep || '');
-        sv('fpis',  dados.pis || '');
-        sv('fctps', dados.ctps || '');
-        sv('ftam-camisa',  dados.tamCamisa || '');
-        sv('ftam-calca',   dados.tamCalca || '');
-        sv('ftam-calcado', dados.tamCalcado || '');
-        sv('ftam-jaleco',  dados.tamJaleco || '');
-        sv('fst', 'Ativo');
-        sv('ftip', 'CLT');
-
-        // Store doc previews for documents tab
-        if (dados.docs && dados.docs.length) {
-          dados.docs.forEach(function(d) {
-            if (d.dataUrl && d.name) {
-              // Will be linked after employee is saved via fid
-              // Store temporarily keyed by name
-              try {
-                sessionStorage.setItem('import_doc_' + d.name, JSON.stringify(d));
-              } catch(ex) {}
-            }
-          });
-          toast(dados.docs.length + ' documento(s) anexado(s) — salve o funcionário para vincular.');
-        }
-
-        toast('✅ Ficha importada: ' + (dados.n || 'candidato') + '. Verifique e complete os campos antes de salvar.');
-      }, 300);
-
-    } catch(err) {
-      alert('Erro ao ler o arquivo: ' + err.message + '\nVerifique se é um JSON gerado pelo formulário de admissão.');
-    }
-    inp.value = '';
-  };
-  reader.readAsText(file);
-}
-
-// Sábados alternados (global) — usado em gerarFlashXLSX
-function calcDiasUteisSabAltGlobal(de, ate) {
-  if (!de || !ate) return 24;
-  var d1 = new Date(de+'T12:00:00'), d2 = new Date(ate+'T12:00:00');
-  if (d1 > d2) return 24;
-  var sabCount = 0, cur = new Date(d1);
-  while (cur <= d2) { if (cur.getDay()===6) sabCount++; cur.setDate(cur.getDate()+1); }
-  var sabsAlternados = Math.ceil(sabCount/2);
-  return (typeof calcDiasUteisGlobal === 'function' ? calcDiasUteisGlobal(de,ate) : 22) + sabsAlternados;
-}
-
-// ============================================================
-// IMPORTAR DO GOOGLE SHEETS
-// ============================================================
-var _sheetsData = []; // cache dos candidatos carregados
+// ── IMPORTAR DO GOOGLE SHEETS ──
+var _sheetsData = [];
 
 function abrirImportSheets() {
-  // Load saved sheet ID
   var savedId = '';
   try { savedId = localStorage.getItem('eq_sheets_admissao_id') || ''; } catch(e) {}
   var inp = document.getElementById('sheets-id-inp');
@@ -13349,218 +13026,92 @@ async function carregarCandidatos() {
   if (!sheetId) { alert('Cole o ID da planilha.'); return; }
   try { localStorage.setItem('eq_sheets_admissao_id', sheetId); } catch(e) {}
 
-  document.getElementById('sheets-step1').style.display = 'none';
-  document.getElementById('sheets-step2').style.display = 'none';
-  document.getElementById('sheets-loading').style.display = 'block';
-  document.getElementById('sheets-loading-txt').textContent = 'Buscando candidatos...';
-
-  _sheetsData = [];
-
-  // Try multiple approaches
-  var success = false;
-
-  // Approach 1: Sheets API v4 with Drive token (if connected)
-  if (driveReady && driveToken && !success) {
-    try {
-      // First get sheet names
-      var metaUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '?fields=sheets.properties.title';
-      var metaResp = await fetch(metaUrl, { headers: { 'Authorization': 'Bearer ' + driveToken } });
-      var meta = await metaResp.json();
-      var sheetNames = (meta.sheets||[]).map(function(s){ return s.properties.title; });
-      document.getElementById('sheets-loading-txt').textContent = 'Abas encontradas: ' + sheetNames.join(', ');
-
-      // Try each sheet name
-      for (var s = 0; s < sheetNames.length; s++) {
-        var sname = sheetNames[s];
-        var valUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent(sname) + '!A:AM';
-        var valResp = await fetch(valUrl, { headers: { 'Authorization': 'Bearer ' + driveToken } });
-        var valData = await valResp.json();
-        var rows = valData.values || [];
-        if (rows.length >= 2) {
-          parseSheetsAPI(valData);
-          if (_sheetsData.length > 0) { success = true; break; }
-        }
-      }
-    } catch(ex) {
-      console.warn('Sheets API v4 failed:', ex);
-    }
-  }
-
-  // Approach 2: gviz export (public sheets, no auth needed)
-  if (!success) {
-    var sheetNames2 = ['Cadastros', 'Página1', 'Pagina1', 'Sheet1', 'Planilha1', 'Plan1'];
-    for (var n = 0; n < sheetNames2.length; n++) {
-      try {
-        document.getElementById('sheets-loading-txt').textContent = 'Tentando aba: ' + sheetNames2[n] + '...';
-        var gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&headers=1&sheet=' + encodeURIComponent(sheetNames2[n]);
-        var gvizResp = await fetch(gvizUrl);
-        var gvizTxt = await gvizResp.text();
-        // gviz wraps response: google.visualization.Query.setResponse({...});
-        var match = gvizTxt.match(/setResponse\(([\s\S]*)\)/);
-        if (match) {
-          var gvizData = JSON.parse(match[1]);
-          if (gvizData.table && gvizData.table.rows && gvizData.table.rows.length > 0) {
-            parseGViz(gvizData);
-            if (_sheetsData.length > 0) { success = true; break; }
-          }
-        }
-      } catch(ex2) {
-        console.warn('gviz failed for', sheetNames2[n], ex2);
-      }
-    }
-  }
-
-  document.getElementById('sheets-loading').style.display = 'none';
-
-  if (!success || _sheetsData.length === 0) {
-    document.getElementById('sheets-step1').style.display = 'block';
-    alert(
-      'Não foi possível carregar os candidatos.\n\n' +
-      'Verifique:\n' +
-      '1. O ID da planilha está correto: ' + sheetId + '\n' +
-      '2. A planilha está compartilhada como "Qualquer pessoa com o link pode VER"\n' +
-      '3. O sistema está conectado ao Drive (ícone verde no topo)\n\n' +
-      'Para compartilhar: Abrir planilha → Compartilhar → Alterar para "Qualquer pessoa com o link"'
-    );
+  if (!driveReady || !driveToken) {
+    alert('Conecte ao Google Drive primeiro para importar da planilha.');
     return;
   }
 
-  document.getElementById('sheets-step2').style.display = 'block';
-  document.getElementById('sheets-busca').value = '';
-  filtrarCandidatos();
-  toast('✅ ' + _sheetsData.length + ' candidato(s) encontrado(s)!');
-}async function carregarCandidatos() {
-  var sheetId = (document.getElementById('sheets-id-inp')||{}).value.trim();
-  if (!sheetId) { alert('Cole o ID da planilha.'); return; }
-
-  // Save sheet ID
-  try { localStorage.setItem('eq_sheets_admissao_id', sheetId); } catch(e) {}
-
-  // Show loading
   document.getElementById('sheets-step1').style.display = 'none';
-  document.getElementById('sheets-step2').style.display = 'none';
   document.getElementById('sheets-loading').style.display = 'block';
-  document.getElementById('sheets-loading-txt').textContent = 'Buscando candidatos...';
+  document.getElementById('sheets-loading-txt').textContent = 'Conectando...';
+  _sheetsData = [];
 
   try {
-    // Use Google Sheets JSON API (public sheets only)
-    // For authenticated access, use Drive API with current token
-    var url;
-    if (driveReady && driveToken) {
-      url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/Cadastros!A:AH?key=&access_token=' + driveToken;
-    } else {
-      // Try public export URL
-      url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=Cadastros';
-    }
+    var metaResp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '?fields=sheets.properties',
+      { headers: { 'Authorization': 'Bearer ' + driveToken } }
+    );
+    if (!metaResp.ok) throw new Error('HTTP ' + metaResp.status);
+    var meta = await metaResp.json();
+    var sheets = (meta.sheets||[]).map(function(s){ return s.properties.title; });
 
-    var resp = await fetch(url, { headers: driveToken ? { 'Authorization': 'Bearer ' + driveToken } : {} });
-    var data;
-
-    if (driveReady && driveToken) {
-      data = await resp.json();
-      parseSheetsAPI(data);
-    } else {
-      var txt = await resp.text();
-      // gviz returns: google.visualization.Query.setResponse({...});
-      var jsonStr = txt.replace(/^[^{]*/, '').replace(/\);?\s*$/, '');
-      var gviz = JSON.parse(jsonStr);
-      parseGViz(gviz);
+    var loaded = false;
+    for (var s = 0; s < sheets.length; s++) {
+      document.getElementById('sheets-loading-txt').textContent = 'Lendo: ' + sheets[s];
+      var valResp = await fetch(
+        'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent(sheets[s]),
+        { headers: { 'Authorization': 'Bearer ' + driveToken } }
+      );
+      if (!valResp.ok) continue;
+      var valData = await valResp.json();
+      var rows = valData.values || [];
+      if (rows.length < 2) continue;
+      var header = rows[0];
+      var dataRows = rows.slice(1).filter(function(r){ return r[1] && r[1].trim(); });
+      if (!dataRows.length) continue;
+      _sheetsData = dataRows.map(function(row) {
+        var obj = {};
+        header.forEach(function(h, i){ obj[h] = row[i] || ''; });
+        return obj;
+      });
+      loaded = true;
+      break;
     }
 
     document.getElementById('sheets-loading').style.display = 'none';
+    if (!loaded || !_sheetsData.length) {
+      document.getElementById('sheets-step1').style.display = 'block';
+      alert('Planilha encontrada mas sem candidatos. Verifique se ha fichas preenchidas.');
+      return;
+    }
     document.getElementById('sheets-step2').style.display = 'block';
+    document.getElementById('sheets-busca').value = '';
     filtrarCandidatos();
+    toast('✅ ' + _sheetsData.length + ' candidato(s) encontrado(s)!');
 
   } catch(err) {
     document.getElementById('sheets-loading').style.display = 'none';
     document.getElementById('sheets-step1').style.display = 'block';
-    alert('Erro ao buscar planilha.\n\nVerifique:\n1. O ID está correto\n2. A planilha está compartilhada como "Qualquer pessoa com o link pode ver"\n\nDetalhe: ' + err.message);
+    var msg = err.message || String(err);
+    if (msg.includes('403') || msg.includes('401')) {
+      alert('Sem permissao. Verifique se esta conectado ao Drive com a mesma conta da planilha. Erro: ' + msg);
+    } else {
+      alert('Erro: ' + msg);
+    }
   }
-}
-
-function parseSheetsAPI(data) {
-  var rows = data.values || [];
-  if (rows.length < 2) { _sheetsData = []; return; }
-  var header = rows[0];
-  _sheetsData = rows.slice(1).map(function(row) {
-    var obj = {};
-    header.forEach(function(h, i) { obj[h] = row[i] || ''; });
-    return obj;
-  }).filter(function(r){ return r['Nome'] || r['nome']; });
-}
-
-function parseGViz(gviz) {
-  var cols = (gviz.table.cols||[]).map(function(c){ return c.label || c.id || ''; });
-  var rows = gviz.table.rows || [];
-  if (!rows.length) { _sheetsData = []; return; }
-
-  // Map every row using column index — most reliable approach
-  var HEADERS = [
-    'Data Envio','Nome','CPF','RG','Nascimento','Sexo','Estado Civil','Naturalidade',
-    'Nome Mae','Nome Pai','Telefone','Email','CEP','Endereco','Numero','Bairro',
-    'Cidade','Complemento','PIS','CTPS','Titulo Eleitor','Cert. Militar','CNH','Cat. CNH',
-    'Banco','Agencia','Conta','Tipo Conta','PIX',
-    'Tam. Camiseta','Tam. Calca','Tam. Calcado','Tam. Jaleco','Pasta Drive'
-  ];
-
-  function cellVal(cell) {
-    if (!cell) return '';
-    if (cell.f) return cell.f; // formatted value
-    if (cell.v !== null && cell.v !== undefined) return String(cell.v);
-    return '';
-  }
-
-  _sheetsData = rows.map(function(row) {
-    var obj = {};
-    // Map by label first
-    cols.forEach(function(h, i) {
-      if (h) obj[h] = cellVal(row.c && row.c[i]);
-    });
-    // Also map by index using known headers
-    HEADERS.forEach(function(h, i) {
-      if (!obj[h]) obj[h] = cellVal(row.c && row.c[i]);
-    });
-    return obj;
-  }).filter(function(r) {
-    var nome = (r['Nome'] || '').trim();
-    return nome && nome !== 'Nome' && nome !== 'nome';
-  });
 }
 
 function filtrarCandidatos() {
   var busca = ((document.getElementById('sheets-busca')||{}).value||'').toLowerCase();
   var lista = document.getElementById('sheets-lista');
   if (!lista) return;
-
   var filtered = _sheetsData.filter(function(r) {
-    if (!busca) return true;
-    var vals = Object.values(r).join(' ').toLowerCase();
-    return vals.includes(busca);
+    var nome = (r['Nome']||'').toLowerCase();
+    var cpf  = (r['CPF'] ||'').toLowerCase();
+    return !busca || nome.includes(busca) || cpf.includes(busca);
   });
-
   if (!filtered.length) {
-    lista.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px;">' +
-      (_sheetsData.length === 0 
-        ? 'Nenhum dado carregado da planilha.' 
-        : 'Nenhum candidato encontrado para "' + busca + '".<br><small style="color:#aaa">Total na planilha: ' + _sheetsData.length + '</small>') +
-      '</div>';
+    lista.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px;">Nenhum candidato encontrado. Total carregado: ' + _sheetsData.length + '</div>';
     return;
   }
-
   lista.innerHTML = filtered.map(function(r, i) {
-    var nome = r['Nome']||r['nome']||'';
-    var cpf  = r['CPF'] ||r['cpf'] ||'';
-    var tel  = r['Telefone']||r['telefone']||'';
-    var dt   = r['Data Envio']||r['data_envio']||'';
-    var dtFmt = dt ? new Date(dt).toLocaleDateString('pt-BR') : '';
-    return '<div style="padding:12px 16px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:.15s;" ' +
-      'onmouseenter="this.style.background=\'#f7faf8\'" onmouseleave="this.style.background=\'\'">' +
+    var dt = r['Data Envio'] ? new Date(r['Data Envio']).toLocaleDateString('pt-BR') : '';
+    return '<div style="padding:12px 16px;border-bottom:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">' +
       '<div>' +
-        '<div style="font-size:13.5px;font-weight:700;color:var(--gray-800);">&#128100; ' + nome + '</div>' +
-        '<div style="font-size:12px;color:#888;margin-top:2px;">CPF: ' + cpf + ' &nbsp;|&nbsp; Tel: ' + tel + (dtFmt?' &nbsp;|&nbsp; Enviado: '+dtFmt:'') + '</div>' +
+        '<div style="font-size:13.5px;font-weight:700;color:var(--gray-800);">&#128100; ' + (r['Nome']||'') + '</div>' +
+        '<div style="font-size:12px;color:#888;">CPF: '+(r['CPF']||'')+' | Tel: '+(r['Telefone']||'')+(dt?' | '+dt:'')+'</div>' +
       '</div>' +
-      '<button class="btn btn-primary btn-sm" style="font-size:12px;padding:6px 14px;white-space:nowrap;" ' +
-        'onclick="importarCandidatoSheets(' + i + ')">&#10004; Importar</button>' +
+      '<button class="btn btn-primary btn-sm" style="font-size:12px;" onclick="importarCandidatoSheets('+i+')">&#10004; Importar</button>' +
     '</div>';
   }).join('');
 }
@@ -13568,70 +13119,47 @@ function filtrarCandidatos() {
 function importarCandidatoSheets(idx) {
   var busca = ((document.getElementById('sheets-busca')||{}).value||'').toLowerCase();
   var filtered = _sheetsData.filter(function(r) {
-    var nome = (r['Nome']||r['nome']||'').toLowerCase();
-    var cpf  = (r['CPF'] ||r['cpf'] ||'').toLowerCase();
+    var nome = (r['Nome']||'').toLowerCase();
+    var cpf  = (r['CPF'] ||'').toLowerCase();
     return !busca || nome.includes(busca) || cpf.includes(busca);
   });
   var r = filtered[idx];
   if (!r) return;
-
-  // Map Sheets columns to employee form fields
-  function fill(fieldId, value) {
-    var el = document.getElementById(fieldId);
-    if (el && value) el.value = value;
-  }
-
-  // Close modal and open employee modal
   closeModal('modal-import-sheets');
   resetFuncModal();
-
   setTimeout(function() {
     openModal('modal-func');
     setTimeout(function() {
-      fill('fnome',     r['Nome']         || r['nome']         || '');
-      fill('fcpf',      r['CPF']          || r['cpf']          || '');
-      fill('frg',       r['RG']           || r['rg']           || '');
-      fill('fnas',      formatDateField(r['Nascimento'] || r['nascimento'] || ''));
-      fill('fsex',      r['Sexo']         || r['sexo']         || '');
-      fill('fec',       r['Estado Civil'] || r['estado_civil'] || '');
-      fill('ftel',      r['Telefone']     || r['telefone']     || '');
-      fill('femail',    r['Email']        || r['email']        || '');
-      fill('fend',      buildEndereco(r));
-      fill('fcep',      r['CEP']          || r['cep']          || '');
-      fill('fpis',      r['PIS']          || r['pis']          || '');
-      fill('fctps',     r['CTPS']         || r['ctps']         || '');
-      fill('ftam-camisa',  r['Tam. Camiseta'] || r['tam_camisa']  || '');
-      fill('ftam-calca',   r['Tam. Calca']    || r['tam_calca']   || '');
-      fill('ftam-calcado', r['Tam. Calcado']  || r['tam_calcado'] || '');
-      fill('ftam-jaleco',  r['Tam. Jaleco']   || r['tam_jaleco']  || '');
-      fill('fst',  'Ativo');
-      fill('ftip', 'CLT');
-
-      toast('✅ Dados de ' + (r['Nome']||r['nome']||'candidato') + ' importados! Complete empresa, cargo e salário.');
+      function sv(id, val) { var el=document.getElementById(id); if(el&&val) el.value=val; }
+      sv('fnome',     r['Nome']||'');
+      sv('fcpf',      r['CPF']||'');
+      sv('frg',       r['RG']||'');
+      sv('fnas',      fmtDate(r['Nascimento']||''));
+      sv('fsex',      r['Sexo']||'');
+      sv('fec',       r['Estado Civil']||'');
+      sv('ftel',      r['Telefone']||'');
+      sv('femail',    r['Email']||'');
+      sv('fend',      [r['Endereco'],r['Numero'],r['Complemento'],r['Bairro'],r['Cidade']].filter(Boolean).join(', '));
+      sv('fcep',      r['CEP']||'');
+      sv('fpis',      r['PIS']||'');
+      sv('fctps',     r['CTPS']||'');
+      sv('ftam-camisa',  r['Tam. Camiseta']||'');
+      sv('ftam-calca',   r['Tam. Calca']||'');
+      sv('ftam-calcado', r['Tam. Calcado']||'');
+      sv('ftam-jaleco',  r['Tam. Jaleco']||'');
+      sv('fst','Ativo'); sv('ftip','CLT');
+      toast('✅ ' + (r['Nome']||'Candidato') + ' importado! Complete empresa, cargo e salario.');
     }, 350);
   }, 150);
 }
 
-function formatDateField(val) {
+function fmtDate(val) {
   if (!val) return '';
-  // If already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-  // If DD/MM/YYYY
-  var m = val.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-  if (m) return m[3] + '-' + m[2] + '-' + m[1];
-  // Try Date parse
-  try { var d = new Date(val); if (!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){}
+  var m = val.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return m[3]+'-'+m[2]+'-'+m[1];
+  try { var d=new Date(val); if(!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){}
   return '';
-}
-
-function buildEndereco(r) {
-  var end  = r['Endereco']  || r['endereco']  || '';
-  var num  = r['Numero']    || r['numero']    || '';
-  var bai  = r['Bairro']    || r['bairro']    || '';
-  var cid  = r['Cidade']    || r['cidade']    || '';
-  var comp = r['Complemento']||r['complemento']||'';
-  var parts = [end, num, comp, bai, cid].filter(Boolean);
-  return parts.join(', ');
 }
 </script>
 </body>
