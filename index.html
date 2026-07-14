@@ -13347,6 +13347,91 @@ function abrirImportSheets() {
 async function carregarCandidatos() {
   var sheetId = (document.getElementById('sheets-id-inp')||{}).value.trim();
   if (!sheetId) { alert('Cole o ID da planilha.'); return; }
+  try { localStorage.setItem('eq_sheets_admissao_id', sheetId); } catch(e) {}
+
+  document.getElementById('sheets-step1').style.display = 'none';
+  document.getElementById('sheets-step2').style.display = 'none';
+  document.getElementById('sheets-loading').style.display = 'block';
+  document.getElementById('sheets-loading-txt').textContent = 'Buscando candidatos...';
+
+  _sheetsData = [];
+
+  // Try multiple approaches
+  var success = false;
+
+  // Approach 1: Sheets API v4 with Drive token (if connected)
+  if (driveReady && driveToken && !success) {
+    try {
+      // First get sheet names
+      var metaUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '?fields=sheets.properties.title';
+      var metaResp = await fetch(metaUrl, { headers: { 'Authorization': 'Bearer ' + driveToken } });
+      var meta = await metaResp.json();
+      var sheetNames = (meta.sheets||[]).map(function(s){ return s.properties.title; });
+      document.getElementById('sheets-loading-txt').textContent = 'Abas encontradas: ' + sheetNames.join(', ');
+
+      // Try each sheet name
+      for (var s = 0; s < sheetNames.length; s++) {
+        var sname = sheetNames[s];
+        var valUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent(sname) + '!A:AM';
+        var valResp = await fetch(valUrl, { headers: { 'Authorization': 'Bearer ' + driveToken } });
+        var valData = await valResp.json();
+        var rows = valData.values || [];
+        if (rows.length >= 2) {
+          parseSheetsAPI(valData);
+          if (_sheetsData.length > 0) { success = true; break; }
+        }
+      }
+    } catch(ex) {
+      console.warn('Sheets API v4 failed:', ex);
+    }
+  }
+
+  // Approach 2: gviz export (public sheets, no auth needed)
+  if (!success) {
+    var sheetNames2 = ['Cadastros', 'Sheet1', 'Planilha1', 'Plan1', 'Form Responses 1'];
+    for (var n = 0; n < sheetNames2.length; n++) {
+      try {
+        document.getElementById('sheets-loading-txt').textContent = 'Tentando aba: ' + sheetNames2[n] + '...';
+        var gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetNames2[n]);
+        var gvizResp = await fetch(gvizUrl);
+        var gvizTxt = await gvizResp.text();
+        // gviz wraps response: google.visualization.Query.setResponse({...});
+        var match = gvizTxt.match(/setResponse\(([\s\S]*)\)/);
+        if (match) {
+          var gvizData = JSON.parse(match[1]);
+          if (gvizData.table && gvizData.table.rows && gvizData.table.rows.length > 0) {
+            parseGViz(gvizData);
+            if (_sheetsData.length > 0) { success = true; break; }
+          }
+        }
+      } catch(ex2) {
+        console.warn('gviz failed for', sheetNames2[n], ex2);
+      }
+    }
+  }
+
+  document.getElementById('sheets-loading').style.display = 'none';
+
+  if (!success || _sheetsData.length === 0) {
+    document.getElementById('sheets-step1').style.display = 'block';
+    alert(
+      'Não foi possível carregar os candidatos.\n\n' +
+      'Verifique:\n' +
+      '1. O ID da planilha está correto: ' + sheetId + '\n' +
+      '2. A planilha está compartilhada como "Qualquer pessoa com o link pode VER"\n' +
+      '3. O sistema está conectado ao Drive (ícone verde no topo)\n\n' +
+      'Para compartilhar: Abrir planilha → Compartilhar → Alterar para "Qualquer pessoa com o link"'
+    );
+    return;
+  }
+
+  document.getElementById('sheets-step2').style.display = 'block';
+  document.getElementById('sheets-busca').value = '';
+  filtrarCandidatos();
+  toast('✅ ' + _sheetsData.length + ' candidato(s) encontrado(s)!');
+}async function carregarCandidatos() {
+  var sheetId = (document.getElementById('sheets-id-inp')||{}).value.trim();
+  if (!sheetId) { alert('Cole o ID da planilha.'); return; }
 
   // Save sheet ID
   try { localStorage.setItem('eq_sheets_admissao_id', sheetId); } catch(e) {}
