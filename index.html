@@ -13388,11 +13388,11 @@ async function carregarCandidatos() {
 
   // Approach 2: gviz export (public sheets, no auth needed)
   if (!success) {
-    var sheetNames2 = ['Cadastros', 'Sheet1', 'Planilha1', 'Plan1', 'Form Responses 1'];
+    var sheetNames2 = ['Cadastros', 'Página1', 'Pagina1', 'Sheet1', 'Planilha1', 'Plan1'];
     for (var n = 0; n < sheetNames2.length; n++) {
       try {
         document.getElementById('sheets-loading-txt').textContent = 'Tentando aba: ' + sheetNames2[n] + '...';
-        var gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetNames2[n]);
+        var gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&headers=1&sheet=' + encodeURIComponent(sheetNames2[n]);
         var gvizResp = await fetch(gvizUrl);
         var gvizTxt = await gvizResp.text();
         // gviz wraps response: google.visualization.Query.setResponse({...});
@@ -13490,14 +13490,41 @@ function parseSheetsAPI(data) {
 }
 
 function parseGViz(gviz) {
-  var cols = gviz.table.cols.map(function(c){ return c.label; });
-  _sheetsData = (gviz.table.rows||[]).map(function(row) {
+  var cols = (gviz.table.cols||[]).map(function(c){ return c.label || c.id || ''; });
+  var rows = gviz.table.rows || [];
+  if (!rows.length) { _sheetsData = []; return; }
+
+  // Map every row using column index — most reliable approach
+  var HEADERS = [
+    'Data Envio','Nome','CPF','RG','Nascimento','Sexo','Estado Civil','Naturalidade',
+    'Nome Mae','Nome Pai','Telefone','Email','CEP','Endereco','Numero','Bairro',
+    'Cidade','Complemento','PIS','CTPS','Titulo Eleitor','Cert. Militar','CNH','Cat. CNH',
+    'Banco','Agencia','Conta','Tipo Conta','PIX',
+    'Tam. Camiseta','Tam. Calca','Tam. Calcado','Tam. Jaleco','Pasta Drive'
+  ];
+
+  function cellVal(cell) {
+    if (!cell) return '';
+    if (cell.f) return cell.f; // formatted value
+    if (cell.v !== null && cell.v !== undefined) return String(cell.v);
+    return '';
+  }
+
+  _sheetsData = rows.map(function(row) {
     var obj = {};
+    // Map by label first
     cols.forEach(function(h, i) {
-      obj[h] = (row.c && row.c[i] && row.c[i].v !== null) ? String(row.c[i].v) : '';
+      if (h) obj[h] = cellVal(row.c && row.c[i]);
+    });
+    // Also map by index using known headers
+    HEADERS.forEach(function(h, i) {
+      if (!obj[h]) obj[h] = cellVal(row.c && row.c[i]);
     });
     return obj;
-  }).filter(function(r){ return r['Nome'] || r['nome']; });
+  }).filter(function(r) {
+    var nome = (r['Nome'] || '').trim();
+    return nome && nome !== 'Nome' && nome !== 'nome';
+  });
 }
 
 function filtrarCandidatos() {
@@ -13506,13 +13533,17 @@ function filtrarCandidatos() {
   if (!lista) return;
 
   var filtered = _sheetsData.filter(function(r) {
-    var nome = (r['Nome']||r['nome']||'').toLowerCase();
-    var cpf  = (r['CPF'] ||r['cpf'] ||'').toLowerCase();
-    return !busca || nome.includes(busca) || cpf.includes(busca);
+    if (!busca) return true;
+    var vals = Object.values(r).join(' ').toLowerCase();
+    return vals.includes(busca);
   });
 
   if (!filtered.length) {
-    lista.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px;">Nenhum candidato encontrado.</div>';
+    lista.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px;">' +
+      (_sheetsData.length === 0 
+        ? 'Nenhum dado carregado da planilha.' 
+        : 'Nenhum candidato encontrado para "' + busca + '".<br><small style="color:#aaa">Total na planilha: ' + _sheetsData.length + '</small>') +
+      '</div>';
     return;
   }
 
