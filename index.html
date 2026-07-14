@@ -13026,69 +13026,102 @@ async function carregarCandidatos() {
   if (!sheetId) { alert('Cole o ID da planilha.'); return; }
   try { localStorage.setItem('eq_sheets_admissao_id', sheetId); } catch(e) {}
 
-  if (!driveReady || !driveToken) {
-    alert('Conecte ao Google Drive primeiro para importar da planilha.');
+  document.getElementById('sheets-step1').style.display = 'none';
+  document.getElementById('sheets-loading').style.display = 'block';
+  document.getElementById('sheets-loading-txt').textContent = 'Buscando candidatos...';
+  _sheetsData = [];
+
+  // Strategy 1: Sheets API with Drive token (needs spreadsheets scope)
+  // Strategy 2: Export as CSV (works if sheet is shared publicly)
+  // Strategy 3: gviz JSON (works if sheet is shared publicly)
+
+  var loaded = false;
+
+  // Try Strategy 1 — Sheets API v4 with Drive token
+  if (driveReady && driveToken && !loaded) {
+    try {
+      document.getElementById('sheets-loading-txt').textContent = 'Lendo via API...';
+      var r1 = await fetch(
+        'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/Cadastros',
+        { headers: { 'Authorization': 'Bearer ' + driveToken } }
+      );
+      if (r1.ok) {
+        var d1 = await r1.json();
+        var rows = d1.values || [];
+        if (rows.length >= 2) {
+          var hdr = rows[0];
+          _sheetsData = rows.slice(1)
+            .filter(function(r){ return r[1] && r[1].trim(); })
+            .map(function(row) {
+              var obj = {};
+              hdr.forEach(function(h,i){ obj[h] = row[i]||''; });
+              return obj;
+            });
+          if (_sheetsData.length) loaded = true;
+        }
+      }
+    } catch(e1) { console.warn('API failed:', e1); }
+  }
+
+  // Try Strategy 2 — Export CSV (requires public sharing)
+  if (!loaded) {
+    try {
+      document.getElementById('sheets-loading-txt').textContent = 'Tentando exportacao CSV...';
+      var csvUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:csv&sheet=Cadastros';
+      var r2 = await fetch(csvUrl);
+      if (r2.ok) {
+        var csvText = await r2.text();
+        var csvRows = csvText.split('\n').map(function(line) {
+          // Parse CSV properly handling quoted fields
+          var fields = [];
+          var cur = ''; var inQ = false;
+          for (var ci = 0; ci < line.length; ci++) {
+            var ch = line[ci];
+            if (ch === '"') { inQ = !inQ; }
+            else if (ch === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
+            else { cur += ch; }
+          }
+          fields.push(cur.trim());
+          return fields;
+        }).filter(function(r){ return r.length > 1; });
+
+        if (csvRows.length >= 2) {
+          var hdr2 = csvRows[0].map(function(h){ return h.replace(/^"|"$/g,''); });
+          _sheetsData = csvRows.slice(1)
+            .filter(function(r){ return r[1] && r[1].replace(/^"|"$/g,'').trim(); })
+            .map(function(row) {
+              var obj = {};
+              hdr2.forEach(function(h,i){
+                obj[h] = (row[i]||'').replace(/^"|"$/g,'');
+              });
+              return obj;
+            });
+          if (_sheetsData.length) loaded = true;
+        }
+      }
+    } catch(e2) { console.warn('CSV failed:', e2); }
+  }
+
+  document.getElementById('sheets-loading').style.display = 'none';
+
+  if (!loaded || !_sheetsData.length) {
+    document.getElementById('sheets-step1').style.display = 'block';
+    alert(
+      'Nao foi possivel carregar os candidatos.\n\n' +
+      'Para funcionar, a planilha precisa ser compartilhada publicamente:\n\n' +
+      '1. Abra a planilha no Google Sheets\n' +
+      '2. Clique em "Compartilhar" (canto superior direito)\n' +
+      '3. Em "Acesso geral" selecione "Qualquer pessoa com o link"\n' +
+      '4. Permissao: "Leitor"\n' +
+      '5. Tente novamente'
+    );
     return;
   }
 
-  document.getElementById('sheets-step1').style.display = 'none';
-  document.getElementById('sheets-loading').style.display = 'block';
-  document.getElementById('sheets-loading-txt').textContent = 'Conectando...';
-  _sheetsData = [];
-
-  try {
-    var metaResp = await fetch(
-      'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '?fields=sheets.properties',
-      { headers: { 'Authorization': 'Bearer ' + driveToken } }
-    );
-    if (!metaResp.ok) throw new Error('HTTP ' + metaResp.status);
-    var meta = await metaResp.json();
-    var sheets = (meta.sheets||[]).map(function(s){ return s.properties.title; });
-
-    var loaded = false;
-    for (var s = 0; s < sheets.length; s++) {
-      document.getElementById('sheets-loading-txt').textContent = 'Lendo: ' + sheets[s];
-      var valResp = await fetch(
-        'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent(sheets[s]),
-        { headers: { 'Authorization': 'Bearer ' + driveToken } }
-      );
-      if (!valResp.ok) continue;
-      var valData = await valResp.json();
-      var rows = valData.values || [];
-      if (rows.length < 2) continue;
-      var header = rows[0];
-      var dataRows = rows.slice(1).filter(function(r){ return r[1] && r[1].trim(); });
-      if (!dataRows.length) continue;
-      _sheetsData = dataRows.map(function(row) {
-        var obj = {};
-        header.forEach(function(h, i){ obj[h] = row[i] || ''; });
-        return obj;
-      });
-      loaded = true;
-      break;
-    }
-
-    document.getElementById('sheets-loading').style.display = 'none';
-    if (!loaded || !_sheetsData.length) {
-      document.getElementById('sheets-step1').style.display = 'block';
-      alert('Planilha encontrada mas sem candidatos. Verifique se ha fichas preenchidas.');
-      return;
-    }
-    document.getElementById('sheets-step2').style.display = 'block';
-    document.getElementById('sheets-busca').value = '';
-    filtrarCandidatos();
-    toast('✅ ' + _sheetsData.length + ' candidato(s) encontrado(s)!');
-
-  } catch(err) {
-    document.getElementById('sheets-loading').style.display = 'none';
-    document.getElementById('sheets-step1').style.display = 'block';
-    var msg = err.message || String(err);
-    if (msg.includes('403') || msg.includes('401')) {
-      alert('Sem permissao. Verifique se esta conectado ao Drive com a mesma conta da planilha. Erro: ' + msg);
-    } else {
-      alert('Erro: ' + msg);
-    }
-  }
+  document.getElementById('sheets-step2').style.display = 'block';
+  document.getElementById('sheets-busca').value = '';
+  filtrarCandidatos();
+  toast('✅ ' + _sheetsData.length + ' candidato(s) encontrado(s)!');
 }
 
 function filtrarCandidatos() {
