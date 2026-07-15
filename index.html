@@ -410,9 +410,271 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .bday-card-foto{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2.5px solid var(--green);flex-shrink:0;}
 .bday-avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 
+
+/* Manual */
+.manual-sec{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid #eee;}
+.manual-sec h2{font-size:16px;font-weight:800;color:#1f5c44;margin-bottom:14px;padding:10px 16px;background:#e8f5ee;border-radius:8px;border-left:4px solid #2e7d5e;}
+.manual-sec h3{font-size:13.5px;font-weight:700;color:#333;margin:14px 0 8px;}
+.manual-sec p{font-size:13px;color:#444;line-height:1.75;margin-bottom:10px;}
+.manual-sec ol li{font-size:13px;color:#444;margin-bottom:4px;}
+.manual-table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0;}
+.manual-table th{background:#1f5c44;color:#fff;padding:8px 12px;text-align:left;font-weight:700;}
+.manual-table td{padding:7px 12px;border-bottom:1px solid #eee;color:#444;vertical-align:top;}
+.manual-table tr:nth-child(even) td{background:#f7fbf9;}
+.manual-code{background:#1a2a22;color:#7ee8a2;padding:10px 16px;border-radius:8px;font-family:monospace;font-size:12px;margin:8px 0 14px;word-break:break-all;}
+.manual-tip{background:#e3f2fd;border:1px solid #90caf9;border-radius:7px;padding:10px 14px;font-size:12.5px;color:#1565c0;margin:10px 0;}
+.manual-warn{background:#fff3e0;border:1px solid #ffb74d;border-radius:7px;padding:10px 14px;font-size:12.5px;color:#e65100;margin:10px 0;}
+@media print{
+  #sidebar,#topbar,.btn{display:none!important;}
+  #main{margin-left:0!important;}
+  .section-page{display:block!important;}
+  .manual-sec{page-break-inside:avoid;}
+}
 </style>
 <style id="googleidentityservice_button_styles">.qJTHM{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;color:#202124;direction:ltr;-webkit-touch-callout:none;font-family:Roboto-Regular,arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:400;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}.ynRLnc{left:-9999px;position:absolute;top:-9999px}.L6cTce{display:none}.bltWBb{overflow-wrap:break-word;word-break:break-word}.hSRGPd{color:#1a73e8;cursor:pointer;font-weight:500;text-decoration:none}.Bz112c-W3lGp{height:16px;width:16px}.Bz112c-E3DyYd{height:20px;width:20px}.Bz112c-r9oPif{height:24px;width:24px}.Bz112c-u2z5K{height:36px;width:36px}.Bz112c-uaxL4e{border-radius:10px}.LgbsSe-Bz112c{display:block}.S9gUrf-YoZ4jf{border:none;margin:0;padding:0}.S9gUrf-YoZ4jf *{border:none;margin:0;padding:0}.fFW7wc-ibnC6b>.aZ2wEe>div{border-color:#4285f4}.P1ekSe-ZMv3u{-webkit-transition:height .2s linear;transition:height .2s linear}.P1ekSe-ZMv3u>div:first-child{background-color:#1a73e8!important;-webkit-transition:width .3s linear;transition:width .3s linear}.P1ekSe-ZMv3u>div:nth-child(2){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.P1ekSe-ZMv3u>div:nth-child(3){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.haAclf{display:inline-block}.nsm7Bb-HzV7m-LgbsSe{border-radius:4px;box-sizing:border-box;-webkit-transition:background-color .218s,border-color .218s;transition:background-color .218s,border-color .218s;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #dadce0;color:#3c4043;cursor:pointer;font-family:Google Sans,arial,sans-serif;font-size:.875rem;height:40px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 12px;position:relative;text-align:center;vertical-align:middle;white-space:nowrap;width:auto}@media screen and (-ms-high-contrast:active){.nsm7Bb-HzV7m-LgbsSe{border:2px solid windowText;color:windowText}}@media screen and (preferes-contrast:more){.nsm7Bb-HzV7m-LgbsSe{color:#000}}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe{font-size:.875rem;height:32px;letter-spacing:.25px;padding:0 10px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe{font-size:.6875rem;height:20px;letter-spacing:.3px;padding:0 8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe{padding:0;width:40px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe{width:32px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe{width:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK{border-radius:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.pSzOP-SxQuSe{border-radius:16px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.purZT-SxQuSe{border-radius:10px}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc{border:1px solid #8e918f;background-color:#131314;color:#e3e3e3}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc{border:none;color:#fff}.nsm7Bb-HzV7m-LgbsSe.MFS4be-v3pZbf-Ia7Qfc{background-color:#1a73e8}.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{background-color:#202124;color:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{color:#fff}}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:18px;margin-right:8px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:14px;min-width:14px;width:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:10px;min-width:10px;width:10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin-left:8px;margin-right:-4px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:10px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:4px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:3px;border-bottom-left-radius:3px;display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center;-webkit-box-align:center;-webkit-align-items:center;align-items:center;background-color:#fff;height:36px;margin-left:-10px;margin-right:12px;min-width:36px;width:36px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c,.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:28px;margin-left:-8px;margin-right:10px;min-width:28px;width:28px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:16px;margin-left:-6px;margin-right:8px;min-width:16px;width:16px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:3px;margin-left:2px;margin-right:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:8px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;-webkit-flex-direction:row;-webkit-box-orient:horizontal;-webkit-box-direction:normal;flex-direction:row;-webkit-box-pack:justify;-webkit-justify-content:space-between;justify-content:space-between;-webkit-flex-wrap:nowrap;flex-wrap:nowrap;height:100%;position:relative;width:100%}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX{-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:1;-webkit-box-flex:1;flex-grow:1;font-family:Google Sans,arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-weight:300}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:0;-webkit-box-flex:0;flex-grow:0}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-MJoBVe{-webkit-transition:background-color .218s;transition:background-color .218s;bottom:0;left:0;position:absolute;right:0;top:0}.nsm7Bb-HzV7m-LgbsSe:focus,.nsm7Bb-HzV7m-LgbsSe:hover{box-shadow:none;border-color:rgb(210,227,252);outline:none}.nsm7Bb-HzV7m-LgbsSe:focus-within{outline:2px solid #00639b;border-color:transparent}.nsm7Bb-HzV7m-LgbsSe:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.08)}.nsm7Bb-HzV7m-LgbsSe:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.1)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.08)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.12)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.24)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.32)}.nsm7Bb-HzV7m-LgbsSe .n1UuX-DkfjY{border-radius:50%;display:-webkit-box;display:-webkit-flex;display:flex;height:20px;margin-left:-4px;margin-right:8px;min-width:20px;width:20px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-family:Roboto;font-size:12px;text-align:left}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .fmcmS,.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .ssJRIf{overflow:hidden;text-overflow:ellipsis}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;color:#5f6368;fill:#5f6368;font-size:11px;font-weight:400}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.i5vt6e-to915-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#c4c7c5;fill:#c4c7c5}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#e8eaed;fill:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff,.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#000;fill:#000}}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .Bz112c{height:18px;margin:-3px -3px -3px 2px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:3px;border-bottom-right-radius:3px;margin-left:12px;margin-right:-10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.L5Fo6c-sM5MNb{border:0;display:block;left:0;position:relative;top:0}.L5Fo6c-bF1uUb{border-radius:4px;bottom:0;cursor:pointer;left:0;position:absolute;right:0;top:0}.L5Fo6c-bF1uUb:focus{border:none;outline:none}sentinel{}</style></head>
 <body>
+
+<!-- MANUAL DO SISTEMA -->
+<div class="section-page" id="sec-manual">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📘 Manual do Sistema RH – Equilibryum</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="window.print()" style="white-space:nowrap;">🖨️ Imprimir / Exportar PDF</button>
+      </div>
+    </div>
+    <div id="manual-content" style="padding:8px 4px;">
+
+      <div style="background:linear-gradient(135deg,#1f5c44,#2e7d5e);color:#fff;border-radius:12px;padding:28px 32px;margin-bottom:28px;">
+        <h1 style="font-size:22px;font-weight:800;margin-bottom:8px;">📘 Manual do Sistema de RH</h1>
+        <p style="opacity:.85;font-size:14px;">Guia completo de uso e atualização do sistema · Versão 2.0</p>
+      </div>
+
+      <!-- ÍNDICE -->
+      <div style="background:#f7fbf9;border:1.5px solid #c8e6d4;border-radius:10px;padding:20px 24px;margin-bottom:28px;">
+        <h2 style="font-size:15px;font-weight:700;color:#1f5c44;margin-bottom:12px;">📋 Índice</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;">
+          <a href="#m1" style="color:#1f5c44;text-decoration:none;">1. Primeiros Passos</a>
+          <a href="#m2" style="color:#1f5c44;text-decoration:none;">2. Cadastro de Funcionários</a>
+          <a href="#m3" style="color:#1f5c44;text-decoration:none;">3. Benefícios</a>
+          <a href="#m4" style="color:#1f5c44;text-decoration:none;">4. Gerar Arquivo Flash</a>
+          <a href="#m5" style="color:#1f5c44;text-decoration:none;">5. Documentos</a>
+          <a href="#m6" style="color:#1f5c44;text-decoration:none;">6. Treinamentos</a>
+          <a href="#m7" style="color:#1f5c44;text-decoration:none;">7. Relatórios</a>
+          <a href="#m8" style="color:#1f5c44;text-decoration:none;">8. Formulário de Admissão</a>
+          <a href="#m9" style="color:#1f5c44;text-decoration:none;">9. Como Atualizar o Sistema</a>
+          <a href="#m10" style="color:#1f5c44;text-decoration:none;">10. Dicas e Boas Práticas</a>
+        </div>
+      </div>
+
+      <!-- 1 -->
+      <div id="m1" class="manual-sec">
+        <h2>1. Primeiros Passos</h2>
+
+        <h3>1.1 Acessar o Sistema</h3>
+        <p>O sistema é acessado pelo navegador no endereço:</p>
+        <div class="manual-code">https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/</div>
+        <div class="manual-tip">💡 Use sempre o Chrome ou Edge para melhor compatibilidade.</div>
+
+        <h3>1.2 Conectar ao Google Drive</h3>
+        <p>Na primeira vez que acessar, o sistema exibe a tela de conexão. Clique em <strong>☁️ Conectar ao Google Drive</strong>, faça login com a conta Google do RH e autorize o acesso. Os dados ficam salvos automaticamente no Drive.</p>
+
+        <h3>1.3 Configurar Empresas</h3>
+        <p>Antes de cadastrar funcionários, acesse o menu <strong>Empresas</strong> e cadastre todas as unidades com razão social, CNPJ e endereço. Essas informações aparecerão automaticamente em todos os documentos gerados.</p>
+
+        <h3>1.4 Configurar Departamentos</h3>
+        <p>Acesse <strong>Empresas → Departamentos</strong> e cadastre os setores da empresa. Isso permite filtrar relatórios e benefícios por departamento.</p>
+      </div>
+
+      <!-- 2 -->
+      <div id="m2" class="manual-sec">
+        <h2>2. Cadastro de Funcionários</h2>
+
+        <h3>2.1 Novo Funcionário</h3>
+        <p>Clique em <strong>+ Novo Funcionário</strong> no menu Funcionários. Preencha os campos obrigatórios (nome, CPF, admissão, empresa, cargo) e clique em <strong>Salvar</strong>.</p>
+
+        <h3>2.2 Campos Importantes</h3>
+        <table class="manual-table">
+          <tr><th>Campo</th><th>Descrição</th></tr>
+          <tr><td>Escala de Trabalho</td><td>Define como os dias úteis são calculados no Flash: Seg-Sex (55), Seg-Sab (56), Sab. Alternados, 12x36</td></tr>
+          <tr><td>Status</td><td>Ativo, Afastado, Férias ou Desligado. Desligados não aparecem em listas de benefícios</td></tr>
+          <tr><td>Salário</td><td>Usado em documentos como a Carta de Retenção ao INSS</td></tr>
+        </table>
+
+        <h3>2.3 Documentos do Funcionário</h3>
+        <p>Na aba <strong>Documentos</strong> dentro do cadastro, anexe os arquivos por categoria (RG, CPF, Contrato, ASO etc.). Se conectado ao Drive, os documentos são salvos automaticamente na pasta <em>RH Equilibryum / [Nome do Funcionário]</em>.</p>
+
+        <h3>2.4 Importar do Formulário de Admissão</h3>
+        <p>Clique em <strong>📊 Importar do Sheets</strong> para buscar candidatos que preencheram o formulário online. Cole o ID da planilha, selecione o candidato e importe — todos os dados preenchem automaticamente.</p>
+
+        <h3>2.5 Foto e Crachá</h3>
+        <p>Na aba <strong>Foto</strong>, faça upload da foto do funcionário. Clique em <strong>🪪 Gerar Crachá</strong> para gerar e imprimir o crachá.</p>
+      </div>
+
+      <!-- 3 -->
+      <div id="m3" class="manual-sec">
+        <h2>3. Benefícios</h2>
+
+        <h3>3.1 Atribuir Benefícios</h3>
+        <p>Acesse <strong>Benefícios → Por Funcionário</strong>. Selecione a empresa no filtro, localize o funcionário e clique em <strong>✏️ Editar</strong>. Informe os valores de VT, VR, VA, Combustível etc. e clique em <strong>Salvar Todos os Benefícios</strong>.</p>
+
+        <h3>3.2 Ajuste em Massa</h3>
+        <p>Selecione vários funcionários com os checkboxes e clique em <strong>⚡ Ajuste em Massa</strong>. Informe os novos valores para cada tipo de benefício e aplique de uma vez.</p>
+
+        <h3>3.3 Reajuste Anual</h3>
+        <p>Clique em <strong>📈 Reajuste Anual</strong>, selecione a empresa, informe os novos valores de VT, VR, VA etc. e aplique. O sistema atualiza todos os funcionários ativos da empresa.</p>
+
+        <h3>3.4 Tipos de Cálculo</h3>
+        <table class="manual-table">
+          <tr><th>Tipo</th><th>Como funciona</th></tr>
+          <tr><td>Por dia</td><td>Valor × dias úteis do período (VT e VR)</td></tr>
+          <tr><td>Mensal fixo</td><td>Valor fixo independente de dias (VA, Odonto, Médico)</td></tr>
+          <tr><td>Mensal</td><td>Variável (Assiduidade, Bônus)</td></tr>
+        </table>
+      </div>
+
+      <!-- 4 -->
+      <div id="m4" class="manual-sec">
+        <h2>4. Gerar Arquivo Flash</h2>
+
+        <h3>4.1 Passo a Passo</h3>
+        <ol style="padding-left:20px;line-height:2;">
+          <li>Acesse <strong>Benefícios → Gerar Arquivo Flash</strong></li>
+          <li>Selecione a <strong>empresa</strong> e a <strong>unidade</strong></li>
+          <li>Informe o <strong>período</strong> (De / Até)</li>
+          <li>Os dias úteis são calculados automaticamente por escala, já descontando feriados nacionais e estaduais de SP</li>
+          <li>Confira os valores e ajuste se necessário</li>
+          <li>Clique em <strong>📄 Gerar XLSX Flash</strong></li>
+        </ol>
+
+        <h3>4.2 Feriados Considerados</h3>
+        <p>O sistema desconta automaticamente: feriados nacionais fixos, feriados móveis (Páscoa, Carnaval, Corpus Christi), Aniversário de SP (25/jan) e Revolução Constitucionalista (09/jul).</p>
+
+        <h3>4.3 Escalas</h3>
+        <table class="manual-table">
+          <tr><th>Escala</th><th>Dias calculados</th></tr>
+          <tr><td>Seg a Sex (55)</td><td>Dias úteis seg-sex excluindo feriados</td></tr>
+          <tr><td>Seg a Sab (56)</td><td>Dias úteis seg-sab excluindo domingos e feriados</td></tr>
+          <tr><td>Sab. Alternados</td><td>Dias úteis + metade dos sábados do período</td></tr>
+          <tr><td>12x36 / Outro</td><td>Usa dias úteis padrão (editável manualmente)</td></tr>
+        </table>
+
+        <h3>4.4 Histórico Flash</h3>
+        <p>Cada arquivo gerado é salvo automaticamente no <strong>Histórico Flash</strong>. Acesse a aba para re-exportar meses anteriores ou gerar um relatório consolidado de todos os períodos.</p>
+      </div>
+
+      <!-- 5 -->
+      <div id="m5" class="manual-sec">
+        <h2>5. Documentos</h2>
+        <p>Acesse <strong>Gerar Documentos</strong>, selecione o funcionário e clique no documento desejado:</p>
+        <table class="manual-table">
+          <tr><th>Documento</th><th>Descrição</th></tr>
+          <tr><td>Recibo de Uniforme</td><td>Lista itens entregues com espaço para assinatura</td></tr>
+          <tr><td>Carta de Retenção ao INSS</td><td>Declaração previdenciária com dados do funcionário</td></tr>
+          <tr><td>Termo Aditivo</td><td>Alteração de horário — campos de horário editáveis</td></tr>
+          <tr><td>Autorização de Uso de Imagem</td><td>Termo de autorização para uso de imagem e voz</td></tr>
+        </table>
+        <p>Todos os documentos puxam automaticamente o nome, CPF, cargo, admissão e empresa do funcionário selecionado. A assinatura digital do responsável de RH é inserida antes da impressão.</p>
+      </div>
+
+      <!-- 6 -->
+      <div id="m6" class="manual-sec">
+        <h2>6. Treinamentos</h2>
+        <p>No menu <strong>Treinamentos</strong>, cadastre os treinamentos com título, data, instrutor, carga horária e participantes. Para selecionar participantes, use os checkboxes com busca por nome.</p>
+        <p>Clique em <strong>🗒️ Lista de Presença</strong> para gerar e imprimir a lista com os participantes selecionados e linhas de assinatura.</p>
+      </div>
+
+      <!-- 7 -->
+      <div id="m7" class="manual-sec">
+        <h2>7. Relatórios</h2>
+
+        <h3>7.1 Relatório de Funcionários</h3>
+        <p>Acesse <strong>Relatórios → Funcionários</strong>. Use os filtros de empresa, departamento, status e período de admissão. Clique em <strong>📄 Gerar Excel</strong> para exportar com todos os dados cadastrais e benefícios em colunas separadas.</p>
+
+        <h3>7.2 Relatório Geral de Benefícios</h3>
+        <p>Na aba <strong>Relatório Geral</strong> em Benefícios, filtre por empresa e período. Clique em <strong>📥 Exportar Excel</strong> para baixar com valores em R$.</p>
+      </div>
+
+      <!-- 8 -->
+      <div id="m8" class="manual-sec">
+        <h2>8. Formulário de Admissão</h2>
+        <p>O link do formulário é:</p>
+        <div class="manual-code">https://recursoshumanosequilibryum-gif.github.io/formulario-admissao/</div>
+
+        <h3>Fluxo completo:</h3>
+        <ol style="padding-left:20px;line-height:2;">
+          <li>Envie o link ao candidato aprovado pelo WhatsApp</li>
+          <li>O candidato preenche dados e anexa documentos</li>
+          <li>Os dados vão automaticamente para a planilha Google Sheets e pasta no Drive</li>
+          <li>No sistema, clique em <strong>📊 Importar do Sheets</strong> em Funcionários</li>
+          <li>Cole o ID da planilha, selecione o candidato e importe</li>
+          <li>Complete empresa, cargo e salário, e salve</li>
+        </ol>
+
+        <div class="manual-tip">⚠️ A planilha precisa estar compartilhada como "Qualquer pessoa com o link pode ver" para a importação funcionar.</div>
+      </div>
+
+      <!-- 9 -->
+      <div id="m9" class="manual-sec">
+        <h2>9. Como Atualizar o Sistema</h2>
+
+        <div class="manual-warn">⚠️ Sempre faça backup antes de atualizar! Baixe o index.html atual do GitHub antes de substituir.</div>
+
+        <h3>9.1 Passo a Passo para Atualizar</h3>
+        <ol style="padding-left:20px;line-height:2.2;">
+          <li>Acesse <strong>github.com/recursoshumanosequilibryum-gif/rh-equilibryum</strong></li>
+          <li>Clique em <strong>index.html</strong> → <strong>Cru (Raw)</strong> → salve como backup</li>
+          <li>Receba o novo arquivo <strong>index.html</strong> do desenvolvedor</li>
+          <li>No repositório, clique em <strong>index.html</strong> → ícone de lápis ✏️ ou clique no botão de upload</li>
+          <li>Faça upload do novo arquivo e confirme com <strong>Commit changes</strong></li>
+          <li>Aguarde 2-3 minutos e acesse o sistema em aba anônima (Ctrl+Shift+N)</li>
+        </ol>
+
+        <h3>9.2 Importante ao Atualizar</h3>
+        <table class="manual-table">
+          <tr><th>Item</th><th>O que acontece</th></tr>
+          <tr><td>Dados dos funcionários</td><td>✅ Preservados — ficam no Google Drive e localStorage</td></tr>
+          <tr><td>Benefícios e histórico</td><td>✅ Preservados — sincronizados no Drive</td></tr>
+          <tr><td>Configurações (Client ID)</td><td>✅ Preservadas — salvas no localStorage</td></tr>
+          <tr><td>Código do sistema</td><td>🔄 Atualizado com novas funcionalidades</td></tr>
+        </table>
+
+        <h3>9.3 Não abre após atualizar?</h3>
+        <ol style="padding-left:20px;line-height:2;">
+          <li>Abra em <strong>aba anônima</strong> (Ctrl+Shift+N) — limpa o cache</li>
+          <li>Se ainda não funcionar, pressione <strong>Ctrl+Shift+R</strong> para forçar recarga</li>
+          <li>Verifique se o arquivo foi salvo com nome <strong>index.html</strong> (não index.html.html)</li>
+        </ol>
+      </div>
+
+      <!-- 10 -->
+      <div id="m10" class="manual-sec">
+        <h2>10. Dicas e Boas Práticas</h2>
+
+        <table class="manual-table">
+          <tr><th>Situação</th><th>Recomendação</th></tr>
+          <tr><td>Sistema não carrega dados</td><td>Clique em "Sincronizar / Iniciar" no topo para reconectar ao Drive</td></tr>
+          <tr><td>Funcionário desligado ainda aparece</td><td>Verifique se o status está como "Desligado" no cadastro</td></tr>
+          <tr><td>Flash com dias errados</td><td>Confira a escala de trabalho no cadastro do funcionário</td></tr>
+          <tr><td>Documento sem dados do funcionário</td><td>Selecione o funcionário no campo antes de gerar o documento</td></tr>
+          <tr><td>Planilha não importa candidato</td><td>Verifique se a planilha está compartilhada publicamente</td></tr>
+          <tr><td>Backup dos dados</td><td>Os dados ficam no Google Drive. Sincronize sempre antes de sair</td></tr>
+          <tr><td>Usar em outro computador</td><td>Basta acessar o link e conectar ao Drive com a mesma conta</td></tr>
+          <tr><td>Múltiplos usuários</td><td>Compartilhe o link. Cada usuário conecta com sua conta Google</td></tr>
+        </table>
+
+        <h3>Contatos de Suporte</h3>
+        <div style="background:#e8f5ee;border-radius:8px;padding:14px 18px;margin-top:12px;font-size:13px;">
+          <strong>Sistema desenvolvido por:</strong> Claude (Anthropic)<br>
+          <strong>Dúvidas e melhorias:</strong> Acesse o chat com o assistente e descreva o que precisa ajustar<br>
+          <strong>Repositório GitHub:</strong> github.com/recursoshumanosequilibryum-gif/rh-equilibryum
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 
 <!-- SETUP WIZARD -->
 <div id="setup-wizard">
@@ -568,6 +830,10 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav(&#39;pendencias&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span>Pendências
   </span></div>
+  <div class="nav-item" onclick="nav('manual',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+    <span>Manual do Sistema</span>
+  </div>
   <div class="sidebar-footer">v2.0 · Equilibryum RH · Drive ☁️</div>
 </aside>
 
