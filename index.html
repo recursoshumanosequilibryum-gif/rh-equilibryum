@@ -1361,6 +1361,18 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <button class="btn btn-primary btn-sm" style="background:#c0392b;" onclick="abrirModalTermoAditivo()">📋 Gerar Documento</button>
       </div>
 
+      <!-- Autorização de Uso de Imagem -->
+      <div class="trein-card" style="border-left:4px solid #6a1b9a;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">&#128247; Autorização de Uso de Imagem</div>
+            <div class="tc-meta">Termo de autorização para uso de imagem e voz</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Autorização para divulgação da imagem e voz do funcionário em materiais institucionais, redes sociais e comunicações da empresa.</p>
+        <button class="btn btn-primary btn-sm" style="background:#6a1b9a;" onclick="gerarUsoImagem()">&#128247; Gerar Documento</button>
+      </div>
+
       <!-- Carta de Retenção ao INSS -->
       <div class="trein-card" style="border-left:4px solid #1a5c3a;">
         <div class="tc-header">
@@ -7648,18 +7660,18 @@ function gerarReciboUniforme() {
     : '';
 
   // Gerar 11 linhas vazias na tabela de uniformes
-  var linhaVazia = '<tr><td style="border:1px solid #000;padding:6px;height:22px;"></td><td style="border:1px solid #000;padding:6px;"></td><td style="border:1px solid #000;padding:6px;"></td><td style="border:1px solid #000;padding:6px;"></td></tr>';
-  var linhas = Array(11).fill(linhaVazia).join('');
+  var linhaVazia = '<tr><td style="border:1px solid #000;padding:6px;height:22px;"></td><td style="border:1px solid #000;padding:3px;"></td><td style="border:1px solid #000;padding:3px;"></td><td style="border:1px solid #000;padding:3px;"></td></tr>';
+  var linhas = Array(7).fill(linhaVazia).join('');
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Recibo de Uniforme – '+f.n+'</title>' +
   '<style>' +
     '*{box-sizing:border-box;margin:0;padding:0;}' +
-    'body{font-family:Calibri,Arial,sans-serif;font-size:10.5pt;color:#000;padding:1.5cm 2cm;}' +
-    '.cabecalho-meta{width:100%;border-collapse:collapse;margin-bottom:6px;}' +
+    'body{font-family:Calibri,Arial,sans-serif;font-size:9.5pt;color:#000;padding:1cm 1.5cm;}' +
+    '.cabecalho-meta{width:100%;border-collapse:collapse;margin-bottom:3px;}' +
     '.cabecalho-meta td{border:1px solid #1C7262;padding:3px 6px;font-size:8.5pt;color:#1C7262;font-weight:700;}' +
     'h1{font-size:12pt;font-weight:700;text-align:center;margin:10px 0 4px;}' +
     'h2{font-size:11pt;font-weight:700;text-align:center;margin-bottom:14px;}' +
-    '.campo{margin-bottom:6px;font-size:10.5pt;border-bottom:1px solid #000;padding-bottom:2px;}' +
+    '.campo{margin-bottom:3px;font-size:10.5pt;border-bottom:1px solid #000;padding-bottom:2px;}' +
     '.secao{font-size:10.5pt;font-weight:700;margin:12px 0 5px;}' +
     'p{font-size:10pt;margin-bottom:8px;text-align:justify;line-height:1.5;}' +
     '.tbl-uni{width:100%;border-collapse:collapse;margin:8px 0;}' +
@@ -7692,7 +7704,7 @@ function gerarReciboUniforme() {
   '<h2>TERMO DE RECEBIMENTO, RESPONSABILIDADE E DEVOLUÇÃO DE UNIFORME</h2>' +
 
   '<div class="campo"><strong>Nome do(a) Colaborador(a):</strong> '+f.n+'</div>' +
-  '<div class="campo" style="margin-bottom:12px;"><strong>Cargo:</strong> '+(f.car||'')+'</div>' +
+  '<div class="campo" style="margin-bottom:7px;"><strong>Cargo:</strong> '+(f.car||'')+'</div>' +
 
   '<div class="secao">1. Recebimento</div>' +
   '<p>Declaro que recebi da <strong>EQUILIBRYUM – REABILITAÇÃO E CONSULTORIA EM SAÚDE LTDA.</strong>, sem qualquer custo inicial, os uniformes abaixo relacionados, destinados exclusivamente ao desempenho de minhas atividades profissionais.</p>' +
@@ -13193,6 +13205,98 @@ function fmtDate(val) {
   if (m) return m[3]+'-'+m[2]+'-'+m[1];
   try { var d=new Date(val); if(!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){}
   return '';
+}
+
+function gerarUsoImagem() {
+  var f = getDocFunc(); if (!f) return;
+
+  var emps = DB.g('empresas');
+  var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
+  var razao = emp.razao || emp.nome || '[RAZAO SOCIAL]';
+  var cnpj  = emp.cnpj  || '[CNPJ]';
+  var endEmp = emp.end  || 'São Paulo – SP';
+
+  var logoHtml = LOGO_EMP_B64
+    ? '<img src="'+LOGO_EMP_B64+'" style="max-height:55px;max-width:180px;object-fit:contain;">'
+    : '<strong style="font-size:14px;">'+razao+'</strong>';
+
+  var admFmt = f.adm ? f.adm.split('-').reverse().join('/') : '___/___/______';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Autorização de Uso de Imagem – '+f.n+'</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:1.5cm 2cm;}' +
+      'h1{font-size:12pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:20px;padding-bottom:8px;border-bottom:2px solid #000;}' +
+      'p{font-size:10pt;line-height:1.8;margin-bottom:12px;text-align:justify;}' +
+      '.campo{font-weight:700;border-bottom:1px solid #000;padding:0 2px;}' +
+      '.check-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:10pt;}' +
+      '.box{width:14px;height:14px;border:1.5px solid #000;flex-shrink:0;margin-top:2px;}' +
+      '.assinaturas{margin-top:40px;display:flex;justify-content:space-between;gap:30px;}' +
+      '.ass-box{text-align:center;flex:1;}' +
+      '.ass-linha{border-top:1px solid #000;margin-bottom:5px;}' +
+      '.ass-img{height:50px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:3px;}' +
+      '@media print{body{padding:1cm 1.5cm;}@page{size:A4;margin:0;}}' +
+    '</style></head><body>' +
+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+      '<div>'+logoHtml+'</div>' +
+      '<div style="text-align:right;font-size:9pt;color:#555;">'+razao+'<br>CNPJ: '+cnpj+'</div>' +
+    '</div>' +
+
+    '<h1>Autorização de Uso de Imagem e Voz</h1>' +
+
+    '<p>Eu, <strong class="campo">'+f.n+'</strong>, portador(a) do CPF n° ' +
+    '<strong class="campo">'+(f.cpf||'___.___.___-__')+'</strong>, ' +
+    'RG n° <strong class="campo">'+(f.rg||'__________________')+'</strong>, ' +
+    'residente em <strong class="campo">'+(f.end||'__________________')+'</strong>, ' +
+    'funcionário(a) da empresa <strong class="campo">'+razao+'</strong>, ' +
+    'CNPJ <strong class="campo">'+cnpj+'</strong>, ' +
+    'admitido(a) em <strong class="campo">'+admFmt+'</strong>, ' +
+    'no cargo de <strong class="campo">'+(f.car||'__________________')+'</strong>, ' +
+    '<strong>AUTORIZO</strong> o uso da minha imagem e voz, captadas em foto e/ou vídeo, para os fins descritos abaixo:</p>' +
+
+    '<p><strong>1. Finalidade da Autorização:</strong></p>' +
+    '<div style="margin-left:10px;margin-bottom:12px;">' +
+      '<div class="check-row"><div class="box">✓</div><span>Materiais institucionais e de comunicação interna da empresa</span></div>' +
+      '<div class="check-row"><div class="box">✓</div><span>Publicações em redes sociais (Instagram, LinkedIn, Facebook e similares)</span></div>' +
+      '<div class="check-row"><div class="box">✓</div><span>Site institucional e portais da empresa</span></div>' +
+      '<div class="check-row"><div class="box">✓</div><span>Materiais de marketing, publicidade e divulgação de serviços</span></div>' +
+      '<div class="check-row"><div class="box">✓</div><span>Treinamentos, apresentações e eventos corporativos</span></div>' +
+    '</div>' +
+
+    '<p><strong>2. Vigência:</strong> Esta autorização é válida pelo período de vigência do contrato de trabalho com a empresa, ' +
+    'podendo ser revogada a qualquer tempo mediante comunicação formal por escrito.</p>' +
+
+    '<p><strong>3. Territorialidade:</strong> A autorização abrange o território nacional e internacional, sem limitação geográfica.</p>' +
+
+    '<p><strong>4. Remuneração:</strong> A presente autorização é concedida a título gratuito, sem qualquer ônus para a empresa.</p>' +
+
+    '<p><strong>5. Declaração:</strong> Declaro que li, compreendi e concordo com os termos desta autorização, ' +
+    'assinando-a de forma livre e espontânea.</p>' +
+
+    '<p style="text-align:center;margin-top:16px;">São Paulo, _____ de __________________________ de 2_____.</p>' +
+
+    '<div class="assinaturas">' +
+      '<div class="ass-box">' +
+        '<div class="ass-img"></div>' +
+        '<div class="ass-linha"></div>' +
+        '<strong>'+f.n+'</strong><br>' +
+        '<span style="font-size:9pt;">CPF: '+(f.cpf||'')+'</span><br>' +
+        '<span style="font-size:9pt;">Funcionário(a)</span>' +
+      '</div>' +
+      '<div class="ass-box" id="sig-empresa-box2">' +
+        '<div class="ass-img" id="sig-empresa-img2"></div>' +
+        '<div class="ass-linha"></div>' +
+        '<strong>'+razao+'</strong><br>' +
+        '<span style="font-size:9pt;">CNPJ: '+cnpj+'</span><br>' +
+        '<span style="font-size:9pt;">Empregadora</span>' +
+      '</div>' +
+    '</div>' +
+
+  '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Autorizacao_Uso_Imagem_'+f.n.replace(/\s+/g,'_'), f);
 }
 </script>
 </body>
