@@ -3705,50 +3705,55 @@ async function driveRequest(path, method, params, body) {
 }
 
 async function findOrCreateFolder(name, parentId) {
-  // Search without parent restriction to find folders regardless of where they were created
+  // Search across entire Drive (not just root) - folder may be in any location
   var q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   if (parentId) q += ` and '${parentId}' in parents`;
 
-  var res;
-  try {
-    res = await driveRequest('files', 'GET', {
-      q,
-      fields: 'files(id,name,createdTime)',
-      orderBy: 'createdTime',
-      spaces: 'drive'
-    });
-  } catch(e) {
-    // Fallback: try with 'root' explicitly
+  var res = { files: [] };
+
+  // Try multiple search strategies
+  var strategies = [
+    { q, fields: 'files(id,name,createdTime,parents)', orderBy: 'createdTime', spaces: 'drive' },
+    { q, fields: 'files(id,name,createdTime,parents)', spaces: 'drive' },
+    { q: q.replace(' and trashed=false',''), fields: 'files(id,name,parents)', spaces: 'drive' }
+  ];
+
+  for (var s = 0; s < strategies.length; s++) {
     try {
-      var q2 = `name='${name}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
-      res = await driveRequest('files', 'GET', { q2, fields: 'files(id,name)' });
-    } catch(e2) { res = { files: [] }; }
+      res = await driveRequest('files', 'GET', strategies[s]);
+      if (res.files && res.files.length > 0) break;
+    } catch(e) {
+      console.warn('[Drive] Strategy ' + s + ' failed:', e.message);
+    }
   }
 
   if (res.files && res.files.length > 0) {
-    if (res.files.length > 1) {
-      console.warn('[Drive] ' + name + ': ' + res.files.length + ' pastas — usando a mais antiga');
-    }
-    // Save the found folder ID immediately
+    var folderId = res.files[0].id;
     if (name === 'RH Equilibryum') {
-      try { localStorage.setItem('eq_rh_folder_id', res.files[0].id); } catch(e) {}
+      try { localStorage.setItem('eq_rh_folder_id', folderId); } catch(e) {}
+      console.log('[Drive] Pasta encontrada:', folderId);
     }
-    return res.files[0].id;
+    return folderId;
   }
 
-  // Create folder
+  // Not found — create it
+  console.log('[Drive] Criando pasta:', name);
   const meta = { name, mimeType: 'application/vnd.google-apps.folder' };
   if (parentId) meta.parents = [parentId];
-  const created = await driveRequest('files', 'POST', { fields: 'id' }, meta);
-  if (name === 'RH Equilibryum') {
-    try { localStorage.setItem('eq_rh_folder_id', created.id); } catch(e) {}
+  try {
+    const created = await driveRequest('files', 'POST', { fields: 'id' }, meta);
+    if (name === 'RH Equilibryum') {
+      try { localStorage.setItem('eq_rh_folder_id', created.id); } catch(e) {}
+    }
+    return created.id;
+  } catch(e) {
+    throw new Error('Nao foi possivel criar a pasta ' + name + ': ' + e.message);
   }
-  return created.id;
 }
 
 async function ensureRHFolder() {
   try {
-    // Try cached folder ID first
+    // Try cached folder ID first (may have been set manually or from previous session)
     var cachedId = localStorage.getItem('eq_rh_folder_id');
     if (cachedId) {
       // Verify it still exists by getting the folder metadata directly
