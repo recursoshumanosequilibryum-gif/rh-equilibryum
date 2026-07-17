@@ -608,7 +608,10 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <span id="drive-badge-txt">Drive</span>
       </span>
       <button class="btn btn-outline btn-sm" id="btn-clear-sig" onclick="clearSavedSignature()" title="Apagar assinatura salva de Mônica Santos" style="font-size:12px;display:none;">✍️ Limpar Assinatura</button>
-      <button class="btn btn-outline btn-sm" id="btn-sync" onclick="syncManual()" title="Buscar dados mais recentes do Drive" style="font-size:12px;">🔄 Sincronizar / Iniciar</button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span id="sync-timestamp" style="font-size:10px;color:#888;white-space:nowrap;"></span>
+        <button class="btn btn-outline btn-sm" id="btn-sync" onclick="syncManual()" title="Buscar dados mais recentes do Drive" style="font-size:12px;">🔄 Sincronizar / Iniciar</button>
+      </div>
       <button class="btn btn-whatsapp btn-sm" onclick="openModal(&#39;modal-wha&#39;)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"></path></svg>
         WhatsApp
@@ -1423,6 +1426,18 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         </div>
         <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Formulário de solicitação de auxílio combustível para colaboradores que utilizam veículo próprio no deslocamento.</p>
         <button class="btn btn-primary btn-sm" style="background:#e65100;" onclick="gerarAuxilioCombustivel()">⛽ Gerar Documento</button>
+      </div>
+
+      <!-- Ficha Cadastral Convênio -->
+      <div class="trein-card" style="border-left:4px solid #2e7d32;">
+        <div class="tc-header">
+          <div>
+            <div class="tc-title">🏥 Ficha de Movimentação Cadastral (FMC)</div>
+            <div class="tc-meta">Ameplan – Inclusão / Alteração / Exclusão de convênio</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Planilha Excel pré-preenchida com os dados do funcionário para movimentação cadastral no convênio Ameplan.</p>
+        <button class="btn btn-primary btn-sm" style="background:#2e7d32;" onclick="gerarFichaCadastral()">📥 Gerar Planilha Excel</button>
       </div>
 
       <!-- Carta de Retenção ao INSS -->
@@ -3747,6 +3762,7 @@ async function loadDriveJSON(filename) {
 }
 
 async function syncFromDrive() {
+  var localCount = DB.g('funcionarios').length;
   const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
   let synced = 0;
   for (const k of keys) {
@@ -7036,6 +7052,12 @@ async function testAndConnect() {
       await ensureRHFolder();
       await syncFromDrive();
       init();
+      // Save machine identifier
+      try {
+        var machId = localStorage.getItem('eq_mach_id') || ('mach_' + Date.now());
+        localStorage.setItem('eq_mach_id', machId);
+        localStorage.setItem('eq_last_online', new Date().toISOString());
+      } catch(e) {}
     } else {
       driveToken = null; driveReady = false;
       localStorage.removeItem('eq_drive_token');
@@ -7442,6 +7464,20 @@ function abrirEImprimirDoc(docHTML, filename, f) {
   _sigDocHTML  = docHTML;
   _sigFilename = filename;
   _sigFuncObj  = f;
+
+  // Show last sync time on load
+  try {
+    var lastSync = localStorage.getItem('eq_last_sync');
+    var tsEl2 = document.getElementById('sync-timestamp');
+    if (tsEl2 && lastSync) tsEl2.textContent = '⏱ ' + lastSync;
+  } catch(e){}
+
+  // Show last sync time
+  try {
+    var ls = localStorage.getItem('eq_last_sync');
+    var tsel = document.getElementById('sync-timestamp');
+    if (tsel && ls) tsel.textContent = 'Sync: ' + ls;
+  } catch(e){}
 
   // Load current saved signatures
   var sigMon = null, sigBru = null;
@@ -13703,6 +13739,115 @@ function gerarAuxilioCombustivel() {
   '</body></html>';
 
   abrirEImprimirDoc(doc, 'AuxilioCombustivel_'+f.n.replace(/\s+/g,'_'), f);
+}
+
+async function gerarFichaCadastral() {
+  var f = getDocFunc(); if (!f) return;
+
+  if (typeof XLSX === 'undefined') {
+    alert('Biblioteca XLSX não carregada. Tente recarregar a página.');
+    return;
+  }
+
+  var emps = DB.g('empresas');
+  var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
+  var razao = (emp.razao || emp.nome || 'EQUILIBRYUM REABILITAÇÃO E CONSULTORIA EM SAUDE').toUpperCase();
+  var cnpj  = emp.cnpj || '';
+
+  // Format dates
+  function fmtXls(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+    return dateStr;
+  }
+
+  var wb = XLSX.utils.book_new();
+  var wsData = [];
+
+  // Build sheet structure matching original
+  // Row 1-2: empty
+  wsData.push([]);
+  wsData.push([]);
+  // Row 3: Title
+  wsData.push(['','','','','','','','','','','FICHA DE MOVIMENTAÇÃO CADASTRAL (FMC)']);
+  wsData.push([]);
+  wsData.push([]);
+  // Row 6: TITULAR label
+  wsData.push(['','TITULAR']);
+  wsData.push([]);
+  // Row 8: checkboxes
+  wsData.push(['','','X',' INCLUSÃO','','','','ALTERAÇÃO','','','','','TRANSFERÊNCIA DE EMPRESA','','','','','','','','','TRANSFERÊNCIA DE PLANO','','','','','','','','EXCLUSÃO']);
+  wsData.push(['','','','','','','','','','','','','','','','','','','','','','SÃO PAULO']);
+  // Row 10: odonto
+  wsData.push(['','','',' INCLUSÃO NO PLANO ODONTOLÓGICO','','','','','','','','','','','','EXCLUSÃO DO PLANO ODONTOLÓGICO']);
+  wsData.push([]);
+  // Row 12: headers
+  wsData.push(['','CÓDIGO DA EMPRESA','','','','','','NOME DA EMPRESA','','','','','','','','','','','','','','','','','','','','CATEGORIA DE PLANO']);
+  // Row 13: empresa data
+  wsData.push(['','', '','','','','',razao + ' ' + cnpj]);
+  // Row 14: carteirinha / nome
+  wsData.push(['','NÚMERO DA CARTEIRINHA','','','','','','','NOME DO TITULAR( NOME DO FUNCIONÁRIO)']);
+  // Row 15: nome value
+  wsData.push(['','','','','','','','',f.n.toUpperCase()]);
+  // Row 16: field labels
+  wsData.push(['','DATA DE ADMISSÃO','','','','','','DATA DE NASCIMENTO','','','','','','Nº DA CHAPA','','','','','','FUNÇÃO','','','','','','','','','','PIS/PASEP OU CNS']);
+  // Row 17: field values
+  wsData.push(['',fmtXls(f.adm),'','','','','',fmtXls(f.nas),'','','','','','','','','','','',(f.car||'').toUpperCase()]);
+  // Row 18: CPF/RG labels
+  wsData.push(['','CPF','','','','','','RG','','','','','','ORGÃO EMISSOR DO RG','','','','','','ESTADO CIVIL','','','','','','SEXO','','','','TELEFONE']);
+  // Row 19: CPF/RG values
+  wsData.push(['',f.cpf||'','','','','','',f.rg||'','','','','','','SSP','','','','','',f.ec||'','','','','','',(f.sex==='M'?'M':f.sex==='F'?'F':''),'','','',f.tel||'']);
+  wsData.push([]);
+  // Row 21: nome mae
+  wsData.push(['',f.nome_mae||'']);
+  // Row 22: endereço labels
+  wsData.push(['','ENDEREÇO','','','','','','','','','','','','','','','','','','','','','','NÚMERO','','','COMPLEMENTO']);
+  // Row 23: endereço value
+  wsData.push(['',f.end||'','','','','','','','','','','','','','','','','','','','','','',f.cep||'']);
+  // Row 24: bairro/cep labels
+  wsData.push(['','BAIRRO','','','','','','','','','','','','','','CEP','','','','','CIDADE','','','','','','','','','','','','','','UF']);
+  wsData.push([]);
+  wsData.push([]);
+  // Row 27: DEPENDENTES
+  wsData.push(['','DEPENDENTES']);
+  wsData.push([]);
+  // Row 29: tipo movimentação dep
+  wsData.push(['','','',' INCLUSÃO','','','','','','','','','','','','ALTERAÇÃO','','','','','','','','','','','','','','','','','','','EXCLUSÃO']);
+  wsData.push([]);
+  wsData.push(['','','',' INCLUSÃO NO PLANO ODONTOLÓGICO','','','','','','','','','','','','EXCLUSÃO DO PLANO ODONTOLÓGICO']);
+  wsData.push([]);
+  // Dependentes rows (1-7)
+  for (var d = 1; d <= 7; d++) {
+    wsData.push(['',d,'','NOME DO DEPENDENTE ('+d+')','','','','','','','','','','','','','','','','','','','SEXO','','','PARENTESCO','','','','','NASCIMENTO']);
+    wsData.push([]);
+    wsData.push(['','','','CPF DO DEPENDENTE','','','','','','','NOME DA MÃE DO DEPENDENTE ']);
+    wsData.push([]);
+  }
+  // Protocolo
+  wsData.push(['','Protocolo Ameplan','','','','','','','','','','','','','','','','','','','Carimbo/Assinatura Empresa']);
+  wsData.push([]);
+  wsData.push(['','a)','Obrigatório o preenchimento de todos os campos;']);
+  wsData.push(['','b) ','Indicar com um "X" no campo para o TITULAR e um "X" no campo correspondente aos Dependentes para o tipo de movimentação desejada.']);
+  wsData.push(['','c)','Enviar juntamente com esta Ficha (FMC) preenchida, cópia das certidões de casamento (esposa/esposo) ou Declaração de União Estável em cartório; certidão de nascimento para os filhos.']);
+  wsData.push(['','d) ','Exceto para inclusão do TITULAR, as demais movimentações devem informar o Nº da Carteirinha.']);
+  wsData.push(['','e)','Encaminhar vínculo empregatício do beneficiário em caso de inclusão de titular.']);
+
+  var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = Array(35).fill({wch: 4});
+  ws['!cols'][1] = {wch: 18};
+  ws['!cols'][7] = {wch: 22};
+  ws['!cols'][10] = {wch: 16};
+
+  // Style title row
+  var titleCell = ws['K3'];
+  if (titleCell) titleCell.s = { font: { bold: true, sz: 14 }, alignment: { horizontal: 'center' } };
+
+  XLSX.utils.book_append_sheet(wb, ws, 'FMC');
+  XLSX.writeFile(wb, 'FMC_' + f.n.replace(/\s+/g,'_') + '.xlsx');
+  toast('✅ Ficha Cadastral gerada para ' + f.n + '!');
 }
 </script>
 </body>
