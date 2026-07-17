@@ -13998,6 +13998,37 @@ async function cleanupDriveDuplicates() {
     console.warn('[Drive] Erro na limpeza:', e);
   }
 }
+
+function init() {
+  // Close sync overlay if open
+  try { closeSyncOverlay(); } catch(e) {}
+  // Show main UI
+  var mainEl = document.getElementById('main');
+  if (mainEl) mainEl.style.display = 'flex';
+  // Activate dashboard section
+  var dashEl = document.getElementById('sec-dashboard');
+  if (dashEl) {
+    document.querySelectorAll('.section-page').forEach(function(s){ s.classList.remove('active'); });
+    dashEl.classList.add('active');
+  }
+  // Activate first nav item
+  var firstNav = document.querySelector('.nav-item');
+  if (firstNav) {
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+    firstNav.classList.add('active');
+  }
+  // Render dashboard
+  try { updDash(); } catch(e) {}
+  // Fill selects
+  try { fillFuncSel('doc-func'); } catch(e) {}
+  try { fillFuncSel('doc-func-sel'); } catch(e) {}
+  // Load last sync timestamp
+  try {
+    var ls = localStorage.getItem('eq_last_sync');
+    var tsel = document.getElementById('sync-timestamp');
+    if (tsel && ls) tsel.textContent = 'Sync: ' + ls;
+  } catch(e) {}
+}
 </script>
 </body>
 </html>
