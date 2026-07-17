@@ -3423,6 +3423,11 @@ let driveReady = false;
 let driveToken = null;
 let rootFolderId = null;
 let rhFolderId = null;
+// Restore folder ID from localStorage immediately on load
+try {
+  var _savedFolderId = localStorage.getItem('eq_rh_folder_id');
+  if (_savedFolderId) rhFolderId = _savedFolderId;
+} catch(e) {}
 
 // ============================================================
 // DB LOCAL (fallback e cache)
@@ -3700,17 +3705,80 @@ async function driveRequest(path, method, params, body) {
 }
 
 async function findOrCreateFolder(name, parentId) {
-  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId || 'root'}' in parents and trashed=false`;
-  const res = await driveRequest('files', 'GET', { q, fields: 'files(id,name)', spaces: 'drive' });
-  if (res.files && res.files.length > 0) return res.files[0].id;
-  const meta = { name, mimeType: 'application/vnd.google-apps.folder', parents: parentId ? [parentId] : [] };
+  // Search without parent restriction to find folders regardless of where they were created
+  var q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  if (parentId) q += ` and '${parentId}' in parents`;
+
+  var res;
+  try {
+    res = await driveRequest('files', 'GET', {
+      q,
+      fields: 'files(id,name,createdTime)',
+      orderBy: 'createdTime',
+      spaces: 'drive'
+    });
+  } catch(e) {
+    // Fallback: try with 'root' explicitly
+    try {
+      var q2 = `name='${name}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+      res = await driveRequest('files', 'GET', { q2, fields: 'files(id,name)' });
+    } catch(e2) { res = { files: [] }; }
+  }
+
+  if (res.files && res.files.length > 0) {
+    if (res.files.length > 1) {
+      console.warn('[Drive] ' + name + ': ' + res.files.length + ' pastas — usando a mais antiga');
+    }
+    // Save the found folder ID immediately
+    if (name === 'RH Equilibryum') {
+      try { localStorage.setItem('eq_rh_folder_id', res.files[0].id); } catch(e) {}
+    }
+    return res.files[0].id;
+  }
+
+  // Create folder
+  const meta = { name, mimeType: 'application/vnd.google-apps.folder' };
+  if (parentId) meta.parents = [parentId];
   const created = await driveRequest('files', 'POST', { fields: 'id' }, meta);
+  if (name === 'RH Equilibryum') {
+    try { localStorage.setItem('eq_rh_folder_id', created.id); } catch(e) {}
+  }
   return created.id;
 }
 
 async function ensureRHFolder() {
   try {
+    // Try cached folder ID first
+    var cachedId = localStorage.getItem('eq_rh_folder_id');
+    if (cachedId) {
+      // Verify it still exists by getting the folder metadata directly
+      try {
+        var check = await fetch(
+          'https://www.googleapis.com/drive/v3/files/' + cachedId + '?fields=id,name,trashed',
+          { headers: { 'Authorization': 'Bearer ' + driveToken } }
+        );
+        if (check.ok) {
+          var meta = await check.json();
+          if (!meta.trashed) {
+            rhFolderId = cachedId;
+            console.log('[Drive] Pasta RH Equilibryum ok:', rhFolderId);
+            return;
+          }
+        }
+        console.warn('[Drive] ID salvo inválido, buscando novamente...');
+        localStorage.removeItem('eq_rh_folder_id');
+      } catch(e) {
+        console.warn('[Drive] Erro ao verificar ID salvo:', e);
+        localStorage.removeItem('eq_rh_folder_id');
+      }
+    }
+
+    // Find or create folder
     rhFolderId = await findOrCreateFolder('RH Equilibryum', null);
+
+    // Save folder ID for future sessions on all machines
+    localStorage.setItem('eq_rh_folder_id', rhFolderId);
+    console.log('[Drive] Pasta RH Equilibryum pronta:', rhFolderId);
     toast("Pasta RH Equilibryum pronta no Drive ☁️");
   } catch(e) {
     console.error('Folder error:', e);
@@ -3735,28 +3803,60 @@ async function saveDriveJSON(filename, data) {
   try {
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
-    // Check if file already exists
+
+    // Find ALL files with this name (may have duplicates)
     const q = `name='${filename}' and '${rhFolderId}' in parents and trashed=false`;
     const res = await driveRequest('files', 'GET', { q, fields: 'files(id)' });
-    let fileId = res.files && res.files.length > 0 ? res.files[0].id : null;
+    const allFiles = res.files || [];
+
+    // If duplicates exist, delete all extras keeping only the first
+    if (allFiles.length > 1) {
+      console.warn(`[Drive] ${filename} has ${allFiles.length} duplicates — cleaning up`);
+      for (let i = 1; i < allFiles.length; i++) {
+        try {
+          await fetch(`https://www.googleapis.com/drive/v3/files/${allFiles[i].id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + driveToken }
+          });
+        } catch(e) {}
+      }
+    }
+
+    let fileId = allFiles.length > 0 ? allFiles[0].id : null;
     const form = new FormData();
-    form.append('metadata', new Blob([JSON.stringify({ name: filename, mimeType: 'application/json', ...(fileId ? {} : { parents: [rhFolderId] }) })], { type: 'application/json' }));
+    form.append('metadata', new Blob([JSON.stringify({
+      name: filename,
+      mimeType: 'application/json',
+      ...(fileId ? {} : { parents: [rhFolderId] })
+    })], { type: 'application/json' }));
     form.append('file', blob);
     const url = fileId
       ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
       : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-    await fetch(url, { method: fileId ? 'PATCH' : 'POST', headers: { 'Authorization': 'Bearer ' + driveToken }, body: form });
+    await fetch(url, {
+      method: fileId ? 'PATCH' : 'POST',
+      headers: { 'Authorization': 'Bearer ' + driveToken },
+      body: form
+    });
   } catch(e) { console.warn('saveDriveJSON error:', e); }
 }
 
 async function loadDriveJSON(filename) {
   if (!driveReady || !rhFolderId) return null;
   try {
+    // Order by modifiedTime desc to always get the most recent file first
     const q = `name='${filename}' and '${rhFolderId}' in parents and trashed=false`;
-    const res = await driveRequest('files', 'GET', { q, fields: 'files(id)' });
+    const res = await driveRequest('files', 'GET', {
+      q,
+      fields: 'files(id,modifiedTime)',
+      orderBy: 'modifiedTime desc'
+    });
     if (!res.files || !res.files.length) return null;
+    // Use most recently modified file
     const fileId = res.files[0].id;
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { 'Authorization': 'Bearer ' + driveToken } });
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { 'Authorization': 'Bearer ' + driveToken }
+    });
     return await r.json();
   } catch(e) { return null; }
 }
@@ -7052,6 +7152,8 @@ async function testAndConnect() {
       await ensureRHFolder();
       await syncFromDrive();
       init();
+      // Cleanup duplicates on first run after update
+      setTimeout(cleanupDriveDuplicates, 3000);
       // Save machine identifier
       try {
         var machId = localStorage.getItem('eq_mach_id') || ('mach_' + Date.now());
@@ -13848,6 +13950,48 @@ async function gerarFichaCadastral() {
   XLSX.utils.book_append_sheet(wb, ws, 'FMC');
   XLSX.writeFile(wb, 'FMC_' + f.n.replace(/\s+/g,'_') + '.xlsx');
   toast('✅ Ficha Cadastral gerada para ' + f.n + '!');
+}
+
+// ── LIMPEZA DE DUPLICATAS NO DRIVE ──
+var _driveCleanupDone = false;
+async function cleanupDriveDuplicates() {
+  if (_driveCleanupDone || !driveReady || !rhFolderId) return;
+  _driveCleanupDone = true;
+  try {
+    var alreadyCleaned = localStorage.getItem('eq_drive_cleaned_v2');
+    if (alreadyCleaned) return;
+
+    console.log('[Drive] Iniciando limpeza de duplicatas...');
+    const keys = ['funcionarios','departamentos','empresas','ferias','exames','epi',
+      'uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas',
+      'politicas','benef-atrib','benef-compras','flash-hist'];
+
+    var deleted = 0;
+    for (const k of keys) {
+      const filename = 'eq_' + k + '.json';
+      const q = `name='${filename}' and '${rhFolderId}' in parents and trashed=false`;
+      const res = await driveRequest('files', 'GET', {
+        q, fields: 'files(id,modifiedTime)', orderBy: 'modifiedTime desc'
+      });
+      const files = res.files || [];
+      if (files.length > 1) {
+        console.log(`[Drive] ${filename}: ${files.length} cópias — removendo ${files.length-1}`);
+        for (let i = 1; i < files.length; i++) {
+          await fetch(`https://www.googleapis.com/drive/v3/files/${files[i].id}`, {
+            method: 'DELETE', headers: { 'Authorization': 'Bearer ' + driveToken }
+          });
+          deleted++;
+        }
+      }
+    }
+
+    localStorage.setItem('eq_drive_cleaned_v2', '1');
+    if (deleted > 0) {
+      toast('🧹 Limpeza concluída: ' + deleted + ' arquivo(s) duplicado(s) removido(s) do Drive!');
+    }
+  } catch(e) {
+    console.warn('[Drive] Erro na limpeza:', e);
+  }
 }
 </script>
 </body>
