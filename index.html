@@ -3113,6 +3113,9 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
       <button class="btn btn-outline" style="width:100%;padding:10px;font-size:13px;" onclick="closeSyncOverlay()">
         Continuar com dados locais
       </button>
+      <button class="btn btn-outline" onclick="restaurarBackup()" style="width:100%;padding:10px;margin-top:8px;border-color:#e65100;color:#e65100;font-size:13px;">
+        &#128260; Restaurar Backup Anterior
+      </button>
     </div>
 
     <div id="sync-done" style="display:none;">
@@ -3868,6 +3871,26 @@ async function loadDriveJSON(filename) {
 
 async function syncFromDrive() {
   var localCount = DB.g('funcionarios').length;
+
+  // ── BACKUP LOCAL ANTES DE SINCRONIZAR ──
+  // Salva snapshot dos dados atuais antes de sobrescrever com dados do Drive
+  try {
+    var backupKeys = ['funcionarios','benef-atrib','empresas','departamentos'];
+    var backup = {};
+    var backupTime = new Date().toISOString();
+    backupKeys.forEach(function(k) {
+      var d = DB.g(k);
+      if (d && d.length > 0) backup[k] = d;
+    });
+    if (backup.funcionarios && backup.funcionarios.length > 0) {
+      localStorage.setItem('eq_backup_pre_sync', JSON.stringify({
+        time: backupTime,
+        data: backup
+      }));
+      console.log('[Backup] Salvo antes do sync:', backup.funcionarios.length, 'funcionários em', backupTime);
+    }
+  } catch(e) { console.warn('[Backup] Erro:', e); }
+
   const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
   let synced = 0;
   for (const k of keys) {
@@ -14028,6 +14051,37 @@ function init() {
     var tsel = document.getElementById('sync-timestamp');
     if (tsel && ls) tsel.textContent = 'Sync: ' + ls;
   } catch(e) {}
+}
+
+// ── RESTAURAR BACKUP PRÉ-SINCRONIZAÇÃO ──
+function restaurarBackup() {
+  try {
+    var raw = localStorage.getItem('eq_backup_pre_sync');
+    if (!raw) { alert('Nenhum backup encontrado.'); return; }
+    var backup = JSON.parse(raw);
+    var time = new Date(backup.time).toLocaleString('pt-BR');
+    var funcsBackup = (backup.data.funcionarios || []).length;
+    var funcsAtual  = DB.g('funcionarios').length;
+
+    if (!confirm(
+      'Backup de ' + time + '\n' +
+      'Funcionários no backup: ' + funcsBackup + '\n' +
+      'Funcionários atuais: ' + funcsAtual + '\n\n' +
+      'Deseja restaurar o backup?\n' +
+      'ATENÇÃO: Os dados atuais serão substituídos.'
+    )) return;
+
+    Object.keys(backup.data).forEach(function(k) {
+      if (backup.data[k] && backup.data[k].length > 0) {
+        DB.s(k, backup.data[k]);
+      }
+    });
+
+    alert('✅ Backup restaurado!\n' + funcsBackup + ' funcionários recuperados.\n\nClique OK e sincronize com o Drive para salvar.');
+    location.reload();
+  } catch(e) {
+    alert('Erro ao restaurar backup: ' + e.message);
+  }
 }
 </script>
 </body>
