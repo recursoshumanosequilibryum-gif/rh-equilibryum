@@ -1903,6 +1903,26 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <input type="text" id="adt-folga" placeholder="01/01/2026" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
       </div>
     </div>
+      <!-- Cláusula 4 -->
+      <div class="form-group form-full" style="border-top:1px solid var(--gray-200);padding-top:12px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:var(--green-dark);">
+          <input type="checkbox" id="adt-tem-clausula4" onchange="toggleClausula4()" style="width:17px;height:17px;accent-color:var(--green);cursor:pointer;">
+          Incluir Cláusula 4ª no documento
+        </label>
+      </div>
+      <div id="adt-clausula4-campos" style="display:none;" class="form-grid" style="width:100%;">
+        <div class="form-group form-full">
+          <label style="font-weight:700;color:#1565c0;font-size:12px;text-transform:uppercase;">Cláusula 4ª – Título</label>
+          <input type="text" id="adt-cl4-titulo" placeholder="Ex.: Salário / Função / Jornada / Outro"
+            style="width:100%;padding:8px 10px;border:1.5px solid #90caf9;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        </div>
+        <div class="form-group form-full">
+          <label>Texto da Cláusula 4ª</label>
+          <textarea id="adt-cl4-texto" rows="4" placeholder="Descreva o conteúdo da Cláusula 4ª..."
+            style="width:100%;padding:8px 10px;border:1.5px solid #90caf9;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+        </div>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-termo-aditivo')">Cancelar</button>
       <button class="btn btn-primary" onclick="gerarTermoAditivo()">📋 Gerar Documento</button>
@@ -13034,12 +13054,23 @@ function gerarCartaINSS() {
   abrirEImprimirDoc(doc, 'Carta_INSS_'+f.n.replace(/\s+/g,'_'), f);
 }
 
+
+function toggleClausula4() {
+  var ck = document.getElementById('adt-tem-clausula4');
+  var campos = document.getElementById('adt-clausula4-campos');
+  if (campos) campos.style.display = (ck && ck.checked) ? 'grid' : 'none';
+}
+
 function abrirModalTermoAditivo() {
   var f = getDocFunc(); if (!f) { alert('Selecione um funcionário primeiro.'); return; }
   // Pre-fill folga with today
   var todayFmt = new Date().toLocaleDateString('pt-BR');
   var folgaEl = document.getElementById('adt-folga');
   if (folgaEl && !folgaEl.value) folgaEl.value = todayFmt;
+  // Reset cláusula 4
+  var ck4 = document.getElementById('adt-tem-clausula4');
+  if(ck4) ck4.checked = false;
+  toggleClausula4();
   openModal('modal-termo-aditivo');
 }
 
@@ -13064,6 +13095,14 @@ function gerarTermoAditivo() {
   var sabPausa   = gv('adt-sab-pausa')   || '_______';
   var sabPausaExt= gv('adt-sab-pausa-ext') || '______________________';
   var folga      = gv('adt-folga')       || hoje;
+
+  // Cláusula 4 (opcional)
+  var ck4el = document.getElementById('adt-tem-clausula4');
+  var cl4Titulo = gv('adt-cl4-titulo') || '4ª';
+  var cl4Texto  = gv('adt-cl4-texto')  || '';
+  var clausula4HTML = (ck4el && ck4el.checked && cl4Texto)
+    ? '<p class="clausula">Cláusula ' + cl4Titulo + '</p><p>' + cl4Texto + '</p>'
+    : '';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
     '<title>Termo Aditivo – '+f.n+'</title>' +
@@ -13110,6 +13149,7 @@ function gerarTermoAditivo() {
     '(<strong class="campo">'+sabPausaExt+'</strong>). Folgas aos domingos a partir de <strong class="campo">'+folga+'</strong>.</p>' +
 
     '<p>Permanecem em pleno vigor todas as demais cláusulas e condições ajustadas no contrato original.</p>' +
+    clausula4HTML +
     '<p>E, por estarem justas e avençadas as partes, assinam o presente instrumento em 02 (duas) vias de igual teor.</p>' +
 
     '<div class="assinaturas">' +
