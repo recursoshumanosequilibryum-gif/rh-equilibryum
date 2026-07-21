@@ -1911,15 +1911,18 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         </label>
       </div>
       <div id="adt-clausula4-campos" style="display:none;width:100%;" class="form-grid">
-        <div class="form-group form-full">
-          <label style="font-weight:700;color:#1565c0;font-size:12px;text-transform:uppercase;">Cláusula 4ª – Título</label>
-          <input type="text" id="adt-cl4-titulo" placeholder="Ex.: Salário / Função / Jornada / Outro"
+        <div class="form-group form-full" style="background:#e3f2fd;border-radius:8px;padding:10px 14px;border:1px solid #90caf9;font-size:12.5px;color:#1565c0;">
+          <strong>Cláusula 4ª –</strong> O empregado perceberá a remuneração de <u>&nbsp;&nbsp;[valor]&nbsp;&nbsp;</u> por mês (<u>&nbsp;&nbsp;[extenso]&nbsp;&nbsp;</u>).
+        </div>
+        <div class="form-group">
+          <label>Valor da Remuneração (R$) <span style="color:#c0392b">*</span></label>
+          <input type="text" id="adt-cl4-valor" placeholder="Ex.: R$ 2.500,00"
             style="width:100%;padding:8px 10px;border:1.5px solid #90caf9;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
-        <div class="form-group form-full">
-          <label>Texto da Cláusula 4ª</label>
-          <textarea id="adt-cl4-texto" rows="4" placeholder="Descreva o conteúdo da Cláusula 4ª..."
-            style="width:100%;padding:8px 10px;border:1.5px solid #90caf9;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+        <div class="form-group">
+          <label>Valor por Extenso <span style="color:#c0392b">*</span></label>
+          <input type="text" id="adt-cl4-extenso" placeholder="Ex.: dois mil e quinhentos reais"
+            style="width:100%;padding:8px 10px;border:1.5px solid #90caf9;border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         </div>
       </div>
     </div>
@@ -13097,11 +13100,14 @@ function gerarTermoAditivo() {
   var folga      = gv('adt-folga')       || hoje;
 
   // Cláusula 4 (opcional)
-  var ck4el = document.getElementById('adt-tem-clausula4');
-  var cl4Titulo = gv('adt-cl4-titulo') || '4ª';
-  var cl4Texto  = gv('adt-cl4-texto')  || '';
-  var clausula4HTML = (ck4el && ck4el.checked && cl4Texto)
-    ? '<p class="clausula">Cláusula ' + cl4Titulo + '</p><p>' + cl4Texto + '</p>'
+  var ck4el    = document.getElementById('adt-tem-clausula4');
+  var cl4Valor   = gv('adt-cl4-valor')   || '_______________';
+  var cl4Extenso = gv('adt-cl4-extenso') || '_______________________________________________';
+  var clausula4HTML = (ck4el && ck4el.checked)
+    ? '<p class="clausula">Cláusula 4ª –</p>' +
+      '<p>O empregado perceberá a remuneração de ' +
+      '<strong class="campo">' + cl4Valor + '</strong> por mês ' +
+      '(<strong class="campo">' + cl4Extenso + '</strong>).</p>'
     : '';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
@@ -14303,9 +14309,9 @@ function gerarCertificado() {
       '.ass-linha{border-top:1.5px solid #555;width:140px;margin:0 auto 4px;}' +
       '.ass-txt{font-size:10px;color:#555;font-weight:600;}' +
       '@media print{' +
-        'html,body{width:297mm;height:210mm;}' +
-        '@page{size:A4 landscape;margin:0;}' +
-        '.cert{page-break-inside:avoid;}' +
+        'html,body{width:297mm!important;height:210mm!important;}' +
+        '@page{size:297mm 210mm landscape;margin:0;}' +
+        '.cert{page-break-inside:avoid;width:297mm!important;height:210mm!important;}' +
       '}' +
     '</style></head><body>' +
     '<div class="cert">' +
