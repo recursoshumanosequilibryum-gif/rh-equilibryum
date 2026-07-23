@@ -13256,11 +13256,7 @@ function gerarCertificado() {
 
   
 
-function toggleClausula4() {
-  var ck = document.getElementById('adt-tem-clausula4');
-  var el = document.getElementById('adt-clausula4-campos');
-  if (el) el.style.display = (ck && ck.checked) ? 'grid' : 'none';
-}
+
 
 function cabecalhoForm(codigo, titulo, autor) {
   var hoje = new Date().toLocaleDateString('pt-BR');
@@ -13460,6 +13456,13 @@ function exportarDevolucoesXLSX() {
   XLSX.utils.book_append_sheet(wb, ws, 'Devoluções');
   XLSX.writeFile(wb, 'Relatorio_Devolucoes.xlsx');
 }
+
+function toggleClausula4() {
+  var ck = document.getElementById('adt-tem-clausula4');
+  var el = document.getElementById('adt-clausula4-campos');
+  if (el) el.style.display = (ck && ck.checked) ? 'grid' : 'none';
+}
+
 </script>
 </body>
 </html>
