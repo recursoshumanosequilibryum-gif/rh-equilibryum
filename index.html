@@ -3604,7 +3604,9 @@ function connectWithToken() {
   syncFromDrive().then(() => {
     init();
     _lastPollHash = '';
-    setInterval(pollDriveChanges, 60000); // poll every 60s
+    if (!window._pollInterval) {
+      window._pollInterval = setInterval(pollDriveChanges, 30000); // poll every 30s
+    }
   });
 }
 
@@ -3891,11 +3893,15 @@ async function syncFromDrive() {
 
 // Sincronização manual — botão no topo
 async function syncManual() {
-  if (!driveReady) { toast('Drive não conectado.', 'warn'); return; }
+  if (!driveReady) { showSyncOverlay(); return; }
   const btn = document.getElementById('btn-sync');
-  if (btn) { btn.innerHTML = '<span class="spinner" style="border-top-color:#fff"></span>'; btn.disabled = true; }
+  if (btn) { btn.innerHTML = '<span class="spinner" style="border-top-color:#fff;width:14px;height:14px;border-width:2px;"></span>'; btn.disabled = true; }
   await syncFromDrive();
   if (btn) { btn.innerHTML = '🔄 Sincronizar'; btn.disabled = false; }
+  if (!window._pollInterval) {
+    window._pollInterval = setInterval(pollDriveChanges, 30000);
+  }
+  toast('✅ Dados atualizados do Drive!');
 }
 
 // Save any DB key to Drive
@@ -11062,6 +11068,14 @@ function gerarRequisicaoUniforme() {
         '<div style="font-size:8.5pt;margin-top:2px;">ASSINATURA DO FUNCIONÁRIO</div>' +
         '<div class="contatoRow">RG: ' + (f.rg||'') + '</div>' +
       '</div>' +
+    '</div>' +
+
+    '<div class="footer" style="margin-top:14px;padding-top:10px;border-top:1px solid #ccc;font-size:9pt;">' +
+      '<b>Endereço de retirada:</b><br>' +
+      '<b>SETTE UNIFORMES</b><br>' +
+      'Fone (11) 2667-1147 – Rua Coronel Carlos Oliva, 243/245 – Tatuapé – Próx. Metrô / Shop. Boulevard Tatuapé<br>' +
+      'HORÁRIO DE ATENDIMENTO: 2ª feira a 5ª feira das 8:30h às 17:30h e 6ª feira das 8:30h às 16:30h.<br>' +
+      'CHEGAR COM 30 MINUTOS DE ANTECEDÊNCIA DO HORÁRIO DE ABERTURA DA LOJA.' +
     '</div>' +
 
     '<div class="atencaoBox">' +
