@@ -4290,16 +4290,13 @@ async function savFunc() {
         pendingFiles.forEach(file => updated.docs.push({ name: file.name, id: null, url: null }));
       }
     }
-    // Save previous status for devolução check
-    if (list[idx]) list[idx]._prevSt = list[idx].st || '';
+    // Hook: captura status anterior ANTES de sobrescrever
+    var _prevStatus = (list[idx] && list[idx].st) || '';
     list[idx] = updated;
     DB.s('funcionarios', list);
 
     // ── Hook: se status mudou para Desligado, abrir modal de devolução ──
-    var oldSt = (list[idx] && list[idx]._prevSt) || '';
-    var newSt = updated.st || '';
-    if (newSt === 'Desligado' && oldSt !== 'Desligado') {
-      // Will open devolução modal after save completes
+    if (updated.st === 'Desligado' && _prevStatus !== 'Desligado') {
       setTimeout(function(){ abrirModalDevolucao(updated.id); }, 600);
     }
 
