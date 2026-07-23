@@ -3477,10 +3477,56 @@ let rhFolderId = null;
 // ============================================================
 const DB = {
   g: k => { try { return JSON.parse(localStorage.getItem('eq_' + k) || '[]') } catch(e) { return [] } },
-  s: (k, v) => localStorage.setItem('eq_' + k, JSON.stringify(v)),
+  s: (k, v) => { localStorage.setItem('eq_' + k, JSON.stringify(v)); scheduleAutoSync(k); },
   go: k => { try { return JSON.parse(localStorage.getItem('eq_' + k) || '{}') } catch(e) { return {} } },
-  so: (k, v) => localStorage.setItem('eq_' + k, JSON.stringify(v))
+  so: (k, v) => { localStorage.setItem('eq_' + k, JSON.stringify(v)); scheduleAutoSync(k); }
 };
+
+// ── Auto-sync: debounce 2s, then save changed keys to Drive ──
+var _autoSyncTimer = null;
+var _pendingSyncKeys = new Set();
+const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devoluções'];
+function scheduleAutoSync(k) {
+  if (!driveReady || !rhFolderId) return;
+  if (DRIVE_KEYS.includes(k)) _pendingSyncKeys.add(k);
+  clearTimeout(_autoSyncTimer);
+  _autoSyncTimer = setTimeout(flushAutoSync, 2000);
+}
+async function flushAutoSync() {
+  if (!driveReady || !rhFolderId || !_pendingSyncKeys.size) return;
+  const keys = Array.from(_pendingSyncKeys);
+  _pendingSyncKeys.clear();
+  for (const k of keys) {
+    const isObj = ['uni-est'].includes(k);
+    const data = isObj ? DB.go(k) : DB.g(k);
+    await saveDriveJSON('eq_' + k + '.json', data);
+  }
+  const now = new Date().toLocaleTimeString('pt-BR');
+  const el = document.getElementById('sync-timestamp');
+  if (el) el.textContent = '☁️ Salvo ' + now;
+}
+
+// ── Polling: recarrega do Drive a cada 60s se outra aba/máquina salvou ──
+var _lastPollHash = '';
+async function pollDriveChanges() {
+  if (!driveReady || !rhFolderId) return;
+  try {
+    const res = await driveRequest('files', 'GET', {
+      q: `'${rhFolderId}' in parents and trashed=false`,
+      fields: 'files(id,name,modifiedTime)',
+      orderBy: 'modifiedTime desc',
+      pageSize: 5
+    });
+    if (!res.files || !res.files.length) return;
+    const hash = res.files.map(f => f.id + f.modifiedTime).join('|');
+    if (_lastPollHash && hash !== _lastPollHash) {
+      // Something changed on Drive from another machine
+      await syncFromDrive();
+      toast('🔄 Dados atualizados de outra máquina');
+    }
+    _lastPollHash = hash;
+  } catch(e) {}
+}
 
 // ============================================================
 // HELPERS
@@ -3555,7 +3601,11 @@ function connectWithToken() {
   document.getElementById('drive-bar').style.display = 'flex';
   updDriveStatus(true, 'Drive compartilhado');
   document.getElementById('user-avatar').textContent = 'U';
-  syncFromDrive().then(() => init());
+  syncFromDrive().then(() => {
+    init();
+    _lastPollHash = '';
+    setInterval(pollDriveChanges, 60000); // poll every 60s
+  });
 }
 
 function copyToken() {
