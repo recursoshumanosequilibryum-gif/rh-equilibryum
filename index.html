@@ -914,6 +914,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div class="tab" onclick="benefTab(&#39;bt-flash&#39;,this)">⚡ Gerar Arquivo Flash</div>
     <div class="tab" onclick="benefTab(&#39;bt-rel&#39;,this)">📊 Relatório Geral</div>
     <div class="tab" onclick="benefTab(&#39;bt-hist&#39;,this)">📁 Histórico Flash</div>
+    <div class="tab" onclick="benefTab(&#39;bt-relcons&#39;,this)">📋 Relatório Consolidado</div>
   </div>
 
   <!-- ABA: POR FUNCIONÁRIO -->
@@ -1105,6 +1106,54 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <tbody id="tb-benef-rel"></tbody>
           <tfoot id="tf-benef-rel" style="font-weight:700;background:var(--green-pale);"></tfoot>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA: RELATÓRIO CONSOLIDADO -->
+  <div id="bt-relcons" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 Relatório Consolidado de Benefícios</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="relcons-emp" onchange="rdRelCons()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:200px;">
+            <option value="">Selecione a empresa</option>
+          </select>
+          <label style="font-size:13px;color:var(--gray-600);">Período:</label>
+          <input type="date" id="relcons-de" onchange="rdRelCons()" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;">
+          <span style="color:var(--gray-400);font-size:13px;">até</span>
+          <input type="date" id="relcons-ate" onchange="rdRelCons()" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;">
+          <button class="btn btn-primary btn-sm" onclick="exportRelCons()">📥 Exportar Excel</button>
+        </div>
+      </div>
+      <!-- KPI cards -->
+      <div id="relcons-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px;"></div>
+      <!-- Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr style="background:var(--green);color:#fff;">
+              <th style="min-width:200px;">Funcionário</th>
+              <th style="min-width:100px;">Departamento</th>
+              <th style="text-align:right;">VT/dia</th>
+              <th style="text-align:right;">Dias</th>
+              <th style="text-align:right;">VT Total</th>
+              <th style="text-align:right;">VR/dia</th>
+              <th style="text-align:right;">VR Total</th>
+              <th style="text-align:right;">VA</th>
+              <th style="text-align:right;">Combustível</th>
+              <th style="text-align:right;">Assist. Odonto</th>
+              <th style="text-align:right;">Assist. Médica</th>
+              <th style="text-align:right;font-weight:800;">Total</th>
+            </tr>
+          </thead>
+          <tbody id="tb-relcons"></tbody>
+          <tfoot id="tf-relcons" style="font-weight:700;background:var(--green-pale);"></tfoot>
+        </table>
+      </div>
+      <div id="relcons-empty" style="text-align:center;padding:48px;color:var(--gray-400);display:none;">
+        <div style="font-size:36px;margin-bottom:10px;">📋</div>
+        <div style="font-weight:600;">Selecione a empresa e o período para gerar o relatório.</div>
       </div>
     </div>
   </div>
@@ -6113,6 +6162,7 @@ function benefTab(id, btn) {
   if(id==='bt-compras') rdBenefCompras();
   if(id==='bt-rel')     rdBenefRel();
   if(id==='bt-hist')    rdHistFlash();
+  if(id==='bt-relcons') rdRelCons();
 }
 
 function benefTipoChange(sel) {
@@ -13470,6 +13520,281 @@ function exportarDevolucoesXLSX() {
   XLSX.utils.book_append_sheet(wb, ws, 'Devoluções');
   XLSX.writeFile(wb, 'Relatorio_Devolucoes.xlsx');
 }
+
+// ============================================================
+// RELATÓRIO CONSOLIDADO DE BENEFÍCIOS
+// ============================================================
+function rdRelCons() {
+  // Fill empresa select
+  var empSel = document.getElementById('relcons-emp');
+  if (empSel && empSel.options.length <= 1) {
+    DB.g('empresas').sort(function(a,b){ return (a.razao||a.nome||'').localeCompare(b.razao||b.nome||''); })
+      .forEach(function(e){
+        var o = document.createElement('option'); o.value = e.id; o.textContent = e.razao||e.nome; empSel.appendChild(o);
+      });
+  }
+
+  // Default period: current month
+  var deEl  = document.getElementById('relcons-de');
+  var ateEl = document.getElementById('relcons-ate');
+  if (deEl && !deEl.value) {
+    var now = new Date(); var y = now.getFullYear(); var m = String(now.getMonth()+1).padStart(2,'0');
+    var last = new Date(y, now.getMonth()+1, 0).getDate();
+    deEl.value  = y + '-' + m + '-01';
+    ateEl.value = y + '-' + m + '-' + String(last).padStart(2,'0');
+  }
+
+  var empId  = (empSel||{}).value || '';
+  var flashDe  = (deEl||{}).value  || '';
+  var flashAte = (ateEl||{}).value || '';
+
+  var emptyEl = document.getElementById('relcons-empty');
+  var tb      = document.getElementById('tb-relcons');
+  var tf      = document.getElementById('tf-relcons');
+  var kpisEl  = document.getElementById('relcons-kpis');
+
+  if (!empId) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (tb) tb.innerHTML = '';
+    if (tf) tf.innerHTML = '';
+    if (kpisEl) kpisEl.innerHTML = '';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Calculate working days
+  var dias = calcDiasUteisGlobal(flashDe, flashAte);
+
+  // Calculate working days including Saturdays (for 56 scale)
+  function calcDiasComSab(de, ate) {
+    if (!de || !ate) return 26;
+    var d1 = new Date(de+'T12:00:00'), d2 = new Date(ate+'T12:00:00');
+    if (d1 > d2) return 26;
+    var feriados = new Set();
+    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) getFeriadosSPGlobal(y).forEach(function(f){ feriados.add(f); });
+    var count = 0, cur = new Date(d1);
+    while (cur <= d2) {
+      var dow = cur.getDay();
+      var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      if (dow !== 0 && !feriados.has(ds)) count++;
+      cur.setDate(cur.getDate()+1);
+    }
+    return count || 26;
+  }
+  var diasComSab = calcDiasComSab(flashDe, flashAte);
+
+  var funcs  = DB.g('funcionarios').filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; });
+  var atribs = DB.g('benef-atrib').filter(function(a){ return a.st === 'Ativo'; });
+  var deps   = DB.g('departamentos');
+
+  if (!tb) return;
+  tb.innerHTML = '';
+
+  // Totals
+  var totVT=0, totVR=0, totVA=0, totComb=0, totOdonto=0, totMed=0, totGeral=0;
+
+  funcs.sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); }).forEach(function(f) {
+    var fBenefs = atribs.filter(function(a){ return a.fid === f.id; });
+    var dep     = deps.find(function(d){ return d.id === f.dep; });
+    var depNome = dep ? dep.nome : '—';
+
+    function findB(kws) {
+      return fBenefs.find(function(a){
+        var t = (a.tipoBase||a.tipo||'').toUpperCase();
+        return kws.some(function(k){ return t.includes(k); });
+      });
+    }
+    var vtB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); });
+    var vrB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR'); });
+    var vaB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA'); });
+    var combB  = findB(['COMBUST']);
+    var odontoB= findB(['ODONTO']);
+    var medB   = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
+
+    // Days depend on scale
+    var escala  = f.escala || '55';
+    var dFunc   = (escala === '56') ? diasComSab : (escala === 'sabalt') ? (dias + Math.ceil(diasComSab - dias) / 2) : dias;
+    dFunc = Math.round(dFunc);
+
+    var vtDia   = parseFloat((vtB   && vtB.valor)   || 0);
+    var vrDia   = parseFloat((vrB   && vrB.valor)   || 0);
+    var vaVal   = parseFloat((vaB   && vaB.valor)   || 0);
+    var combVal = parseFloat((combB && combB.valor) || 0);
+    var odonto  = parseFloat((odontoB && odontoB.valor) || 0);
+    var med     = parseFloat((medB    && medB.valor)    || 0);
+
+    var vtTotal = vtDia * dFunc;
+    var vrTotal = vrDia * dFunc;
+    var total   = vtTotal + vrTotal + vaVal + combVal + odonto + med;
+
+    if (total === 0 && vtDia === 0 && vrDia === 0 && vaVal === 0 && combVal === 0 && odonto === 0 && med === 0) return;
+
+    totVT    += vtTotal;
+    totVR    += vrTotal;
+    totVA    += vaVal;
+    totComb  += combVal;
+    totOdonto+= odonto;
+    totMed   += med;
+    totGeral += total;
+
+    function cell(val) { return '<td style="text-align:right;padding:5px 8px;">' + (val > 0 ? fmtMoney(val) : '—') + '</td>'; }
+    function cellN(val) { return '<td style="text-align:right;padding:5px 8px;">' + val + '</td>'; }
+
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="padding:5px 8px;"><strong>' + f.n + '</strong></td>' +
+      '<td style="padding:5px 8px;font-size:12px;color:var(--gray-500);">' + depNome + '</td>' +
+      cellN(vtDia > 0 ? fmtMoney(vtDia) : '—') +
+      cellN(vtDia > 0 ? dFunc : '—') +
+      cell(vtTotal) +
+      cellN(vrDia > 0 ? fmtMoney(vrDia) : '—') +
+      cell(vrTotal) +
+      cell(vaVal) +
+      cell(combVal) +
+      cell(odonto) +
+      cell(med) +
+      '<td style="text-align:right;padding:5px 8px;font-weight:700;color:var(--green-dark);">' + fmtMoney(total) + '</td>';
+    tb.appendChild(tr);
+  });
+
+  // Footer
+  if (tf) {
+    tf.innerHTML = '<tr>' +
+      '<td style="padding:5px 8px;"><strong>TOTAL</strong></td>' +
+      '<td></td><td></td><td></td>' +
+      '<td style="text-align:right;padding:5px 8px;">' + fmtMoney(totVT) + '</td>' +
+      '<td></td>' +
+      '<td style="text-align:right;padding:5px 8px;">' + fmtMoney(totVR) + '</td>' +
+      '<td style="text-align:right;padding:5px 8px;">' + fmtMoney(totVA) + '</td>' +
+      '<td style="text-align:right;padding:5px 8px;">' + fmtMoney(totComb) + '</td>' +
+      '<td style="text-align:right;padding:5px 8px;">' + fmtMoney(totOdonto) + '</td>' +
+      '<td style="text-align:right;padding:5px 8px;">' + fmtMoney(totMed) + '</td>' +
+      '<td style="text-align:right;padding:5px 8px;color:var(--green-dark);">' + fmtMoney(totGeral) + '</td>' +
+    '</tr>';
+  }
+
+  // KPI cards
+  var periodoStr = flashDe && flashAte
+    ? flashDe.split('-').reverse().join('/') + ' a ' + flashAte.split('-').reverse().join('/')
+    : 'Período não selecionado';
+  var kpis = [
+    { label: 'VT Total',         val: totVT,     icon: '🚌' },
+    { label: 'VR Total',         val: totVR,     icon: '🍽️' },
+    { label: 'VA Total',         val: totVA,     icon: '🛒' },
+    { label: 'Combustível',      val: totComb,   icon: '⛽' },
+    { label: 'Assist. Odonto',   val: totOdonto, icon: '🦷' },
+    { label: 'Assist. Médica',   val: totMed,    icon: '🏥' },
+    { label: 'Total Geral',      val: totGeral,  icon: '💰', bold: true }
+  ];
+  if (kpisEl) {
+    kpisEl.innerHTML = kpis.filter(function(k){ return k.val > 0; }).map(function(k){
+      return '<div style="background:#fff;border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid var(--green);text-align:center;">' +
+        '<div style="font-size:22px;margin-bottom:4px;">' + k.icon + '</div>' +
+        '<div style="font-size:' + (k.bold?'20':'18') + 'px;font-weight:800;color:var(--green-dark);">' + fmtMoney(k.val) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--gray-500);margin-top:2px;">' + k.label + '</div>' +
+        '<div style="font-size:10px;color:var(--gray-400);">' + periodoStr + '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+function exportRelCons() {
+  if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
+
+  var empSel   = document.getElementById('relcons-emp');
+  var deEl     = document.getElementById('relcons-de');
+  var ateEl    = document.getElementById('relcons-ate');
+  var empId    = (empSel||{}).value || '';
+  var flashDe  = (deEl||{}).value  || '';
+  var flashAte = (ateEl||{}).value || '';
+
+  if (!empId) { alert('Selecione a empresa.'); return; }
+
+  var emps   = DB.g('empresas');
+  var emp    = emps.find(function(e){ return e.id === empId; });
+  var empNome = emp ? (emp.razao||emp.nome) : empId;
+
+  var dias = calcDiasUteisGlobal(flashDe, flashAte);
+  function calcDiasComSabExp(de, ate) {
+    if (!de || !ate) return 26;
+    var d1 = new Date(de+'T12:00:00'), d2 = new Date(ate+'T12:00:00');
+    if (d1 > d2) return 26;
+    var feriados = new Set();
+    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) getFeriadosSPGlobal(y).forEach(function(f){ feriados.add(f); });
+    var count = 0, cur = new Date(d1);
+    while (cur <= d2) {
+      var dow = cur.getDay();
+      var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      if (dow !== 0 && !feriados.has(ds)) count++;
+      cur.setDate(cur.getDate()+1);
+    }
+    return count || 26;
+  }
+  var diasComSab = calcDiasComSabExp(flashDe, flashAte);
+
+  var funcs  = DB.g('funcionarios').filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; });
+  var atribs = DB.g('benef-atrib').filter(function(a){ return a.st === 'Ativo'; });
+  var deps   = DB.g('departamentos');
+
+  var headers = ['Funcionário','Departamento','Escala','Dias','VT/dia (R$)','VT Total (R$)','VR/dia (R$)','VR Total (R$)','VA (R$)','Combustível (R$)','Assist. Odonto (R$)','Assist. Médica (R$)','Total (R$)'];
+  var rows = [headers];
+
+  var totVT=0,totVR=0,totVA=0,totComb=0,totOdonto=0,totMed=0,totGeral=0;
+
+  funcs.sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); }).forEach(function(f) {
+    var fBenefs = atribs.filter(function(a){ return a.fid === f.id; });
+    var dep     = deps.find(function(d){ return d.id === f.dep; });
+    function findB(kws) {
+      return fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return kws.some(function(k){ return t.includes(k); }); });
+    }
+    var vtB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); });
+    var vrB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR'); });
+    var vaB    = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA'); });
+    var combB  = findB(['COMBUST']);
+    var odontoB= findB(['ODONTO']);
+    var medB   = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
+
+    var escala  = f.escala || '55';
+    var dFunc   = (escala === '56') ? diasComSab : dias;
+
+    var vtDia   = parseFloat((vtB   && vtB.valor)   || 0);
+    var vrDia   = parseFloat((vrB   && vrB.valor)   || 0);
+    var vaVal   = parseFloat((vaB   && vaB.valor)   || 0);
+    var combVal = parseFloat((combB && combB.valor) || 0);
+    var odonto  = parseFloat((odontoB && odontoB.valor) || 0);
+    var med     = parseFloat((medB    && medB.valor)    || 0);
+    var vtTotal = vtDia * dFunc;
+    var vrTotal = vrDia * dFunc;
+    var total   = vtTotal + vrTotal + vaVal + combVal + odonto + med;
+
+    if (total === 0) return;
+
+    totVT+=vtTotal; totVR+=vrTotal; totVA+=vaVal; totComb+=combVal; totOdonto+=odonto; totMed+=med; totGeral+=total;
+
+    rows.push([f.n, dep?dep.nome:'', escala, dFunc, vtDia||'', vtTotal||'', vrDia||'', vrTotal||'', vaVal||'', combVal||'', odonto||'', med||'', total]);
+  });
+
+  rows.push(['TOTAL','','','','',totVT,'',totVR,totVA,totComb,totOdonto,totMed,totGeral]);
+
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:35},{wch:24},{wch:10},{wch:6},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14}];
+
+  // Format number columns
+  var range = XLSX.utils.decode_range(ws['!ref']);
+  for (var R = 1; R <= range.e.r; R++) {
+    [4,5,6,7,8,9,10,11,12].forEach(function(C) {
+      var addr = XLSX.utils.encode_cell({r:R,c:C});
+      if (ws[addr] && ws[addr].v) { ws[addr].t='n'; ws[addr].z='"R$"\ #.##0,00'; }
+    });
+  }
+
+  var wb = XLSX.utils.book_new();
+  var periodo = (flashDe&&flashAte) ? flashDe.substr(0,7)+'_a_'+flashAte.substr(0,7) : 'periodo';
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado');
+  XLSX.writeFile(wb, 'Beneficios_Consolidado_' + empNome.replace(/\s+/g,'_') + '_' + periodo + '.xlsx');
+  toast('✅ Relatório exportado!');
+}
+
 
 function toggleClausula4() {
   var ck = document.getElementById('adt-tem-clausula4');
