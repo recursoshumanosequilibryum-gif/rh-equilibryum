@@ -774,7 +774,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="card">
     <div class="card-header">
       <span class="card-title">🩹 Exames Médicos <span id="exm-alert-badge" class="badge badge-red" style="display:none;margin-left:8px;font-size:11px;"></span></span>
-      <button class="btn btn-primary" onclick="openModal(&#39;modal-exm&#39;)">+ Novo Exame</button>
+      <button class="btn btn-primary" onclick="novoExm()">+ Novo Exame</button>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:12px;">
       <span>🏳 Legenda:</span>
@@ -2433,14 +2433,16 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 
 <!-- Exame -->
 <div class="modal-bg" id="modal-exm">
-  <div class="modal"><div class="modal-header"><span class="modal-title">Exame Médico</span><button class="modal-close" onclick="closeModal(&#39;modal-exm&#39;)">×</button></div>
+  <div class="modal"><div class="modal-header"><span class="modal-title" id="modal-exm-titulo">Exame Médico</span><button class="modal-close" onclick="closeModal(&#39;modal-exm&#39;)">×</button></div>
+      <input type="hidden" id="exm-edit-id">
     <div class="form-grid">
       <div class="form-group form-full"><label>Funcionário *</label><select id="exf"><option value="">Selecione</option></select></div>
       <div class="form-group"><label>Tipo *</label><select id="ext"><option>Admissional</option><option>Periódico</option><option>Demissional</option><option>Retorno</option></select></div>
       <div class="form-group"><label>Data Agendada *</label><input id="exd" type="date"></div>
       <div class="form-group"><label>Clínica / Médico</label><input id="excl" type="text" placeholder="Nome da clínica"></div>
       <div class="form-group"><label>Exames Solicitados</label><input id="exex" type="text" placeholder="Hemograma, audiometria..."></div>
-      <div class="form-group"><label>Resultado</label><select id="exr"><option value="">Pendente</option><option>Apto</option><option>Apto com restrição</option><option>Inapto</option></select></div>
+      <div class="form-group"><label>Resultado</label><select id="exr" onchange="toggleNovaDataExm()"><option value="">Pendente</option><option>Apto</option><option>Apto com restrição</option><option>Inapto</option></select></div>
+      <div class="form-group" id="exm-nova-data-wrap" style="display:none;"><label>Nova Data de Agendamento</label><input id="exm-nova-data" type="date" placeholder="Próximo agendamento"></div>
       <div class="form-group form-full"><label>Observações</label><textarea id="exob" rows="2"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal(&#39;modal-exm&#39;)">Cancelar</button><button class="btn btn-primary" onclick="savExm()">💾 Salvar</button></div>
@@ -5107,11 +5109,86 @@ async function delFer(id) {
 // ============================================================
 async function savExm() {
   const fid = v('exf'); if (!fid) { alert('Selecione funcionário.'); return; }
-  const list = DB.g('exames');
-  list.push({ id: uid(), fid, tipo: v('ext'), data: v('exd'), cl: v('excl'), ex: v('exex'), res: v('exr'), obs: v('exob') });
+  const editId = document.getElementById('exm-edit-id').value;
+  var list = DB.g('exames');
+  const res = v('exr');
+  const novaData = (document.getElementById('exm-nova-data')||{}).value || '';
+
+  if (editId) {
+    // Edição: atualiza o registro existente
+    var idx = list.findIndex(function(e){ return e.id === editId; });
+    if (idx >= 0) {
+      list[idx].tipo = v('ext');
+      list[idx].data = v('exd');
+      list[idx].cl   = v('excl');
+      list[idx].ex   = v('exex');
+      list[idx].res  = res;
+      list[idx].obs  = v('exob');
+      // Se concluído e tem nova data, cria novo agendamento automaticamente
+      if (res && res !== '' && novaData) {
+        list.push({ id: uid(), fid: list[idx].fid, tipo: list[idx].tipo, data: novaData, cl: list[idx].cl, ex: list[idx].ex, res: '', obs: '' });
+      }
+    }
+  } else {
+    list.push({ id: uid(), fid, tipo: v('ext'), data: v('exd'), cl: v('excl'), ex: v('exex'), res, obs: v('exob') });
+  }
+
   DB.s('exames', list);
-  if (driveReady) await driveSync('exames');
-  closeModal('modal-exm'); rdExm(); updDash(); toast('Exame salvo' + (driveReady ? ' ☁️' : '!'));
+  if (driveReady) driveSync('exames');
+  closeModal('modal-exm'); rdExm(); updDash();
+  toast((editId ? 'Exame atualizado' : 'Exame salvo') + (driveReady ? ' ☁️' : '!'));
+}
+
+function novoExm() {
+  var selF = document.getElementById('exf');
+  if (selF) {
+    var funcs = DB.g('funcionarios');
+    selF.innerHTML = '<option value="">Selecione</option>';
+    funcs.filter(function(f){ return f.st !== 'Desligado'; })
+      .sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); })
+      .forEach(function(f){ var o=document.createElement('option'); o.value=f.id; o.textContent=f.n; selF.appendChild(o); });
+  }
+  document.getElementById('exm-edit-id').value = '';
+  document.getElementById('modal-exm-titulo').textContent = 'Novo Exame';
+  ['exd','excl','exex','exob'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('ext').value = 'Admissional';
+  document.getElementById('exr').value = '';
+  var nd = document.getElementById('exm-nova-data'); if (nd) nd.value = '';
+  var wrap = document.getElementById('exm-nova-data-wrap'); if (wrap) wrap.style.display='none';
+  openModal('modal-exm');
+}
+
+function toggleNovaDataExm() {
+  var res = (document.getElementById('exr')||{}).value || '';
+  var wrap = document.getElementById('exm-nova-data-wrap');
+  if (wrap) wrap.style.display = (res && res !== '') ? 'block' : 'none';
+}
+
+function editExm(eid) {
+  var list  = DB.g('exames');
+  var funcs = DB.g('funcionarios');
+  var e = list.find(function(x){ return x.id === eid; }); if (!e) return;
+
+  // Preencher select de funcionários
+  var selF = document.getElementById('exf');
+  selF.innerHTML = '<option value="">Selecione</option>';
+  funcs.filter(function(f){ return f.st !== 'Desligado'; }).sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); })
+    .forEach(function(f){ var o = document.createElement('option'); o.value=f.id; o.textContent=f.n; selF.appendChild(o); });
+
+  // Preencher campos
+  document.getElementById('exm-edit-id').value = eid;
+  document.getElementById('modal-exm-titulo').textContent = 'Editar Exame';
+  document.getElementById('exf').value   = e.fid  || '';
+  document.getElementById('ext').value   = e.tipo  || 'Admissional';
+  document.getElementById('exd').value   = e.data  || '';
+  document.getElementById('excl').value  = e.cl    || '';
+  document.getElementById('exex').value  = e.ex    || '';
+  document.getElementById('exr').value   = e.res   || '';
+  document.getElementById('exob').value  = e.obs   || '';
+  // Reset nova data
+  var nd = document.getElementById('exm-nova-data'); if (nd) nd.value = '';
+  toggleNovaDataExm();
+  openModal('modal-exm');
 }
 function rdExm() {
   const all = DB.g('exames'); const funcs = DB.g('funcionarios');
@@ -5183,9 +5260,14 @@ function rdExm() {
       var td5 = document.createElement('td'); td5.textContent = e.obs || '—';
       td5.style.cssText = 'max-width:140px;font-size:12px;color:var(--gray-600)';
       var td6 = document.createElement('td');
+      td6.style.cssText = 'white-space:nowrap;';
+      var btnEdit = document.createElement('button');
+      btnEdit.className = 'btn-icon'; btnEdit.title = 'Editar'; btnEdit.innerHTML = '✏️';
+      (function(eid){ btnEdit.onclick = function(){ editExm(eid); }; })(e.id);
       var btn = document.createElement('button');
       btn.className = 'btn-icon danger'; btn.innerHTML = '&#128465;';
       (function(eid) { btn.onclick = function() { delExm(eid); }; })(e.id);
+      td6.appendChild(btnEdit);
       td6.appendChild(btn);
       [td1,td2,td3,td4,td5,td6].forEach(function(td) { tr.appendChild(td); });
       tb.appendChild(tr);
