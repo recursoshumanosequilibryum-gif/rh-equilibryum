@@ -831,6 +831,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <button class="btn btn-primary btn-sm" onclick="openModal(&#39;modal-uni-out&#39;)">- Saída</button>
         <button class="btn btn-sm" style="background:var(--accent);color:#fff;" onclick="openModal(&#39;modal-uni-ajuste&#39;)">⚖️ Ajuste</button>
         <button class="btn btn-sm" style="background:var(--gray-600);color:#fff;" onclick="atribuirIdsLegados()" title="Corrige registros antigos sem ID para permitir exclusão">🔧 Corrigir Legados</button>
+        <button class="btn btn-sm" style="background:#b71c1c;color:#fff;" onclick="zerarEstoque()" title="Zerar todas as quantidades do estoque">🗑️ Zerar Estoque</button>
       </div>
     </div>
     <div class="tabs">
@@ -5784,6 +5785,27 @@ function rdUniMov() {
     tb.appendChild(tr);
   });
 }
+
+async function zerarEstoque() {
+  var est = DB.go('uni-est');
+  var total = Object.keys(est).length;
+  if (total === 0) { toast('Estoque já está zerado.', 'warn'); return; }
+  var c1 = confirm('⚠️ ATENÇÃO\n\nIsso vai zerar a quantidade de TODOS os itens do estoque.\nEssa ação não pode ser desfeita.\n\nDeseja continuar?');
+  if (!c1) return;
+  var c2 = confirm('Tem certeza? Todo o estoque será zerado agora.');
+  if (!c2) return;
+  Object.keys(est).forEach(function(k){ est[k] = 0; });
+  DB.so('uni-est', est);
+  var movs = DB.g('uni-mov');
+  movs.push({ id: uid(), tipo: 'Ajuste', item: 'ZERAR ESTOQUE', tam: '—', qtd: 0,
+    obs: 'Estoque zerado manualmente em ' + new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR'),
+    data: new Date().toISOString().slice(0,10), fid: '' });
+  DB.s('uni-mov', movs);
+  if (driveReady) { await driveSyncObj('uni-est'); await driveSync('uni-mov'); }
+  rdUni();
+  toast('✅ Estoque zerado!' + (driveReady ? ' ☁️' : ''));
+}
+
 
 async function atribuirIdsLegados() {
   var list = DB.g('uni-mov');
