@@ -11375,16 +11375,13 @@ function rdFormExpModal() {
 }
 
 function gerarFormExpXLSX() {
-  if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
-
+  if (typeof XLSX === 'undefined') { alert('XLSX não disponível.'); return; }
   var fid  = (document.getElementById('fexp-func')||{}).value;
   var dias = parseInt((document.getElementById('fexp-dias')||{}).value)||45;
   var data = (document.getElementById('fexp-data')||{}).value;
   if (!fid) { alert('Selecione um funcionário.'); return; }
-
-  var f    = DB.g('funcionarios').find(function(x){ return x.id===fid; });
-  if (!f)  { alert('Funcionário não encontrado.'); return; }
-
+  var f   = DB.g('funcionarios').find(function(x){ return x.id===fid; });
+  if (!f) { alert('Funcionário não encontrado.'); return; }
   var deps = DB.g('departamentos');
   var emps = DB.g('empresas');
   var dep  = deps.find(function(d){ return d.id===f.dep; });
@@ -11403,210 +11400,214 @@ function gerarFormExpXLSX() {
     'Organização e zelo com materiais e equipamentos'
   ];
 
-  // ── Helpers ──────────────────────────────────────────────────
-  var GREEN  = '1F5C44';
-  var GREENL = 'E8F5EE';
-  var WHITE  = 'FFFFFF';
-  var GRAY   = 'F5F5F5';
-  var DKGRAY = '555555';
-  var BLACK  = '111111';
+  // ── estilos base ─────────────────────────────────────────────
+  var BK = '000000'; // preto
+  var GR = '1F5C44'; // verde Equilibryum
+  var GL = 'D6EAD6'; // verde claro
+  var WH = 'FFFFFF';
+  var GY = 'F2F2F2'; // cinza claro linhas alternadas
+  var LB = 'E8F0FF'; // azul claro sub-header notas
 
-  function cell(v, opts) {
-    var c = { v: v === undefined ? '' : v, t: typeof v === 'number' ? 'n' : 's' };
-    opts = opts || {};
-    c.s = {
-      font:      Object.assign({ name: 'Calibri', sz: opts.sz || 10, bold: !!opts.bold, color: { rgb: opts.color || BLACK } }, opts.font || {}),
-      alignment: Object.assign({ vertical: 'center', wrapText: true }, opts.align ? { horizontal: opts.align } : {}),
-      fill:      opts.fill ? { fgColor: { rgb: opts.fill }, patternType: 'solid' } : { patternType: 'none' },
-      border:    opts.border || {}
+  function bord(t,b,l,r) {
+    var s = 'thin', blk = { rgb: BK };
+    return {
+      top:    t ? { style:s, color:blk } : {},
+      bottom: b ? { style:s, color:blk } : {},
+      left:   l ? { style:s, color:blk } : {},
+      right:  r ? { style:s, color:blk } : {}
     };
-    return c;
   }
+  var BA = bord(1,1,1,1); // all sides
 
-  var BORDER_ALL = {
-    top:    { style: 'thin', color: { rgb: '999999' } },
-    bottom: { style: 'thin', color: { rgb: '999999' } },
-    left:   { style: 'thin', color: { rgb: '999999' } },
-    right:  { style: 'thin', color: { rgb: '999999' } }
-  };
-  var BORDER_BOT = { bottom: { style: 'medium', color: { rgb: GREEN } } };
-  var BORDER_TOP = { top: { style: 'thin', color: { rgb: '999999' } } };
-
-  function ca(ws, r, c, v, opts) {
-    var addr = XLSX.utils.encode_cell({ r: r, c: c });
-    ws[addr] = cell(v, opts);
+  function mkCell(v, sz, bold, hAlign, fgColor, bgColor, brd, wrap, italic) {
+    return {
+      v: v === null || v === undefined ? '' : v,
+      t: typeof v === 'number' ? 'n' : 's',
+      s: {
+        font:      { name:'Calibri', sz:sz||10, bold:!!bold, italic:!!italic, color:{rgb: fgColor||BK} },
+        alignment: { horizontal:hAlign||'left', vertical:'center', wrapText:!!wrap },
+        fill:      bgColor ? { fgColor:{rgb:bgColor}, patternType:'solid' } : { patternType:'none' },
+        border:    brd || {}
+      }
+    };
   }
 
   var ws = {};
   var merges = [];
-  var R = 0; // current row
+  var rows = [];  // hpt por linha
+  var R = 0;
 
-  // Col widths: A=32 B=14 C=14 D=14 E=14 F=14 G=22
-  ws['!cols'] = [{wch:32},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:22}];
-
-  // ── Linha 0: Título principal ─────────────────────────────────
-  ca(ws, R, 0, 'AVALIAÇÃO DE PERÍODO DE EXPERIÊNCIA – ' + dias + ' DIAS', {
-    sz: 14, bold: true, color: WHITE, fill: GREEN, align: 'center',
-    border: { top: {style:'medium',color:{rgb:GREEN}}, bottom:{style:'medium',color:{rgb:GREEN}},
-              left:{style:'medium',color:{rgb:GREEN}}, right:{style:'medium',color:{rgb:GREEN}} }
-  });
-  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:{top:{style:'medium',color:{rgb:GREEN}},bottom:{style:'medium',color:{rgb:GREEN}},left:{style:'thin',color:{rgb:GREEN}},right:{style:'medium',color:{rgb:GREEN}}}});
-  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-  ws['!rows'] = ws['!rows'] || []; ws['!rows'][R] = {hpt:24};
-  R++;
-
-  // ── Linha 1: Empresa / CNPJ / Data ───────────────────────────
-  ca(ws,R,0, (emp?emp.razao:'Equilibryum'), {bold:true, sz:10, border:BORDER_ALL});
-  ca(ws,R,1, 'CNPJ:', {bold:true, align:'right', border:BORDER_ALL});
-  ca(ws,R,2, emp?(emp.cnpj||''):'', {border:BORDER_ALL});
-  merges.push({s:{r:R,c:2},e:{r:R,c:4}});
-  ca(ws,R,5, 'Data:', {bold:true, align:'right', border:BORDER_ALL});
-  ca(ws,R,6, dataFmt, {border:BORDER_ALL});
-  R++;
-
-  // ── Linha separadora vazia ────────────────────────────────────
-  ws['!rows'][R] = {hpt:4};
-  R++;
-
-  // ── Cabeçalho DADOS DO FUNCIONÁRIO ───────────────────────────
-  ca(ws,R,0,'DADOS DO FUNCIONÁRIO',{bold:true,sz:10,color:WHITE,fill:GREEN,align:'left',border:{top:{style:'thin',color:{rgb:GREEN}},bottom:{style:'thin',color:{rgb:GREEN}},left:{style:'thin',color:{rgb:GREEN}},right:{style:'thin',color:{rgb:GREEN}}}});
-  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:{top:{style:'thin',color:{rgb:GREEN}},bottom:{style:'thin',color:{rgb:GREEN}},left:{style:'thin',color:{rgb:GREEN}},right:{style:'thin',color:{rgb:GREEN}}}});
-  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:16};
-  R++;
-
-  // Dados funcionário — 4 linhas 2 colunas
-  var infoRows = [
-    ['Funcionário:', f.n,                           'CPF:',            f.cpf||'—'],
-    ['Cargo / Função:', f.car||'—',                 'Departamento:',   dep?dep.nome:'—'],
-    ['Data de Admissão:', fd(f.adm),                'Vencimento '+dias+'d:', fd(venc)],
-    ['Gestor / Supervisor:', f.ges||'—',            'Empresa:',        emp?(emp.razao||'').split(' ')[0]:'—']
-  ];
-  infoRows.forEach(function(row){
-    ca(ws,R,0, row[0], {bold:true, sz:9, color:DKGRAY, fill:GRAY, border:BORDER_ALL});
-    ca(ws,R,1, row[1], {sz:10, bold:true, border:BORDER_ALL});
-    merges.push({s:{r:R,c:1},e:{r:R,c:2}});
-    ca(ws,R,3, row[2], {bold:true, sz:9, color:DKGRAY, fill:GRAY, border:BORDER_ALL});
-    ca(ws,R,4, row[3], {sz:10, bold:true, border:BORDER_ALL});
-    merges.push({s:{r:R,c:4},e:{r:R,c:6}});
-    ws['!rows'][R]={hpt:16};
-    R++;
-  });
-  ws['!rows'][R]={hpt:4}; R++; // espaço
-
-  // ── Cabeçalho CRITÉRIOS ───────────────────────────────────────
-  ca(ws,R,0,'CRITÉRIOS DE AVALIAÇÃO',{bold:true,sz:10,color:WHITE,fill:GREEN,align:'left',border:BORDER_ALL});
-  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:BORDER_ALL});
-  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:16}; R++;
-
-  // Sub-cabeçalho notas
-  ca(ws,R,0,'Critério de Avaliação',{bold:true,sz:9,color:GREEN,fill:GREENL,align:'center',border:BORDER_ALL});
-  ['1\nInsuf.','2\nRegular','3\nBom','4\nÓtimo','5\nExcl.'].forEach(function(t,i){
-    ca(ws,R,i+1,t,{bold:true,sz:9,color:GREEN,fill:GREENL,align:'center',border:BORDER_ALL});
-  });
-  ca(ws,R,6,'Observação',{bold:true,sz:9,color:GREEN,fill:GREENL,align:'center',border:BORDER_ALL});
-  ws['!rows'][R]={hpt:22}; R++;
-
-  // Linhas dos critérios
-  criterios.forEach(function(crit, idx){
-    var bg = idx%2===0?WHITE:GRAY;
-    ca(ws,R,0,crit,{sz:10,fill:bg,border:BORDER_ALL});
-    for (var c=1;c<=5;c++) ca(ws,R,c,'',{fill:bg,align:'center',border:BORDER_ALL});
-    ca(ws,R,6,'',{fill:bg,border:BORDER_ALL});
-    ws['!rows'][R]={hpt:18}; R++;
-  });
-
-  ws['!rows'][R]={hpt:4}; R++; // espaço
-
-  // ── RESULTADO DA AVALIAÇÃO ────────────────────────────────────
-  ca(ws,R,0,'RESULTADO DA AVALIAÇÃO',{bold:true,sz:10,color:WHITE,fill:GREEN,border:BORDER_ALL});
-  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:BORDER_ALL});
-  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:16}; R++;
-
-  ca(ws,R,0,'(   ) Efetivado',{sz:11,align:'center',border:BORDER_ALL});
-  ca(ws,R,1,'(   ) Prorrogado',{sz:11,align:'center',border:BORDER_ALL});
-  merges.push({s:{r:R,c:1},e:{r:R,c:2}});
-  ca(ws,R,3,'(   ) Desligado',{sz:11,align:'center',border:BORDER_ALL});
-  merges.push({s:{r:R,c:3},e:{r:R,c:4}});
-  ca(ws,R,5,'Média Geral:',{bold:true,sz:10,align:'right',border:BORDER_ALL});
-  ca(ws,R,6,'_____ / 5',{sz:11,align:'center',border:BORDER_ALL});
-  ws['!rows'][R]={hpt:20}; R++;
-
-  ws['!rows'][R]={hpt:4}; R++; // espaço
-
-  // ── PARECER DO GESTOR ─────────────────────────────────────────
-  ca(ws,R,0,'PARECER DO GESTOR / OBSERVAÇÕES GERAIS:',{bold:true,sz:9,color:DKGRAY,fill:GRAY,border:BORDER_ALL});
-  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GRAY,border:BORDER_ALL});
-  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:14}; R++;
-
-  // Área em branco para parecer (3 linhas)
-  for (var i=0;i<3;i++){
-    for (var c=0;c<=6;c++) ca(ws,R,c,'',{border:BORDER_ALL});
-    merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-    ws['!rows'][R]={hpt:22}; R++;
+  function put(r,c,cell) { ws[XLSX.utils.encode_cell({r:r,c:c})] = cell; }
+  function merge(r1,c1,r2,c2) { merges.push({s:{r:r1,c:c1},e:{r:r2,c:c2}}); }
+  function hpt(r,h) { rows[r] = {hpt:h}; }
+  // preenche células vazias com borda para que todas as bordas apareçam
+  function emptyBordered(r,c1,c2,bg) {
+    for (var c=c1;c<=c2;c++) put(r,c, mkCell('',10,false,'left',BK,bg,BA));
   }
 
-  ws['!rows'][R]={hpt:8}; R++; // espaço
+  // ── COLS: A B  C  D  E  F  G  (índices 0-6) ─────────────────
+  //   Critério(A largo) | 1 | 2 | 3 | 4 | 5 | Observação
+  ws['!cols'] = [{wch:36},{wch:7},{wch:9},{wch:7},{wch:7},{wch:7},{wch:20}];
 
-  // ── ASSINATURAS ───────────────────────────────────────────────
+  // ══ R0: TÍTULO ═══════════════════════════════════════════════
+  var tituloTxt = 'AVALIAÇÃO DE PERÍODO DE EXPERIÊNCIA – ' + dias + ' DIAS';
+  put(R,0, mkCell(tituloTxt, 14, true, 'center', WH, GR, bord(1,1,1,1)));
+  for (var c=1;c<=6;c++) put(R,c, mkCell('',14,true,'center',WH,GR,bord(1,1,0,1)));
+  merge(R,0,R,6); hpt(R,26); R++;
+
+  // ══ R1: EMPRESA | CNPJ | DATA ════════════════════════════════
+  put(R,0, mkCell((emp?emp.razao:'Equilibryum'), 10, true, 'left', BK, WH, BA));
+  merge(R,0,R,1);
+  put(R,2, mkCell('CNPJ:', 9, true, 'right', BK, GY, BA));
+  put(R,3, mkCell(emp?(emp.cnpj||''):'', 10, false, 'center', BK, WH, BA));
+  merge(R,3,R,4);
+  put(R,5, mkCell('Data:', 9, true, 'right', BK, GY, BA));
+  put(R,6, mkCell(dataFmt, 10, true, 'center', BK, WH, BA));
+  hpt(R,18); R++;
+
+  // ══ R2: separador ════════════════════════════════════════════
+  hpt(R,5); R++;
+
+  // ══ R3: DADOS DO FUNCIONÁRIO (cabeçalho seção) ═══════════════
+  put(R,0, mkCell('DADOS DO FUNCIONÁRIO', 10, true, 'left', WH, GR, BA));
+  for (var c=1;c<=6;c++) put(R,c, mkCell('',10,true,'left',WH,GR,BA));
+  merge(R,0,R,6); hpt(R,16); R++;
+
+  // ── info rows ────────────────────────────────────────────────
+  var infoData = [
+    ['Funcionário:',       f.n,          'CPF:',              f.cpf||'—'],
+    ['Cargo / Função:',    f.car||'—',   'Departamento:',     dep?dep.nome:'—'],
+    ['Data de Admissão:',  fd(f.adm),    'Vencimento '+dias+'d:', fd(venc)],
+    ['Gestor/Supervisor:', f.ges||'—',   'Empresa:',          emp?(emp.razao||'').split(' ')[0]:'—']
+  ];
+  infoData.forEach(function(row) {
+    put(R,0, mkCell(row[0], 9, true,  'right', BK, GY, BA));
+    put(R,1, mkCell(row[1], 10, true, 'left',  BK, WH, BA));
+    merge(R,1,R,2);
+    put(R,3, mkCell(row[2], 9, true,  'right', BK, GY, BA));
+    put(R,4, mkCell(row[3], 10, true, 'left',  BK, WH, BA));
+    merge(R,4,R,6);
+    put(R,2, mkCell('',9,false,'left',BK,WH,BA)); // merged, fill borda
+    hpt(R,17); R++;
+  });
+
+  // ══ separador ════════════════════════════════════════════════
+  hpt(R,5); R++;
+
+  // ══ CRITÉRIOS: cabeçalho seção ═══════════════════════════════
+  put(R,0, mkCell('CRITÉRIOS DE AVALIAÇÃO', 10, true, 'left', WH, GR, BA));
+  for (var c=1;c<=6;c++) put(R,c, mkCell('',10,true,'left',WH,GR,BA));
+  merge(R,0,R,6); hpt(R,16); R++;
+
+  // ── Sub-cabeçalho notas ──────────────────────────────────────
+  put(R,0, mkCell('Critério de Avaliação', 9, true, 'center', WH, GR, BA));
+  var notaHdrs = ['1\nInsuf.','2\nRegular','3\nBom','4\nÓtimo','5\nExcl.'];
+  notaHdrs.forEach(function(t,i){ put(R,i+1, mkCell(t,9,true,'center',WH,GR,BA,true)); });
+  put(R,6, mkCell('Observação', 9, true, 'center', WH, GR, BA));
+  hpt(R,26); R++;
+
+  // ── linhas de critério ───────────────────────────────────────
+  criterios.forEach(function(crit, idx) {
+    var bg = idx%2===0 ? WH : GY;
+    put(R,0, mkCell(crit, 10, false, 'left', BK, bg, BA, true));
+    for (var c=1;c<=5;c++) put(R,c, mkCell('',10,false,'center',BK,bg,BA));
+    put(R,6, mkCell('',10,false,'left',BK,bg,BA));
+    hpt(R,18); R++;
+  });
+
+  // ══ separador ════════════════════════════════════════════════
+  hpt(R,5); R++;
+
+  // ══ RESULTADO DA AVALIAÇÃO ═══════════════════════════════════
+  put(R,0, mkCell('RESULTADO DA AVALIAÇÃO', 10, true, 'left', WH, GR, BA));
+  for (var c=1;c<=6;c++) put(R,c, mkCell('',10,true,'left',WH,GR,BA));
+  merge(R,0,R,6); hpt(R,16); R++;
+
+  put(R,0, mkCell('(   )  Efetivado', 11, false, 'center', BK, WH, BA));
+  merge(R,0,R,1);
+  put(R,2, mkCell('(   )  Prorrogado', 11, false, 'center', BK, WH, BA));
+  merge(R,2,R,3);
+  put(R,4, mkCell('(   )  Desligado', 11, false, 'center', BK, WH, BA));
+  put(R,5, mkCell('Média Geral:', 10, true, 'right', BK, GY, BA));
+  put(R,6, mkCell('_____ / 5', 11, false, 'center', BK, WH, BA));
+  put(R,1, mkCell('',10,false,'left',BK,WH,BA));
+  put(R,3, mkCell('',10,false,'left',BK,WH,BA));
+  hpt(R,22); R++;
+
+  // ══ separador ════════════════════════════════════════════════
+  hpt(R,5); R++;
+
+  // ══ PARECER DO GESTOR ════════════════════════════════════════
+  put(R,0, mkCell('PARECER DO GESTOR / OBSERVAÇÕES GERAIS:', 9, true, 'left', BK, GY, BA));
+  for (var c=1;c<=6;c++) put(R,c, mkCell('',9,true,'left',BK,GY,BA));
+  merge(R,0,R,6); hpt(R,14); R++;
+
+  // 3 linhas em branco para preenchimento
+  for (var i=0;i<3;i++) {
+    for (var c=0;c<=6;c++) put(R,c, mkCell('',10,false,'left',BK,WH,BA));
+    merge(R,0,R,6);
+    hpt(R,24); R++;
+  }
+
+  // ══ separador ════════════════════════════════════════════════
+  hpt(R,10); R++;
+
+  // ══ ASSINATURAS ══════════════════════════════════════════════
   var assinaturas = [
-    { nome: f.ges||'Gestor Responsável', cargo: 'Gestor / Supervisor' },
-    { nome: f.n,                          cargo: 'Funcionário(a)\nCPF: '+(f.cpf||'') },
-    { nome: 'MÔNICA SANTOS',              cargo: 'Coordenadora de RH' },
-    { nome: 'BRUNO NATHAN DA SILVA',      cargo: 'Analista de RH' }
+    { nome: f.ges||'Gestor Responsável',  cargo: 'Gestor / Supervisor' },
+    { nome: f.n,                           cargo: 'Funcionário(a)  CPF: '+(f.cpf||'') },
+    { nome: 'MÔNICA SANTOS',               cargo: 'Coordenadora de RH' },
+    { nome: 'BRUNO NATHAN DA SILVA',       cargo: 'Analista de RH' }
   ];
 
-  // Linha do nome (espaço para assinar)
-  assinaturas.forEach(function(a,i){
-    ca(ws,R,i+( i>=2?1:0 )+(i>=2?1:0),'',{border:{bottom:{style:'medium',color:{rgb:'333333'}}}});
+  // Linha em branco (espaço para assinar) — borda inferior preta
+  var bBotOnly = { bottom:{style:'thin',color:{rgb:BK}}, left:{style:'thin',color:{rgb:BK}}, right:{style:'thin',color:{rgb:BK}}, top:{} };
+  var bTopOnly = { top:{style:'thin',color:{rgb:BK}}, left:{style:'thin',color:{rgb:BK}}, right:{style:'thin',color:{rgb:BK}}, bottom:{} };
+
+  // cols: 0-1 | 2-3 | 4-5 | 6  (4 blocos)
+  var asgCols = [[0,1],[2,3],[4,5],[6,6]];
+
+  // Espaço para assinatura
+  asgCols.forEach(function(cols) {
+    for (var c=cols[0];c<=cols[1];c++) put(R,c, mkCell('',10,false,'center',BK,WH,bBotOnly));
+    if (cols[0]!==cols[1]) merge(R,cols[0],R,cols[1]);
   });
-  // — reescrito em pares de colunas
-  // Col A-B: assinatura 1 | Col C-D: assinatura 2 | Col E: assinatura 3 | Col F-G: assinatura 4
-  for (var c=0;c<=6;c++) ca(ws,R,c,'',{border:{}});
-  merges.push({s:{r:R,c:0},e:{r:R,c:1}});
-  merges.push({s:{r:R,c:2},e:{r:R,c:3}});
-  merges.push({s:{r:R,c:4},e:{r:R,c:4}});
-  merges.push({s:{r:R,c:5},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:30}; R++;
+  hpt(R,32); R++;
 
-  // Linha de nome
-  ca(ws,R,0,assinaturas[0].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
-  merges.push({s:{r:R,c:0},e:{r:R,c:1}});
-  ca(ws,R,2,assinaturas[1].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
-  merges.push({s:{r:R,c:2},e:{r:R,c:3}});
-  ca(ws,R,4,assinaturas[2].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
-  ca(ws,R,5,assinaturas[3].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
-  merges.push({s:{r:R,c:5},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:14}; R++;
+  // Nome
+  assinaturas.forEach(function(a,i) {
+    var cols = asgCols[i];
+    put(R,cols[0], mkCell(a.nome, 9, true, 'center', BK, WH, bord(0,0,1,1)));
+    if (cols[0]!==cols[1]) {
+      put(R,cols[1], mkCell('',9,true,'center',BK,WH,bord(0,0,0,1)));
+      merge(R,cols[0],R,cols[1]);
+    }
+  });
+  hpt(R,14); R++;
 
-  // Linha do cargo
-  ca(ws,R,0,assinaturas[0].cargo,{sz:8,color:DKGRAY,align:'center'});
-  merges.push({s:{r:R,c:0},e:{r:R,c:1}});
-  ca(ws,R,2,assinaturas[1].cargo,{sz:8,color:DKGRAY,align:'center'});
-  merges.push({s:{r:R,c:2},e:{r:R,c:3}});
-  ca(ws,R,4,assinaturas[2].cargo,{sz:8,color:DKGRAY,align:'center'});
-  ca(ws,R,5,assinaturas[3].cargo,{sz:8,color:DKGRAY,align:'center'});
-  merges.push({s:{r:R,c:5},e:{r:R,c:6}});
-  ws['!rows'][R]={hpt:13}; R++;
+  // Cargo
+  assinaturas.forEach(function(a,i) {
+    var cols = asgCols[i];
+    put(R,cols[0], mkCell(a.cargo, 8, false, 'center', '666666', WH, bord(0,1,1,1), true));
+    if (cols[0]!==cols[1]) {
+      put(R,cols[1], mkCell('',8,false,'center','666666',WH,bord(0,1,0,1)));
+      merge(R,cols[0],R,cols[1]);
+    }
+  });
+  hpt(R,14); R++;
 
-  ws['!rows'][R]={hpt:6}; R++;
+  // ══ separador + rodapé ═══════════════════════════════════════
+  hpt(R,6); R++;
+  put(R,0, mkCell('Documento gerado em '+new Date().toLocaleString('pt-BR')+' | Sistema RH Equilibryum', 8, false, 'center', 'AAAAAA', WH, bord(1,0,0,0)));
+  merge(R,0,R,6);
+  for (var c=1;c<=6;c++) put(R,c, mkCell('',8,false,'center','AAAAAA',WH,bord(1,0,0,0)));
 
-  // ── Rodapé ────────────────────────────────────────────────────
-  ca(ws,R,0,'Documento gerado em '+new Date().toLocaleString('pt-BR')+' | Sistema RH Equilibryum',
-    {sz:8,color:'AAAAAA',align:'center',border:{top:{style:'thin',color:{rgb:'EEEEEE'}}}});
-  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
-
-  // ── Montar planilha ───────────────────────────────────────────
+  // ── fechar planilha ──────────────────────────────────────────
   ws['!merges'] = merges;
-  var maxR = R; var maxC = 6;
-  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:maxR,c:maxC}});
-
-  // Configuração de página para impressão A4 retrato
-  ws['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
-  ws['!margins']   = { left:0.5, right:0.5, top:0.75, bottom:0.75, header:0.3, footer:0.3 };
+  ws['!rows']   = rows;
+  ws['!ref']    = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:R,c:6}});
+  ws['!pageSetup'] = { paperSize:9, orientation:'portrait', fitToPage:true, fitToWidth:1, fitToHeight:0 };
+  ws['!margins']   = { left:0.4, right:0.4, top:0.6, bottom:0.6, header:0.2, footer:0.2 };
 
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Avaliação ' + dias + 'd');
