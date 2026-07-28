@@ -11380,7 +11380,6 @@ function gerarFormExpXLSX() {
   var fid  = (document.getElementById('fexp-func')||{}).value;
   var dias = parseInt((document.getElementById('fexp-dias')||{}).value)||45;
   var data = (document.getElementById('fexp-data')||{}).value;
-
   if (!fid) { alert('Selecione um funcionário.'); return; }
 
   var f    = DB.g('funcionarios').find(function(x){ return x.id===fid; });
@@ -11404,67 +11403,214 @@ function gerarFormExpXLSX() {
     'Organização e zelo com materiais e equipamentos'
   ];
 
-  var wb = XLSX.utils.book_new();
-  var ws_data = [];
+  // ── Helpers ──────────────────────────────────────────────────
+  var GREEN  = '1F5C44';
+  var GREENL = 'E8F5EE';
+  var WHITE  = 'FFFFFF';
+  var GRAY   = 'F5F5F5';
+  var DKGRAY = '555555';
+  var BLACK  = '111111';
 
-  // Cabeçalho empresa
-  ws_data.push(['AVALIAÇÃO DE PERÍODO DE EXPERIÊNCIA – ' + dias + ' DIAS']);
-  ws_data.push(['Empresa:', emp ? (emp.razao||emp.nome) : 'Equilibryum', '', 'CNPJ:', emp ? (emp.cnpj||'') : '']);
-  ws_data.push(['Data:', dataFmt]);
-  ws_data.push([]);
+  function cell(v, opts) {
+    var c = { v: v === undefined ? '' : v, t: typeof v === 'number' ? 'n' : 's' };
+    opts = opts || {};
+    c.s = {
+      font:      Object.assign({ name: 'Calibri', sz: opts.sz || 10, bold: !!opts.bold, color: { rgb: opts.color || BLACK } }, opts.font || {}),
+      alignment: Object.assign({ vertical: 'center', wrapText: true }, opts.align ? { horizontal: opts.align } : {}),
+      fill:      opts.fill ? { fgColor: { rgb: opts.fill }, patternType: 'solid' } : { patternType: 'none' },
+      border:    opts.border || {}
+    };
+    return c;
+  }
 
-  // Dados do funcionário
-  ws_data.push(['DADOS DO FUNCIONÁRIO']);
-  ws_data.push(['Funcionário:', f.n, '', 'CPF:', f.cpf||'']);
-  ws_data.push(['Cargo / Função:', f.car||'', '', 'Departamento:', dep ? dep.nome : '']);
-  ws_data.push(['Data de Admissão:', fd(f.adm), '', 'Vencimento ' + dias + 'd:', fd(venc)]);
-  ws_data.push(['Gestor / Supervisor:', f.ges||'', '', 'Empresa:', emp ? (emp.razao||'').split(' ')[0] : '']);
-  ws_data.push([]);
+  var BORDER_ALL = {
+    top:    { style: 'thin', color: { rgb: '999999' } },
+    bottom: { style: 'thin', color: { rgb: '999999' } },
+    left:   { style: 'thin', color: { rgb: '999999' } },
+    right:  { style: 'thin', color: { rgb: '999999' } }
+  };
+  var BORDER_BOT = { bottom: { style: 'medium', color: { rgb: GREEN } } };
+  var BORDER_TOP = { top: { style: 'thin', color: { rgb: '999999' } } };
 
-  // Tabela de critérios
-  ws_data.push(['CRITÉRIOS DE AVALIAÇÃO']);
-  ws_data.push(['Critério', 'Nota 1 (Insuf.)', 'Nota 2 (Regular)', 'Nota 3 (Bom)', 'Nota 4 (Ótimo)', 'Nota 5 (Excl.)', 'Observação']);
-  criterios.forEach(function(c){
-    ws_data.push([c, '', '', '', '', '', '']);
+  function ca(ws, r, c, v, opts) {
+    var addr = XLSX.utils.encode_cell({ r: r, c: c });
+    ws[addr] = cell(v, opts);
+  }
+
+  var ws = {};
+  var merges = [];
+  var R = 0; // current row
+
+  // Col widths: A=32 B=14 C=14 D=14 E=14 F=14 G=22
+  ws['!cols'] = [{wch:32},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:22}];
+
+  // ── Linha 0: Título principal ─────────────────────────────────
+  ca(ws, R, 0, 'AVALIAÇÃO DE PERÍODO DE EXPERIÊNCIA – ' + dias + ' DIAS', {
+    sz: 14, bold: true, color: WHITE, fill: GREEN, align: 'center',
+    border: { top: {style:'medium',color:{rgb:GREEN}}, bottom:{style:'medium',color:{rgb:GREEN}},
+              left:{style:'medium',color:{rgb:GREEN}}, right:{style:'medium',color:{rgb:GREEN}} }
   });
-  ws_data.push([]);
+  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:{top:{style:'medium',color:{rgb:GREEN}},bottom:{style:'medium',color:{rgb:GREEN}},left:{style:'thin',color:{rgb:GREEN}},right:{style:'medium',color:{rgb:GREEN}}}});
+  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+  ws['!rows'] = ws['!rows'] || []; ws['!rows'][R] = {hpt:24};
+  R++;
 
-  // Resultado
-  ws_data.push(['RESULTADO DA AVALIAÇÃO']);
-  ws_data.push(['( ) Efetivado', '( ) Prorrogado', '( ) Desligado', '', 'Média Geral:', '_____ / 5']);
-  ws_data.push([]);
+  // ── Linha 1: Empresa / CNPJ / Data ───────────────────────────
+  ca(ws,R,0, (emp?emp.razao:'Equilibryum'), {bold:true, sz:10, border:BORDER_ALL});
+  ca(ws,R,1, 'CNPJ:', {bold:true, align:'right', border:BORDER_ALL});
+  ca(ws,R,2, emp?(emp.cnpj||''):'', {border:BORDER_ALL});
+  merges.push({s:{r:R,c:2},e:{r:R,c:4}});
+  ca(ws,R,5, 'Data:', {bold:true, align:'right', border:BORDER_ALL});
+  ca(ws,R,6, dataFmt, {border:BORDER_ALL});
+  R++;
 
-  // Parecer
-  ws_data.push(['PARECER DO GESTOR / OBSERVAÇÕES GERAIS:']);
-  ws_data.push(['']);
-  ws_data.push(['']);
-  ws_data.push([]);
+  // ── Linha separadora vazia ────────────────────────────────────
+  ws['!rows'][R] = {hpt:4};
+  R++;
 
-  // Assinaturas
-  ws_data.push(['ASSINATURAS']);
-  ws_data.push([f.ges||'Gestor Responsável', '', f.n, '', 'MÔNICA SANTOS', '', 'BRUNO NATHAN DA SILVA']);
-  ws_data.push(['Gestor / Supervisor', '', 'Funcionário(a) – CPF: ' + (f.cpf||''), '', 'Coordenadora de RH', '', 'Analista de RH']);
-  ws_data.push([]);
-  ws_data.push(['Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum']);
+  // ── Cabeçalho DADOS DO FUNCIONÁRIO ───────────────────────────
+  ca(ws,R,0,'DADOS DO FUNCIONÁRIO',{bold:true,sz:10,color:WHITE,fill:GREEN,align:'left',border:{top:{style:'thin',color:{rgb:GREEN}},bottom:{style:'thin',color:{rgb:GREEN}},left:{style:'thin',color:{rgb:GREEN}},right:{style:'thin',color:{rgb:GREEN}}}});
+  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:{top:{style:'thin',color:{rgb:GREEN}},bottom:{style:'thin',color:{rgb:GREEN}},left:{style:'thin',color:{rgb:GREEN}},right:{style:'thin',color:{rgb:GREEN}}}});
+  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:16};
+  R++;
 
-  var ws = XLSX.utils.aoa_to_sheet(ws_data);
+  // Dados funcionário — 4 linhas 2 colunas
+  var infoRows = [
+    ['Funcionário:', f.n,                           'CPF:',            f.cpf||'—'],
+    ['Cargo / Função:', f.car||'—',                 'Departamento:',   dep?dep.nome:'—'],
+    ['Data de Admissão:', fd(f.adm),                'Vencimento '+dias+'d:', fd(venc)],
+    ['Gestor / Supervisor:', f.ges||'—',            'Empresa:',        emp?(emp.razao||'').split(' ')[0]:'—']
+  ];
+  infoRows.forEach(function(row){
+    ca(ws,R,0, row[0], {bold:true, sz:9, color:DKGRAY, fill:GRAY, border:BORDER_ALL});
+    ca(ws,R,1, row[1], {sz:10, bold:true, border:BORDER_ALL});
+    merges.push({s:{r:R,c:1},e:{r:R,c:2}});
+    ca(ws,R,3, row[2], {bold:true, sz:9, color:DKGRAY, fill:GRAY, border:BORDER_ALL});
+    ca(ws,R,4, row[3], {sz:10, bold:true, border:BORDER_ALL});
+    merges.push({s:{r:R,c:4},e:{r:R,c:6}});
+    ws['!rows'][R]={hpt:16};
+    R++;
+  });
+  ws['!rows'][R]={hpt:4}; R++; // espaço
 
-  // Larguras das colunas
-  ws['!cols'] = [{wch:40},{wch:18},{wch:18},{wch:18},{wch:18},{wch:18},{wch:30}];
+  // ── Cabeçalho CRITÉRIOS ───────────────────────────────────────
+  ca(ws,R,0,'CRITÉRIOS DE AVALIAÇÃO',{bold:true,sz:10,color:WHITE,fill:GREEN,align:'left',border:BORDER_ALL});
+  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:BORDER_ALL});
+  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:16}; R++;
 
-  // Mesclar células do título
-  ws['!merges'] = [
-    {s:{r:0,c:0}, e:{r:0,c:6}},  // Título principal
-    {s:{r:4,c:0}, e:{r:4,c:6}},  // DADOS DO FUNCIONÁRIO
-    {s:{r:10,c:0},e:{r:10,c:6}}, // CRITÉRIOS
-    {s:{r:20,c:0},e:{r:20,c:6}}, // RESULTADO
-    {s:{r:23,c:0},e:{r:23,c:6}}, // PARECER
-    {s:{r:27,c:0},e:{r:27,c:6}}, // ASSINATURAS
-    {s:{r:31,c:0},e:{r:31,c:6}}, // Rodapé
+  // Sub-cabeçalho notas
+  ca(ws,R,0,'Critério de Avaliação',{bold:true,sz:9,color:GREEN,fill:GREENL,align:'center',border:BORDER_ALL});
+  ['1\nInsuf.','2\nRegular','3\nBom','4\nÓtimo','5\nExcl.'].forEach(function(t,i){
+    ca(ws,R,i+1,t,{bold:true,sz:9,color:GREEN,fill:GREENL,align:'center',border:BORDER_ALL});
+  });
+  ca(ws,R,6,'Observação',{bold:true,sz:9,color:GREEN,fill:GREENL,align:'center',border:BORDER_ALL});
+  ws['!rows'][R]={hpt:22}; R++;
+
+  // Linhas dos critérios
+  criterios.forEach(function(crit, idx){
+    var bg = idx%2===0?WHITE:GRAY;
+    ca(ws,R,0,crit,{sz:10,fill:bg,border:BORDER_ALL});
+    for (var c=1;c<=5;c++) ca(ws,R,c,'',{fill:bg,align:'center',border:BORDER_ALL});
+    ca(ws,R,6,'',{fill:bg,border:BORDER_ALL});
+    ws['!rows'][R]={hpt:18}; R++;
+  });
+
+  ws['!rows'][R]={hpt:4}; R++; // espaço
+
+  // ── RESULTADO DA AVALIAÇÃO ────────────────────────────────────
+  ca(ws,R,0,'RESULTADO DA AVALIAÇÃO',{bold:true,sz:10,color:WHITE,fill:GREEN,border:BORDER_ALL});
+  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GREEN,border:BORDER_ALL});
+  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:16}; R++;
+
+  ca(ws,R,0,'(   ) Efetivado',{sz:11,align:'center',border:BORDER_ALL});
+  ca(ws,R,1,'(   ) Prorrogado',{sz:11,align:'center',border:BORDER_ALL});
+  merges.push({s:{r:R,c:1},e:{r:R,c:2}});
+  ca(ws,R,3,'(   ) Desligado',{sz:11,align:'center',border:BORDER_ALL});
+  merges.push({s:{r:R,c:3},e:{r:R,c:4}});
+  ca(ws,R,5,'Média Geral:',{bold:true,sz:10,align:'right',border:BORDER_ALL});
+  ca(ws,R,6,'_____ / 5',{sz:11,align:'center',border:BORDER_ALL});
+  ws['!rows'][R]={hpt:20}; R++;
+
+  ws['!rows'][R]={hpt:4}; R++; // espaço
+
+  // ── PARECER DO GESTOR ─────────────────────────────────────────
+  ca(ws,R,0,'PARECER DO GESTOR / OBSERVAÇÕES GERAIS:',{bold:true,sz:9,color:DKGRAY,fill:GRAY,border:BORDER_ALL});
+  for (var c=1;c<=6;c++) ca(ws,R,c,'',{fill:GRAY,border:BORDER_ALL});
+  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:14}; R++;
+
+  // Área em branco para parecer (3 linhas)
+  for (var i=0;i<3;i++){
+    for (var c=0;c<=6;c++) ca(ws,R,c,'',{border:BORDER_ALL});
+    merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+    ws['!rows'][R]={hpt:22}; R++;
+  }
+
+  ws['!rows'][R]={hpt:8}; R++; // espaço
+
+  // ── ASSINATURAS ───────────────────────────────────────────────
+  var assinaturas = [
+    { nome: f.ges||'Gestor Responsável', cargo: 'Gestor / Supervisor' },
+    { nome: f.n,                          cargo: 'Funcionário(a)\nCPF: '+(f.cpf||'') },
+    { nome: 'MÔNICA SANTOS',              cargo: 'Coordenadora de RH' },
+    { nome: 'BRUNO NATHAN DA SILVA',      cargo: 'Analista de RH' }
   ];
 
+  // Linha do nome (espaço para assinar)
+  assinaturas.forEach(function(a,i){
+    ca(ws,R,i+( i>=2?1:0 )+(i>=2?1:0),'',{border:{bottom:{style:'medium',color:{rgb:'333333'}}}});
+  });
+  // — reescrito em pares de colunas
+  // Col A-B: assinatura 1 | Col C-D: assinatura 2 | Col E: assinatura 3 | Col F-G: assinatura 4
+  for (var c=0;c<=6;c++) ca(ws,R,c,'',{border:{}});
+  merges.push({s:{r:R,c:0},e:{r:R,c:1}});
+  merges.push({s:{r:R,c:2},e:{r:R,c:3}});
+  merges.push({s:{r:R,c:4},e:{r:R,c:4}});
+  merges.push({s:{r:R,c:5},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:30}; R++;
+
+  // Linha de nome
+  ca(ws,R,0,assinaturas[0].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
+  merges.push({s:{r:R,c:0},e:{r:R,c:1}});
+  ca(ws,R,2,assinaturas[1].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
+  merges.push({s:{r:R,c:2},e:{r:R,c:3}});
+  ca(ws,R,4,assinaturas[2].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
+  ca(ws,R,5,assinaturas[3].nome,{bold:true,sz:9,align:'center',border:{top:{style:'medium',color:{rgb:'333333'}}}});
+  merges.push({s:{r:R,c:5},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:14}; R++;
+
+  // Linha do cargo
+  ca(ws,R,0,assinaturas[0].cargo,{sz:8,color:DKGRAY,align:'center'});
+  merges.push({s:{r:R,c:0},e:{r:R,c:1}});
+  ca(ws,R,2,assinaturas[1].cargo,{sz:8,color:DKGRAY,align:'center'});
+  merges.push({s:{r:R,c:2},e:{r:R,c:3}});
+  ca(ws,R,4,assinaturas[2].cargo,{sz:8,color:DKGRAY,align:'center'});
+  ca(ws,R,5,assinaturas[3].cargo,{sz:8,color:DKGRAY,align:'center'});
+  merges.push({s:{r:R,c:5},e:{r:R,c:6}});
+  ws['!rows'][R]={hpt:13}; R++;
+
+  ws['!rows'][R]={hpt:6}; R++;
+
+  // ── Rodapé ────────────────────────────────────────────────────
+  ca(ws,R,0,'Documento gerado em '+new Date().toLocaleString('pt-BR')+' | Sistema RH Equilibryum',
+    {sz:8,color:'AAAAAA',align:'center',border:{top:{style:'thin',color:{rgb:'EEEEEE'}}}});
+  merges.push({s:{r:R,c:0},e:{r:R,c:6}});
+
+  // ── Montar planilha ───────────────────────────────────────────
+  ws['!merges'] = merges;
+  var maxR = R; var maxC = 6;
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:maxR,c:maxC}});
+
+  // Configuração de página para impressão A4 retrato
+  ws['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+  ws['!margins']   = { left:0.5, right:0.5, top:0.75, bottom:0.75, header:0.3, footer:0.3 };
+
+  var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Avaliação ' + dias + 'd');
-  var fname = 'Avaliacao_Experiencia_' + f.n.replace(/\s+/g,'_') + '_' + dias + 'd_' + dataFmt.replace(/\//g,'-') + '.xlsx';
+  var fname = 'Avaliacao_Experiencia_' + f.n.replace(/\s+/g,'_') + '_' + dias + 'd.xlsx';
   XLSX.writeFile(wb, fname);
   toast('✅ Excel gerado!');
   closeModal('modal-form-exp');
