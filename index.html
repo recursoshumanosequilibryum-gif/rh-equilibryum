@@ -3053,6 +3053,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal(&#39;modal-form-exp&#39;)">Cancelar</button>
+      <button class="btn btn-success btn-sm" onclick="gerarFormExpXLSX()" style="background:#1b5e20;color:#fff;">📊 Gerar Excel</button>
       <button class="btn btn-primary" id="btn-gen-exp" onclick="gerarFormExp()">📄 Gerar DOCX</button>
     </div>
   </div>
@@ -11372,6 +11373,103 @@ function rdFormExpModal() {
     });
   document.getElementById('fexp-data').value = td();
 }
+
+function gerarFormExpXLSX() {
+  if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
+
+  var fid  = (document.getElementById('fexp-func')||{}).value;
+  var dias = parseInt((document.getElementById('fexp-dias')||{}).value)||45;
+  var data = (document.getElementById('fexp-data')||{}).value;
+
+  if (!fid) { alert('Selecione um funcionário.'); return; }
+
+  var f    = DB.g('funcionarios').find(function(x){ return x.id===fid; });
+  if (!f)  { alert('Funcionário não encontrado.'); return; }
+
+  var deps = DB.g('departamentos');
+  var emps = DB.g('empresas');
+  var dep  = deps.find(function(d){ return d.id===f.dep; });
+  var emp  = emps.find(function(e){ return e.id===f.emp; });
+  var venc = add(f.adm, dias - 1);
+  var dataFmt = data ? data.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR');
+
+  var criterios = [
+    'Pontualidade e assiduidade',
+    'Comprometimento e responsabilidade',
+    'Qualidade do trabalho realizado',
+    'Relacionamento interpessoal / trabalho em equipe',
+    'Iniciativa e proatividade',
+    'Conhecimento técnico e adaptação à função',
+    'Apresentação pessoal e uso do uniforme',
+    'Organização e zelo com materiais e equipamentos'
+  ];
+
+  var wb = XLSX.utils.book_new();
+  var ws_data = [];
+
+  // Cabeçalho empresa
+  ws_data.push(['AVALIAÇÃO DE PERÍODO DE EXPERIÊNCIA – ' + dias + ' DIAS']);
+  ws_data.push(['Empresa:', emp ? (emp.razao||emp.nome) : 'Equilibryum', '', 'CNPJ:', emp ? (emp.cnpj||'') : '']);
+  ws_data.push(['Data:', dataFmt]);
+  ws_data.push([]);
+
+  // Dados do funcionário
+  ws_data.push(['DADOS DO FUNCIONÁRIO']);
+  ws_data.push(['Funcionário:', f.n, '', 'CPF:', f.cpf||'']);
+  ws_data.push(['Cargo / Função:', f.car||'', '', 'Departamento:', dep ? dep.nome : '']);
+  ws_data.push(['Data de Admissão:', fd(f.adm), '', 'Vencimento ' + dias + 'd:', fd(venc)]);
+  ws_data.push(['Gestor / Supervisor:', f.ges||'', '', 'Empresa:', emp ? (emp.razao||'').split(' ')[0] : '']);
+  ws_data.push([]);
+
+  // Tabela de critérios
+  ws_data.push(['CRITÉRIOS DE AVALIAÇÃO']);
+  ws_data.push(['Critério', 'Nota 1 (Insuf.)', 'Nota 2 (Regular)', 'Nota 3 (Bom)', 'Nota 4 (Ótimo)', 'Nota 5 (Excl.)', 'Observação']);
+  criterios.forEach(function(c){
+    ws_data.push([c, '', '', '', '', '', '']);
+  });
+  ws_data.push([]);
+
+  // Resultado
+  ws_data.push(['RESULTADO DA AVALIAÇÃO']);
+  ws_data.push(['( ) Efetivado', '( ) Prorrogado', '( ) Desligado', '', 'Média Geral:', '_____ / 5']);
+  ws_data.push([]);
+
+  // Parecer
+  ws_data.push(['PARECER DO GESTOR / OBSERVAÇÕES GERAIS:']);
+  ws_data.push(['']);
+  ws_data.push(['']);
+  ws_data.push([]);
+
+  // Assinaturas
+  ws_data.push(['ASSINATURAS']);
+  ws_data.push([f.ges||'Gestor Responsável', '', f.n, '', 'MÔNICA SANTOS', '', 'BRUNO NATHAN DA SILVA']);
+  ws_data.push(['Gestor / Supervisor', '', 'Funcionário(a) – CPF: ' + (f.cpf||''), '', 'Coordenadora de RH', '', 'Analista de RH']);
+  ws_data.push([]);
+  ws_data.push(['Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' | Sistema RH Equilibryum']);
+
+  var ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+  // Larguras das colunas
+  ws['!cols'] = [{wch:40},{wch:18},{wch:18},{wch:18},{wch:18},{wch:18},{wch:30}];
+
+  // Mesclar células do título
+  ws['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:6}},  // Título principal
+    {s:{r:4,c:0}, e:{r:4,c:6}},  // DADOS DO FUNCIONÁRIO
+    {s:{r:10,c:0},e:{r:10,c:6}}, // CRITÉRIOS
+    {s:{r:20,c:0},e:{r:20,c:6}}, // RESULTADO
+    {s:{r:23,c:0},e:{r:23,c:6}}, // PARECER
+    {s:{r:27,c:0},e:{r:27,c:6}}, // ASSINATURAS
+    {s:{r:31,c:0},e:{r:31,c:6}}, // Rodapé
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Avaliação ' + dias + 'd');
+  var fname = 'Avaliacao_Experiencia_' + f.n.replace(/\s+/g,'_') + '_' + dias + 'd_' + dataFmt.replace(/\//g,'-') + '.xlsx';
+  XLSX.writeFile(wb, fname);
+  toast('✅ Excel gerado!');
+  closeModal('modal-form-exp');
+}
+
 
 function gerarFormExp() {
   var fid  = (document.getElementById('fexp-func')||{}).value;
