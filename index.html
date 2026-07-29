@@ -9425,7 +9425,9 @@ async function gerarFlashEmpresasSelecionadas() {
     var cols=[{wch:34},{wch:15},{wch:24},{wch:10},{wch:7}];
     headers.slice(5).forEach(function(){cols.push({wch:16});});
     ws['!cols']=cols;
-    var nomEmp=(emp.razao||emp.nome).replace(/[/*?:[\]]/g,'').substring(0,31);
+    var nomBase=(emp.razao||emp.nome).replace(/[/*?:[\]|]/g,'').trim().substring(0,28);
+    var nomEmp=nomBase, sufixo=1;
+    while(wb.SheetNames.indexOf(nomEmp)>=0){ nomEmp=nomBase.substring(0,25)+' '+(++sufixo); }
     XLSX.utils.book_append_sheet(wb,ws,nomEmp);
   });
 
