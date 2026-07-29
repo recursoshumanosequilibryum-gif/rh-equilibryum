@@ -977,6 +977,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <div class="card-header">
         <span class="card-title">⚡ Gerar Arquivo de Importação – Flash Benefícios</span>
         <button class="btn btn-primary btn-sm" onclick="gerarFlashXLSX()">📄 Gerar XLSX Flash</button>
+        <button class="btn btn-primary btn-sm" onclick="gerarFlashTodasEmpresas()" style="background:#1b5e20;">🏢 Todas as Empresas</button>
       </div>
 
       <!-- Seleção de empresa e competência -->
@@ -9269,6 +9270,105 @@ function updateCalcCell(fid) {
 }
 
 // ── Gerar XLSX Flash ─────────────────────────────────────────
+
+async function gerarFlashTodasEmpresas() {
+  if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
+  var de  = (document.getElementById('flash-de') ||{}).value||'';
+  var ate = (document.getElementById('flash-ate')||{}).value||'';
+  if (!de || !ate) { alert('Informe o período (De e Até).'); return; }
+  var chkVT    = (document.getElementById('flash-chk-vt')    ||{checked:true}).checked;
+  var chkVR    = (document.getElementById('flash-chk-vr')    ||{checked:true}).checked;
+  var chkVA    = (document.getElementById('flash-chk-va')    ||{checked:true}).checked;
+  var chkComb  = (document.getElementById('flash-chk-comb')  ||{checked:true}).checked;
+  var chkAssim = (document.getElementById('flash-chk-assim') ||{checked:true}).checked;
+  var chkBonus = (document.getElementById('flash-chk-bonus') ||{checked:true}).checked;
+  var chkOdonto= (document.getElementById('flash-chk-odonto')||{checked:false}).checked;
+  var chkMed   = (document.getElementById('flash-chk-med')   ||{checked:false}).checked;
+  var deFmt=de.split('-').reverse().join('/'), ateFmt=ate.split('-').reverse().join('/');
+  var periodo=deFmt+' a '+ateFmt;
+  var empresas=DB.g('empresas').filter(function(e){return e.razao||e.nome;});
+  var atribs=DB.g('benef-atrib'), deps=DB.g('departamentos'), todosFunc=DB.g('funcionarios');
+  if (!empresas.length) { alert('Nenhuma empresa cadastrada.'); return; }
+  var diasUt=calcDiasUteisGlobal(de,ate);
+  var diasCs=(function(){
+    var d1=new Date(de+'T12:00:00'),d2=new Date(ate+'T12:00:00'),fer=new Set(),n=0;
+    for(var y=d1.getFullYear();y<=d2.getFullYear();y++) getFeriadosSPGlobal(y).forEach(function(f){fer.add(f);});
+    var cur=new Date(d1);
+    while(cur<=d2){var dow=cur.getDay(),ds=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');if(dow!==0&&!fer.has(ds))n++;cur.setDate(cur.getDate()+1);}
+    return n||26;
+  })();
+  var headers=['FUNCIONÁRIO','CPF','DEPARTAMENTO','ESCALA','DIAS'];
+  if(chkVT){headers.push('VT/DIA (R$)');headers.push('VT TOTAL (R$)');}
+  if(chkVR){headers.push('VR/DIA (R$)');headers.push('VR TOTAL (R$)');}
+  if(chkVA) headers.push('VA (R$)');
+  if(chkComb) headers.push('COMBUSTÍVEL (R$)');
+  if(chkAssim) headers.push('ASSIDUIDADE (R$)');
+  if(chkBonus) headers.push('BÔNUS (R$)');
+  if(chkOdonto) headers.push('ODONTO (R$)');
+  if(chkMed) headers.push('ASSIST. MÉDICA (R$)');
+  headers.push('TOTAL (R$)');
+  var wb=XLSX.utils.book_new();
+  var resumoRows=[['EMPRESA','CNPJ','FUNCIONÁRIOS','TOTAL (R$)','PERÍODO']];
+  var grandTotal=0, totalFuncs=0;
+  empresas.forEach(function(emp){
+    var funcs=todosFunc.filter(function(f){return f.emp===emp.id&&f.st!=='Desligado';});
+    if(!funcs.length) return;
+    funcs.sort(function(a,b){return a.n.localeCompare(b.n,'pt-BR');});
+    var wsData=[];
+    wsData.push(['EMPRESA:',emp.razao||emp.nome,'','CNPJ:',emp.cnpj||'','','PERÍODO:',periodo]);
+    wsData.push([]);
+    wsData.push(headers);
+    var empTotal=0;
+    funcs.forEach(function(f){
+      var dep=deps.find(function(d){return d.id===f.dep;});
+      var esc=f.escala||'55';
+      var dias=esc==='56'?diasCs:esc==='sabalt'?Math.round(diasUt+Math.ceil((diasCs-diasUt)/2)):diasUt;
+      function fb(matchFn){var b=atribs.find(function(a){if(a.fid!==f.id||a.st!=='Ativo')return false;return matchFn(a.tipoBase||a.tipo||'');});return b?(parseFloat(b.valor)||0):0;}
+      var vtD=chkVT?fb(function(t){return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT');}):0;
+      var vrD=chkVR?fb(function(t){return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR');}):0;
+      var va=chkVA?fb(function(t){return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA');}):0;
+      var cb=chkComb?fb(function(t){return t.toUpperCase().includes('COMBUST');}):0;
+      var as=chkAssim?fb(function(t){return t.toUpperCase().includes('ASSIDU');}):0;
+      var bn=chkBonus?fb(function(t){return t.toUpperCase().includes('BÔN')||t.toUpperCase().includes('BON')||t.toUpperCase().includes('PREM');}):0;
+      var od=chkOdonto?fb(function(t){return t.toUpperCase().includes('ODONTO');}):0;
+      var md=chkMed?fb(function(t){return t.toUpperCase().includes('MÉD')||t.toUpperCase().includes('MED');}):0;
+      var vtT=vtD*dias,vrT=vrD*dias,tot=vtT+vrT+va+cb+as+bn+od+md;
+      empTotal+=tot;
+      var row=[f.n,f.cpf||'',dep?dep.nome:'',esc,dias];
+      if(chkVT){row.push(vtD||'');row.push(vtT||'');}
+      if(chkVR){row.push(vrD||'');row.push(vrT||'');}
+      if(chkVA) row.push(va||'');
+      if(chkComb) row.push(cb||'');
+      if(chkAssim) row.push(as||'');
+      if(chkBonus) row.push(bn||'');
+      if(chkOdonto) row.push(od||'');
+      if(chkMed) row.push(md||'');
+      row.push(tot||'');
+      wsData.push(row);
+    });
+    var totRow=['TOTAL','','','',''];
+    for(var i=5;i<headers.length-1;i++) totRow.push('');
+    totRow.push(empTotal);
+    wsData.push(totRow);
+    grandTotal+=empTotal; totalFuncs+=funcs.length;
+    resumoRows.push([emp.razao||emp.nome,emp.cnpj||'',funcs.length,empTotal,periodo]);
+    var ws=XLSX.utils.aoa_to_sheet(wsData);
+    var cols=[{wch:34},{wch:15},{wch:24},{wch:10},{wch:7}];
+    headers.slice(5).forEach(function(){cols.push({wch:16});});
+    ws['!cols']=cols;
+    var nomEmp=(emp.razao||emp.nome).replace(/[/*?:[\]]/g,'').substring(0,31);
+    XLSX.utils.book_append_sheet(wb,ws,nomEmp);
+  });
+  resumoRows.push(['TOTAL GERAL','',totalFuncs,grandTotal,periodo]);
+  var wsRes=XLSX.utils.aoa_to_sheet(resumoRows);
+  wsRes['!cols']=[{wch:40},{wch:18},{wch:15},{wch:18},{wch:26}];
+  wb.SheetNames.unshift('RESUMO');
+  wb.Sheets['RESUMO']=wsRes;
+  var fname='Flash_TodasEmpresas_'+de+'_a_'+ate+'.xlsx';
+  XLSX.writeFile(wb,fname);
+  toast('Exportado! '+empresas.length+' empresa(s), '+totalFuncs+' funcionário(s) — '+periodo);
+}
+
 async function gerarFlashXLSX() {
   var empId = (document.getElementById('flash-empresa')||{}).value||'';
   var de    = (document.getElementById('flash-de') ||{}).value||'';
