@@ -9027,8 +9027,8 @@ function rdFlash() {
   var selEmp = document.getElementById('flash-empresa');
   if (selEmp) {
     var cur = selEmp.value;
-    selEmp.innerHTML = '<option value="">Selecione</option>';
-    DB.g('empresas').forEach(function(e) {
+    selEmp.innerHTML = '<option value="">Selecione</option><option value="__TODAS__">🏢 Todas as Empresas</option>';
+    DB.g('empresas').sort(function(a,b){return (a.razao||a.nome).localeCompare(b.razao||b.nome,'pt-BR');}).forEach(function(e) {
       var o = document.createElement('option');
       o.value = e.id;
       o.textContent = e.razao + (e.cnpj ? ' – ' + e.cnpj : '');
@@ -9323,13 +9323,12 @@ function selecionarTodasFlash(sel) {
   document.querySelectorAll('#flash-emp-checkboxes input[type=checkbox]').forEach(function(ck){ ck.checked = sel; });
 }
 
-async function gerarFlashEmpresasSelecionadas() {
+async function gerarFlashEmpresasSelecionadas() { return gerarFlashTodasXLSX(Array.from(document.querySelectorAll('#flash-emp-checkboxes input[type=checkbox]:checked')).map(function(ck){return ck.getAttribute('data-emp-id');})); }
+async function gerarFlashTodasXLSX(ids) {
   if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
 
-  var selecionadas = Array.from(document.querySelectorAll('#flash-emp-checkboxes input[type=checkbox]:checked'))
-    .map(function(ck){ return ck.getAttribute('data-emp-id'); });
-
-  if (!selecionadas.length) { alert('Selecione ao menos uma empresa.'); return; }
+  var selecionadas = ids || DB.g('empresas').map(function(e){return e.id;});
+  if (!selecionadas.length) { alert('Nenhuma empresa disponível.'); return; }
 
   var de  = (document.getElementById('flash-de') ||{}).value||'';
   var ate = (document.getElementById('flash-ate')||{}).value||'';
@@ -9457,6 +9456,9 @@ async function gerarFlashXLSX() {
 
   if (!empId) { alert('Selecione uma empresa.'); return; }
   if (!de || !ate) { alert('Informe o período (De e Até).'); return; }
+
+  // Se "Todas as Empresas" — delegar para função consolidada
+  if (empId === '__TODAS__') { gerarFlashTodasXLSX(); return; }
 
   var emp   = DB.g('empresas').find(function(e){ return e.id===empId; });
   var funcs = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
@@ -10073,13 +10075,16 @@ async function savBenefAtr() { return savBenefAtrNovo(); }
 
 // ── Flash: auto CNPJ ao selecionar empresa ────────────────────
 function onFlashEmpChange() {
-  var empId = (document.getElementById('flash-empresa')||{}).value;
+  var empId  = (document.getElementById('flash-empresa')||{}).value;
   var cnpjEl = document.getElementById('flash-cnpj');
-  if (!empId) { if(cnpjEl) cnpjEl.value=''; return; }
-  var emp = DB.g('empresas').find(function(e){return e.id===empId;});
-  if (emp && cnpjEl) {
-    cnpjEl.value = emp.cnpj || emp.razao || '';
+  if (!empId) { if(cnpjEl) cnpjEl.value=''; renderFlashTable(); return; }
+  if (empId === '__TODAS__') {
+    if (cnpjEl) cnpjEl.value = 'Todas as empresas';
+    renderFlashTable();
+    return;
   }
+  var emp = DB.g('empresas').find(function(e){return e.id===empId;});
+  if (emp && cnpjEl) cnpjEl.value = emp.cnpj || '';
   renderFlashTable();
 }
 
