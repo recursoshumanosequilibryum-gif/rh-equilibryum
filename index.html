@@ -1998,7 +1998,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
   <div class="modal" style="max-width:600px;">
     <div class="modal-header">
       <span class="modal-title">📦 Devolução de Itens – Desligamento</span>
-      <button class="modal-close" onclick="closeModal('modal-devolucao')">&#215;</button>
+      <button class="modal-close" onclick="closeModal('modal-devolucao');var b=document.querySelector('#modal-devolucao .btn-primary');if(b){b.setAttribute('onclick','salvarDevolucao()');b.textContent='💾 Registrar Devolução';}">&#215;</button>
     </div>
     <div class="form-grid">
       <div class="form-group form-full" style="background:#fff3e0;border-radius:8px;padding:10px 14px;border:1px solid #ffb74d;font-size:12.5px;color:#e65100;">
@@ -4722,6 +4722,15 @@ function rdFunc() {
     btnX.className = 'btn-icon danger'; btnX.title = 'Excluir'; btnX.innerHTML = '🗑️';
     (function(id){ btnX.onclick = function(){ delFunc(id); }; })(f.id);
 
+    // Botão devolução — só aparece para Desligados
+    var btnDev = null;
+    if (f.st === 'Desligado') {
+      btnDev = document.createElement('button');
+      btnDev.className = 'btn-icon'; btnDev.title = 'Ajustar devolução de uniformes'; btnDev.innerHTML = '📦';
+      btnDev.style.cssText = 'background:#fff3e0;border:1px solid #ffb74d;';
+      (function(id){ btnDev.onclick = function(){ editarDevolucao(id); }; })(f.id);
+    }
+
     var btnC = document.createElement('button');
     btnC.className = 'btn-icon'; btnC.title = 'Gerar Crachá'; btnC.innerHTML = '🪪';
     (function(id){ btnC.onclick = function(){ gerarCracha(id); }; })(f.id);
@@ -4731,6 +4740,7 @@ function rdFunc() {
     td8.appendChild(btnW);
     td8.appendChild(btnC);
     td8.appendChild(btnX);
+    if (btnDev) td8.appendChild(btnDev);
 
     [td1,td2,td3,td4,td5,td5b,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
     tb.appendChild(tr);
@@ -13735,7 +13745,124 @@ function gerarAuxilioCombustivel() {
 // ════════════════════════════════════
 // DEVOLUÇÃO DE ITENS – DESLIGAMENTO
 // ════════════════════════════════════
+// Abre o modal de devolução já preenchido com o registro existente (ou em branco se não houver)
+function editarDevolucao(fid) {
+  _devFuncId = fid;
+  var f    = DB.g('funcionarios').find(function(x){ return x.id === fid; }); if (!f) return;
+  var devs = DB.g('devolucoes') || [];
+  // Pegar o registro mais recente deste funcionário
+  var reg  = devs.slice().reverse().find(function(d){ return d.fid === fid; });
+
+  // Preencher nome
+  var nEl = document.getElementById('dev-func-nome');
+  if (nEl) nEl.textContent = f.n;
+
+  // Preencher data
+  var dtEl = document.getElementById('dev-data');
+  if (dtEl) dtEl.value = reg ? (reg.data || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
+
+  // Preencher motivo
+  var motEl = document.getElementById('dev-motivo');
+  if (motEl) motEl.value = reg ? (reg.motivo || '') : '';
+
+  // Mapa item → id do checkbox
+  var ckMap = {
+    'Camiseta/Polo':    'dev-camiseta',
+    'Calça':            'dev-calca',
+    'Jaleco':           'dev-jaleco',
+    'Sapato/Calçado':   'dev-sapato',
+    'Crachá':           'dev-cracha',
+    'Chave':            'dev-chave',
+    'Crachá de acesso': 'dev-crach2',
+    'Equipamentos':     'dev-equip'
+  };
+
+  // Reset checkboxes
+  Object.values(ckMap).forEach(function(id){
+    var el = document.getElementById(id); if (el) el.checked = false;
+  });
+
+  // Marcar itens que já foram registrados
+  var obsExtras = [];
+  if (reg && reg.itens) {
+    reg.itens.forEach(function(item){
+      if (ckMap[item]) {
+        var el = document.getElementById(ckMap[item]); if (el) el.checked = true;
+      } else {
+        obsExtras.push(item);
+      }
+    });
+  }
+
+  // Observações
+  var obsEl = document.getElementById('dev-obs');
+  if (obsEl) obsEl.value = obsExtras.join(', ');
+
+  // Guardar id do registro em edição
+  _devEditId = reg ? reg.id : null;
+
+  // Mudar título do modal para indicar edição
+  var titulo = document.querySelector('#modal-devolucao .modal-title');
+  if (titulo) titulo.textContent = reg ? '📦 Ajustar Devolução – ' + f.n : '📦 Devolução de Itens – ' + f.n;
+
+  // Mudar botão salvar para não chamar confirmarDesligamento() novamente
+  var btnSalvar = document.querySelector('#modal-devolucao .btn-primary');
+  if (btnSalvar) {
+    btnSalvar.setAttribute('onclick', 'salvarDevolucaoEdicao()');
+    btnSalvar.textContent = '💾 Salvar Ajuste';
+  }
+
+  openModal('modal-devolucao');
+}
+
+function salvarDevolucaoEdicao() {
+  var fid = _devFuncId; if (!fid) return;
+
+  function ck(id){ var el=document.getElementById(id); return el&&el.checked; }
+  function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+
+  var itens = [];
+  if (ck('dev-camiseta')) itens.push('Camiseta/Polo');
+  if (ck('dev-calca'))    itens.push('Calça');
+  if (ck('dev-jaleco'))   itens.push('Jaleco');
+  if (ck('dev-sapato'))   itens.push('Sapato/Calçado');
+  if (ck('dev-cracha'))   itens.push('Crachá');
+  if (ck('dev-chave'))    itens.push('Chave');
+  if (ck('dev-crach2'))   itens.push('Crachá de acesso');
+  if (ck('dev-equip'))    itens.push('Equipamentos');
+  var obs = gv('dev-obs'); if (obs) itens.push(obs);
+
+  var devs = DB.g('devolucoes') || [];
+
+  if (_devEditId) {
+    // Atualizar registro existente
+    var idx = devs.findIndex(function(d){ return d.id === _devEditId; });
+    if (idx >= 0) {
+      devs[idx].itens   = itens;
+      devs[idx].data    = gv('dev-data') || td();
+      devs[idx].motivo  = gv('dev-motivo');
+      devs[idx].editado = new Date().toISOString();
+    }
+  } else {
+    // Criar novo registro
+    devs.push({ id: uid(), fid: fid, data: gv('dev-data')||td(), motivo: gv('dev-motivo'), itens: itens, criado: new Date().toISOString() });
+  }
+
+  DB.s('devolucoes', devs);
+  if (driveReady) driveSync('devolucoes');
+  closeModal('modal-devolucao');
+  rdDevRelatorio();
+  rdFunc();
+  toast('📦 Devolução atualizada com ' + itens.length + ' item(ns)!' + (driveReady ? ' ☁️' : ''));
+
+  // Restaurar botão salvar original
+  var btnSalvar = document.querySelector('#modal-devolucao .btn-primary');
+  if (btnSalvar) { btnSalvar.setAttribute('onclick','salvarDevolucao()'); btnSalvar.textContent = '💾 Registrar Devolução'; }
+}
+
+
 var _devFuncId = null;
+var _devEditId = null;
 
 function abrirModalDevolucao(fid) {
   _devFuncId = fid;
