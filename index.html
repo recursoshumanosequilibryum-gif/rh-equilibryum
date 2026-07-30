@@ -982,9 +982,21 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
       <!-- Seleção de empresa e competência -->
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:14px;background:var(--green-pale);border-radius:var(--radius-sm);">
-        <div class="form-group" style="min-width:200px;">
+        <div class="form-group" style="min-width:260px;position:relative;">
           <label>Empresa *</label>
-          <select id="flash-empresa" onchange="onFlashEmpChange()">
+          <div id="flash-emp-dropdown" onclick="toggleFlashEmpDrop()" style="cursor:pointer;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);background:#fff;font-size:13px;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+            <span id="flash-emp-label" style="color:var(--gray-400);">Selecione</span>
+            <span style="font-size:10px;color:var(--gray-400);">▼</span>
+          </div>
+          <div id="flash-emp-drop-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);box-shadow:var(--shadow);z-index:200;max-height:280px;overflow-y:auto;">
+            <div style="padding:8px 10px;border-bottom:1px solid var(--gray-100);display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;" onclick="event.stopPropagation();flashEmpSelAll(true)">✅ Todas</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;" onclick="event.stopPropagation();flashEmpSelAll(false)">☐ Nenhuma</button>
+            </div>
+            <div id="flash-emp-ck-list" style="padding:6px 4px;"></div>
+          </div>
+          <!-- hidden select mantido para compatibilidade com gerarFlashXLSX original -->
+          <select id="flash-empresa" style="display:none;" onchange="onFlashEmpChange()">
             <option value="">Selecione</option>
           </select>
         </div>
@@ -9022,18 +9034,79 @@ function getDiasEscala(escala) {
   return parseInt((document.getElementById('flash-dias-56')||{value:26}).value)||26;
 }
 
+// ── Flash multi-empresa ──────────────────────────────────────
+function toggleFlashEmpDrop() {
+  var d = document.getElementById('flash-emp-drop-list');
+  if (!d) return;
+  d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('flash-emp-dropdown');
+  var list = document.getElementById('flash-emp-drop-list');
+  if (wrap && list && !wrap.contains(e.target) && !list.contains(e.target)) {
+    list.style.display = 'none';
+  }
+});
+function flashEmpSelAll(sel) {
+  document.querySelectorAll('#flash-emp-ck-list input[type=checkbox]').forEach(function(ck){ ck.checked = sel; });
+  updateFlashEmpLabel();
+  renderFlashTable();
+}
+function updateFlashEmpLabel() {
+  var cks = Array.from(document.querySelectorAll('#flash-emp-ck-list input[type=checkbox]'));
+  var sel = cks.filter(function(c){ return c.checked; });
+  var lbl = document.getElementById('flash-emp-label');
+  if (!lbl) return;
+  if (sel.length === 0)          lbl.textContent = 'Selecione';
+  else if (sel.length === cks.length) lbl.textContent = '🏢 Todas as empresas (' + sel.length + ')';
+  else if (sel.length === 1)     lbl.textContent = sel[0].dataset.nome;
+  else                           lbl.textContent = sel.length + ' empresas selecionadas';
+  lbl.style.color = sel.length > 0 ? 'var(--gray-800)' : 'var(--gray-400)';
+  // Atualiza o select hidden para o gerarFlashXLSX original
+  var hidSel = document.getElementById('flash-empresa');
+  if (hidSel) {
+    if (sel.length === 1) hidSel.value = sel[0].value;
+    else hidSel.value = sel.length > 1 ? '__TODAS__' : '';
+  }
+}
+function getFlashEmpIds() {
+  return Array.from(document.querySelectorAll('#flash-emp-ck-list input[type=checkbox]:checked'))
+    .map(function(c){ return c.value; });
+}
+
+
 function rdFlash() {
   // Fill empresa select
   var selEmp = document.getElementById('flash-empresa');
   if (selEmp) {
     var cur = selEmp.value;
     selEmp.innerHTML = '<option value="">Selecione</option><option value="__TODAS__">🏢 Todas as Empresas</option>';
+    var ckList = document.getElementById('flash-emp-ck-list');
+    var prevIds = getFlashEmpIds();
+    if (ckList) ckList.innerHTML = '';
     DB.g('empresas').sort(function(a,b){return (a.razao||a.nome).localeCompare(b.razao||b.nome,'pt-BR');}).forEach(function(e) {
       var o = document.createElement('option');
       o.value = e.id;
-      o.textContent = e.razao + (e.cnpj ? ' – ' + e.cnpj : '');
+      o.textContent = (e.razao||e.nome) + (e.cnpj ? ' – ' + e.cnpj : '');
       selEmp.appendChild(o);
+      if (ckList) {
+        var lbl = document.createElement('label');
+        lbl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:13px;border-radius:5px;';
+        lbl.onmouseover = function(){ this.style.background='var(--green-pale)'; };
+        lbl.onmouseout  = function(){ this.style.background=''; };
+        var ck = document.createElement('input');
+        ck.type = 'checkbox'; ck.value = e.id; ck.dataset.nome = e.razao||e.nome;
+        ck.style.cssText = 'width:15px;height:15px;accent-color:var(--green);cursor:pointer;';
+        ck.checked = prevIds.indexOf(e.id) >= 0;
+        ck.onchange = function(){ updateFlashEmpLabel(); renderFlashTable(); };
+        lbl.appendChild(ck);
+        var sp = document.createElement('span');
+        sp.textContent = e.razao||e.nome;
+        lbl.appendChild(sp);
+        ckList.appendChild(lbl);
+      }
     });
+    updateFlashEmpLabel();
     if (cur) {
       selEmp.value = cur;
       // Update CNPJ field
@@ -9057,12 +9130,13 @@ function rdFlash() {
 }
 
 function renderFlashTable() {
-  var empId = (document.getElementById('flash-empresa')||{}).value || '';
+  var empIds = getFlashEmpIds();
+  var empId  = empIds.length === 1 ? empIds[0] : (empIds.length > 1 ? '__MULTI__' : '');
   var tbody = document.getElementById('flash-tbody');
   var empty = document.getElementById('flash-empty');
   var tbl   = document.getElementById('flash-table');
 
-  if (!empId) {
+  if (!empIds.length) {
     if (tbody) tbody.innerHTML = '';
     if (empty) empty.style.display = 'flex';
     if (tbl)   tbl.style.display = 'none';
@@ -9077,7 +9151,7 @@ function renderFlashTable() {
     var prevFuncVal = funcFilterSel.value;
     funcFilterSel.innerHTML = '<option value="">Todos os funcionários</option>';
     DB.g('funcionarios')
-      .filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; })
+      .filter(function(f){ return empIds.indexOf(f.emp) >= 0 && f.st !== 'Desligado'; })
       .sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); })
       .forEach(function(f){
         var o = document.createElement('option');
@@ -9090,7 +9164,7 @@ function renderFlashTable() {
   var sortAlfa = document.getElementById('flash-alfa') && document.getElementById('flash-alfa').checked;
 
   var funcs = DB.g('funcionarios').filter(function(f){
-    if (f.emp !== empId || f.st === 'Desligado') return false;
+    if (empIds.indexOf(f.emp) < 0 || f.st === 'Desligado') return false;
     if (filterFuncId && f.id !== filterFuncId) return false;
     return true;
   });
@@ -9446,7 +9520,9 @@ async function gerarFlashXLSX() {
   if (!de || !ate) { alert('Informe o período (De e Até).'); return; }
 
   // Se "Todas as Empresas" — delegar para função consolidada
-  if (empId === '__TODAS__') { gerarFlashTodasXLSX(); return; }
+  var empIds2 = getFlashEmpIds();
+  if (empIds2.length > 1 || empId === '__TODAS__') { gerarFlashTodasXLSX(empIds2.length ? empIds2 : null); return; }
+  if (empIds2.length === 1) empId = empIds2[0];
 
   var emp   = DB.g('empresas').find(function(e){ return e.id===empId; });
   var funcs = DB.g('funcionarios').filter(function(f){ return f.emp===empId && f.st!=='Desligado'; });
