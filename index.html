@@ -12265,79 +12265,75 @@ function rdPJ() {
 }
 
 function gerarTemplatePJ() {
-  var mesF = parseInt((document.getElementById('pj-mes-filter')||{value:''}).value)||0;
-  var hoje = new Date();
-  var mes  = mesF || (hoje.getMonth()+1);
-  var ano  = hoje.getFullYear();
-  var MESES     = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var mesF  = parseInt((document.getElementById('pj-mes-filter')||{value:''}).value)||0;
+  var busca = (document.getElementById('pj-busca')||{value:''}).value.toLowerCase();
+  var hoje  = new Date();
+  var mesHoje = hoje.getMonth() + 1;
+  var mes   = mesF || mesHoje;
+  var ano   = hoje.getFullYear();
+  var MESES     = ['','Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   var MESES_ABR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-  var lista = _pjSessao.filter(function(p){
-    return p.nas && parseInt(p.nas.split('-')[1]) === mes;
-  }).sort(function(a,b){
-    return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
+  if (!_pjSessao.length) { alert('Importe a planilha antes de gerar o template.'); return; }
+
+  var lista = _pjSessao.slice();
+  if (busca) lista = lista.filter(function(p){
+    return (p.nome||'').toLowerCase().includes(busca)||(p.area||'').toLowerCase().includes(busca);
   });
 
-  if (!lista.length) { alert('Nenhum PJ aniversaria em ' + MESES[mes] + '.'); return; }
+  var temNas = _pjSessao.some(function(p){ return !!p.nas; });
+  if (temNas) {
+    lista = lista.filter(function(p){
+      if (!p.nas) return false;
+      return parseInt(p.nas.split('-')[1]) === mes;
+    });
+    if (!lista.length) {
+      alert('Nenhum PJ aniversaria no mes selecionado. Verifique o filtro de mes.');
+      return;
+    }
+  } else {
+    if (!lista.length) { alert('Nenhum PJ encontrado para gerar o template.'); return; }
+  }
 
-  var logoHtml = LOGO_EMP_B64
+  lista.sort(function(a,b){
+    if (temNas && a.nas && b.nas) return parseInt(a.nas.split('-')[2]) - parseInt(b.nas.split('-')[2]);
+    return (a.nome||'').localeCompare(b.nome||'');
+  });
+
+  var logoHtml = (typeof LOGO_EMP_B64 !== 'undefined' && LOGO_EMP_B64)
     ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:52px;max-width:170px;object-fit:contain;display:block;margin:0 auto 10px;">'
     : '<div style="font-size:15pt;font-weight:700;color:#1a5c3a;margin-bottom:10px;">EQUILIBRYUM</div>';
 
-  // Cards: sem foto, apenas dados — grade responsiva que cabe em 1 página
-  var cards = lista.map(function(p) {
-    var partes   = p.nome.trim().split(/\s+/);
-    var nome1    = (partes[0]||'').toUpperCase();
-    var nome2    = (partes[1]||'').toUpperCase();
-    var nomeExib = nome1 + (nome2 ? ' ' + nome2 : '');
-    var pts      = p.nas.split('-');
-    var dia      = parseInt(pts[2]);
-    var mesN     = parseInt(pts[1]);
-    var ativ     = (p.ativ && p.ativ !== '-') ? p.ativ : '';
-    var area     = (p.area && p.area !== '-') ? p.area : '';
+  var titulo    = temNas ? '&#127874; Aniversariantes PJ' : '&#128188; Prestadores de Servico PJ';
+  var subtitulo = temNas
+    ? 'PJ / Prestadores &nbsp;|&nbsp; ' + lista.length + ' aniversariante(s) em ' + MESES[mes] + ' ' + ano
+    : lista.length + ' prestador(es)';
 
+  var cards = lista.map(function(p) {
+    var partes = p.nome.trim().split(/\s+/);
+    var nomeExib = ((partes[0]||'')).toUpperCase() + (partes[1] ? ' ' + partes[1].toUpperCase() : '');
+    var ativ = (p.ativ && p.ativ !== '-') ? p.ativ : '';
+    var area = (p.area && p.area !== '-') ? p.area : '';
+    var dataHtml = '';
+    if (p.nas) {
+      var pts = p.nas.split('-');
+      dataHtml = '<div class="card-data">&#127874; ' + parseInt(pts[2]) + ' de ' + MESES_ABR[parseInt(pts[1])] + '</div>';
+    }
     return '<div class="card">' +
       '<div class="card-nome">' + nomeExib + '</div>' +
-      '<div class="card-data">&#127874; ' + dia + ' de ' + MESES_ABR[mesN] + '</div>' +
+      dataHtml +
       (ativ ? '<div class="card-info">' + ativ + '</div>' : '') +
       (area ? '<div class="card-area">' + area + '</div>' : '') +
     '</div>';
   }).join('');
 
-  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
-    '<title>Aniversariantes PJ ' + MESES[mes] + ' ' + ano + '</title>' +
-    '<style>' +
-      '*{box-sizing:border-box;margin:0;padding:0;}' +
-      'body{font-family:Calibri,Arial,sans-serif;background:#d4f0e0;min-height:100vh;padding:22px 26px;}' +
-      '.pg{background:linear-gradient(140deg,#d4f0e0 0%,#a8dfc0 50%,#c8e8f5 100%);min-height:100vh;padding:22px 26px;border-radius:8px;}' +
-      '.hdr{text-align:center;margin-bottom:18px;}' +
-      '.title{font-size:18pt;font-weight:700;color:#1a5c3a;text-shadow:none;}' +
-      '.sub{font-size:11pt;color:#2d6a4f;margin-top:4px;}' +
-      '.grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}' +
-      '.card{background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:10px 12px;text-align:center;width:160px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.08);}' +
-      '.card-nome{font-weight:700;font-size:9.5pt;color:#1a5c3a;line-height:1.25;margin-bottom:5px;letter-spacing:.2px;}' +
-      '.card-data{font-size:10pt;font-weight:700;color:#e65100;margin-bottom:4px;}' +
-      '.card-info{font-size:9.5pt;color:#2d6a4f;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
-      '.card-area{font-size:9pt;color:#3d8b6a;}' +
-      '.ftr{margin-top:14px;text-align:center;font-size:8pt;color:#5a9a7a;}' +
-      '@media print{' +
-        'html,body{background:#0d3b26!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
-        '.pg{min-height:unset;}' +
-        '@page{margin:.8cm;size:A4 landscape;}' +
-      '}' +
-    '</style></head><body>' +
-    '<div class="pg">' +
-      '<div class="hdr">' + logoHtml +
-        '<div class="title">&#127874; Aniversariantes PJ — ' + MESES[mes] + ' ' + ano + '</div>' +
-        '<div class="sub">PJ / Prestadores de Serviço &nbsp;|&nbsp; ' + lista.length + ' aniversariante(s)</div>' +
-      '</div>' +
-      '<div class="grid">' + cards + '</div>' +
-      '<div class="ftr">Sistema RH Equilibryum &nbsp;&#183;&nbsp; ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
-    '</div>' +
-  '</body></html>';
+  var css = '*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Calibri,Arial,sans-serif;background:#d4f0e0;padding:22px 26px;}.pg{background:linear-gradient(140deg,#d4f0e0 0%,#a8dfc0 50%,#c8e8f5 100%);min-height:100vh;padding:22px 26px;border-radius:8px;}.hdr{text-align:center;margin-bottom:18px;}.title{font-size:18pt;font-weight:700;color:#1a5c3a;}.sub{font-size:11pt;color:#2d6a4f;margin-top:4px;}.grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}.card{background:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.8);border-radius:12px;padding:10px 12px;text-align:center;width:160px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.08);}.card-nome{font-weight:700;font-size:9.5pt;color:#1a5c3a;line-height:1.25;margin-bottom:5px;}.card-data{font-size:10pt;font-weight:700;color:#e65100;margin-bottom:4px;}.card-info{font-size:9.5pt;color:#2d6a4f;margin-bottom:2px;}.card-area{font-size:9pt;color:#3d8b6a;}.ftr{margin-top:14px;text-align:center;font-size:8pt;color:#5a9a7a;}@media print{html,body{background:#0d3b26!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.pg{min-height:unset;}@page{margin:.8cm;size:A4 landscape;}}';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>' + titulo + '</title><style>' + css + '</style></head><body><div class="pg"><div class="hdr">' + logoHtml + '<div class="title">' + titulo + '</div><div class="sub">' + subtitulo + '</div></div><div class="grid">' + cards + '</div><div class="ftr">Sistema RH Equilibryum &#183; ' + new Date().toLocaleDateString('pt-BR') + '</div></div></body></html>';
 
   var w = window.open('', '_blank');
   if (w) { w.document.write(doc); w.document.close(); setTimeout(function(){ w.print(); }, 800); }
+  else { alert('Pop-up bloqueado. Permita pop-ups para este site e tente novamente.'); }
 }
 function handleListaAssinada(inp) {
   var file = inp.files[0]; if (!file) return;
