@@ -2265,6 +2265,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
             <option value="55">Seg a Sex (55)</option>
             <option value="56">Seg a Sab (56)</option>
             <option value="sabalt">Sab. Alternados</option>
+            <option value="somsab">Somente Sábados</option>
             <option value="12x36">12x36</option>
             <option value="Outro">Outro</option>
           </select>
@@ -9322,7 +9323,15 @@ function renderFlashTable() {
     var inpDias = document.createElement('input');
     inpDias.type = 'number'; inpDias.min = '1'; inpDias.max = '31';
     inpDias.id = 'dias-'+f.id; // Use escala do cadastro para determinar dias: "55"=Seg-Sex, "56"=Seg-Sab
-    var diasCalc = (f.escala === '56') ? diasUteisComSab : diasUteisPeriodo;
+    var _sabsRT = (function(){
+      var d1=new Date(flashDe+'T12:00:00'),d2=new Date(flashAte+'T12:00:00'),n=0,cur=new Date(d1);
+      while(cur<=d2){if(cur.getDay()===6)n++;cur.setDate(cur.getDate()+1);}
+      return n;
+    })();
+    var diasCalc = (f.escala === '56') ? diasUteisComSab
+                 : (f.escala === 'sabalt') ? (diasUteisPeriodo + Math.ceil(_sabsRT/2))
+                 : (f.escala === 'somsab') ? _sabsRT
+                 : diasUteisPeriodo;
     inpDias.value = diasCalc || '22';
     inpDias.style.cssText = 'width:52px;border:1.5px solid #1a5c3a;border-radius:5px;padding:4px 5px;font-size:13px;font-weight:700;color:#1a5c3a;font-family:inherit;text-align:center;';
     inpDias.title = 'Dias trabalhados no período';
@@ -9607,7 +9616,11 @@ async function gerarFlashXLSX() {
     }
 
     var diasInp = getInp('dias-'+f.id);
-    var diasFallback = (f.escala === '56') ? (diasUteisComSab||26) : (diasUteisPeriodo||22);
+    var _sabsXLSX=(function(){var d1=new Date(flashDe+'T12:00:00'),d2=new Date(flashAte+'T12:00:00'),n=0,cur=new Date(d1);while(cur<=d2){if(cur.getDay()===6)n++;cur.setDate(cur.getDate()+1);}return n;})();
+    var diasFallback = (f.escala === '56') ? (diasUteisComSab||26)
+                     : (f.escala === 'sabalt') ? ((diasUteisPeriodo||22) + Math.ceil(_sabsXLSX/2))
+                     : (f.escala === 'somsab') ? _sabsXLSX
+                     : (diasUteisPeriodo||22);
     var dias = diasInp !== null ? diasInp : diasFallback;
 
     var vtDia  = chkVT    ? (getInp('vt-'+f.id)    !== null ? getInp('vt-'+f.id)    : findBenef(function(t){ return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); })) : 0;
@@ -14355,7 +14368,8 @@ function rdRelCons() {
 
     // Days depend on scale
     var escala  = f.escala || '55';
-    var dFunc   = (escala === '56') ? diasComSab : (escala === 'sabalt') ? (dias + Math.ceil(diasComSab - dias) / 2) : dias;
+    var _sabsCons = (function(){var d1=new Date(flashDe+'T12:00:00'),d2=new Date(flashAte+'T12:00:00'),n=0,cur=new Date(d1);while(cur<=d2){if(cur.getDay()===6)n++;cur.setDate(cur.getDate()+1);}return n;})();
+    var dFunc   = (escala === '56') ? diasComSab : (escala === 'sabalt') ? (dias + Math.ceil(diasComSab - dias) / 2) : (escala === 'somsab') ? _sabsCons : dias;
     dFunc = Math.round(dFunc);
 
     var vtDia   = parseFloat((vtB   && vtB.valor)   || 0);
@@ -14497,7 +14511,8 @@ function exportRelCons() {
     var medB   = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
 
     var escala  = f.escala || '55';
-    var dFunc   = (escala === '56') ? diasComSab : dias;
+    var _sabsExp=(function(){var d1=new Date(flashDe+'T12:00:00'),d2=new Date(flashAte+'T12:00:00'),n=0,cur=new Date(d1);while(cur<=d2){if(cur.getDay()===6)n++;cur.setDate(cur.getDate()+1);}return n;})();
+    var dFunc   = (escala === '56') ? diasComSab : (escala === 'sabalt') ? Math.round(dias+Math.ceil((_sabsExp)/2)) : (escala === 'somsab') ? _sabsExp : dias;
 
     var vtDia   = parseFloat((vtB   && vtB.valor)   || 0);
     var vrDia   = parseFloat((vrB   && vrB.valor)   || 0);
