@@ -1604,6 +1604,19 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
           <option value="mes">Este mês</option>
           <option value="semana">Esta semana</option>
           <option value="todos">Todos os meses</option>
+          <option disabled>──────────────</option>
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
         </select>
       </div>
     </div>
@@ -7416,6 +7429,10 @@ function rdBday() {
     return Object.assign({}, f, {bm: parts[1], bd: parts[2]});
   });
   if (filter === 'mes') lista = lista.filter(function(f){ return f.bm === hm; });
+  else if (!isNaN(parseInt(filter))) {
+    var mesSel = parseInt(filter);
+    lista = lista.filter(function(f){ return f.bm === mesSel; });
+  }
   else if (filter === 'semana') {
     var ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
     var fim = new Date(ini); fim.setDate(ini.getDate()+6);
@@ -7438,13 +7455,14 @@ function rdBday() {
   el.innerHTML = '';
 
   // Botão de gerar template (só no filtro de mês)
-  if (filter === 'mes') {
+  var mesBtnNum = filter === 'mes' ? hm : (!isNaN(parseInt(filter)) ? parseInt(filter) : 0);
+  if (filter === 'mes' || mesBtnNum > 0) {
     var btnDiv = document.createElement('div');
     btnDiv.style.cssText = 'margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);';
     var btnTpl = document.createElement('button');
     btnTpl.className = 'btn btn-primary';
-    btnTpl.innerHTML = '&#127873; Gerar Template — ' + MESES_NOME[hm-1];
-    (function(m){ btnTpl.onclick = function(){ gerarTemplateAniversariantes(m); }; })(hm);
+    btnTpl.innerHTML = '&#127873; Gerar Template — ' + MESES_NOME[mesBtnNum-1];
+    (function(m){ btnTpl.onclick = function(){ gerarTemplateAniversariantes(m); }; })(mesBtnNum);
     var info = document.createElement('span');
     info.style.cssText = 'font-size:12px;color:var(--green-dark);';
     info.textContent = 'Gera uma página visual com foto e dados dos aniversariantes para imprimir ou compartilhar';
