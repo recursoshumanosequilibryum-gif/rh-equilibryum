@@ -12300,7 +12300,7 @@ function gerarTemplatePJ() {
     return (a.nome||'').localeCompare(b.nome||'');
   });
 
-  var logoHtml = (typeof LOGO_EMP_B64 !== 'undefined' && LOGO_EMP_B64)
+  var logoHtml = LOGO_EMP_B64
     ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:52px;max-width:170px;object-fit:contain;display:block;margin:0 auto 10px;">'
     : '<div style="font-size:15pt;font-weight:700;color:#1a5c3a;margin-bottom:10px;">Equilibryum</div>';
 
