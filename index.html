@@ -8053,7 +8053,7 @@ function gerarReciboUniforme() {
   var f = getDocFunc(); if (!f) return;
   var emps = DB.g('empresas');
   var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
-  var razao = (emp.razao || emp.nome || 'Equilibryum').toUpperCase();
+  var razao = (emp.razao || emp.nome || 'EQUILIBRYUM REAB CONSULT EM SAUDE S S LT').toUpperCase();
   var cnpj  = emp.cnpj || '05.441.897/000-1/02';
   var hoje  = new Date().toLocaleDateString('pt-BR');
   var valAte = new Date(); valAte.setDate(valAte.getDate()+30);
@@ -8061,119 +8061,114 @@ function gerarReciboUniforme() {
   var dep   = deps.find(function(d){ return d.id === f.dep; });
   var posto = dep ? (dep.n||dep.nome||'').toUpperCase() : '';
 
-  // Row builder: qtde | item | cor | tamanho | bordado
-  function row(item, cor, qtd) {
-    return '<tr>' +
-      '<td class="c-qtd">'+(qtd||'')+'</td>' +
-      '<td class="c-item">'+item+'</td>' +
-      '<td class="c-cor">'+(cor||'')+'</td>' +
-      '<td class="c-tam"></td>' +
-      '<td class="c-bord"></td>' +
-    '</tr>';
+  function row(item, cor) {
+    return '<tr><td></td><td>'+item+'</td><td>'+(cor||'')+'</td><td></td><td></td></tr>';
   }
   function secRow(titulo) {
     return '<tr><td colspan="5" class="sec">'+titulo+'</td></tr>';
   }
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
-    '<title>Autorização Uniforme – '+f.n+'</title>' +
+    '<title>Requisicao Uniforme</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
       'html,body{width:210mm;font-family:Arial,sans-serif;font-size:7.5pt;color:#000;}' +
       'body{padding:.8cm 1cm;}' +
-      'h2{font-size:9pt;font-weight:700;text-align:center;text-transform:uppercase;' +
-         'letter-spacing:.5px;margin-bottom:8px;}' +
+      'h2{font-size:9pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}' +
       '.cab{display:flex;gap:0;margin-bottom:0;}' +
-      '.cab-left{flex:1;}' +
+      '.cab-left{flex:1;border:1px solid #000;min-height:80px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:8pt;}' +
       '.cab-right{width:55%;}' +
       '.cr{border:1px solid #000;border-top:none;border-left:none;padding:2px 5px;font-size:7.5pt;line-height:1.6;}' +
       '.cr:first-child{border-top:1px solid #000;}' +
       '.cr b{margin-right:3px;}' +
+      '.row2{display:flex;}' +
+      '.row2 .cr{flex:1;}' +
       'table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:4px;}' +
       'th{background:#eee;padding:2px 5px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;}' +
-      'td{border:1px solid #000;padding:1px 4px;height:14px;}' +
-      '.c-qtd{width:32px;}.c-item{}.c-cor{width:50px;}.c-tam{width:44px;}.c-bord{width:48px;}' +
+      'td{border:1px solid #000;padding:1px 4px;height:15px;}' +
+      'td:first-child{width:34px;}td:nth-child(3){width:52px;}td:nth-child(4){width:46px;}td:nth-child(5){width:50px;}' +
       '.sec{font-weight:700;background:#ddd;font-size:7pt;text-align:center;padding:2px;}' +
-      '.footer{margin-top:5px;font-size:6.8pt;border:1px solid #000;padding:4px 6px;line-height:1.5;}' +
       '.validade{font-size:7pt;margin-top:3px;}' +
-      '.sigs{margin-top:6px;display:flex;justify-content:space-between;gap:20px;}' +
+      '.sigs{margin-top:8px;display:flex;justify-content:space-between;gap:20px;}' +
       '.sig{flex:1;}' +
-      '.sig-ln{border-top:1px solid #000;margin-bottom:2px;margin-top:20px;}' +
+      '.sig-ln{border-top:1px solid #000;margin-bottom:2px;margin-top:22px;}' +
       '.sig-nm{font-size:7pt;font-weight:700;}' +
       '.sig-inf{font-size:6.8pt;}' +
+      '.footer{margin-top:5px;font-size:6.8pt;border:1px solid #000;padding:4px 6px;line-height:1.5;}' +
       '@media print{@page{size:A4;margin:0;}body{padding:.7cm .9cm;}}' +
     '</style></head><body>' +
 
-    '<h2>Autorização para Retirada de Uniforme</h2>' +
+    '<h2>Autorizacao para Retirada de Uniforme</h2>' +
 
-    // Header grid: left=logo space, right=info fields
     '<div class="cab">' +
-      '<div class="cab-left" style="border:1px solid #000;min-height:80px;"></div>' +
+      '<div class="cab-left">LOGO</div>' +
       '<div class="cab-right">' +
-        '<div class="cr" style="border-top:1px solid #000;border-left:1px solid #000;display:flex;gap:10px;">' +
+        '<div class="cr" style="border-top:1px solid #000;border-left:1px solid #000;display:flex;gap:12px;">' +
           '<span><b>DATA:</b>'+hoje+'</span>' +
-          '<span><b>Nº</b></span>' +
+          '<span><b>N\u00ba:</b></span>' +
         '</div>' +
         '<div class="cr" style="border-left:1px solid #000;"><b>GRUPO:</b></div>' +
-        '<div class="cr" style="border-left:1px solid #000;"><b>RAZÃO SOCIAL:</b> '+razao+'</div>' +
+        '<div class="cr" style="border-left:1px solid #000;"><b>RAZ\u00c3O SOCIAL:</b> '+razao+'</div>' +
         '<div class="cr" style="border-left:1px solid #000;"><b>CNPJ:</b> '+cnpj+'</div>' +
         '<div class="cr" style="border-left:1px solid #000;"><b>NOME:</b> '+f.n.toUpperCase()+'</div>' +
-        '<div class="cr" style="border-left:1px solid #000;"><b>POSTO:</b> '+posto+'</div>' +
-        '<div class="cr" style="border-left:1px solid #000;"><b>FUNÇÃO:</b> '+(f.car||'').toUpperCase()+'</div>' +
+        '<div class="row2">' +
+          '<div class="cr" style="border-left:1px solid #000;"><b>POSTO:</b> '+posto+'</div>' +
+          '<div class="cr" style="border-left:1px solid #000;"><b>FUN\u00c7\u00c3O:</b> '+(f.car||'').toUpperCase()+'</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
     '<table>' +
       '<thead><tr>' +
-        '<th class="c-qtd">QTDE</th>' +
-        '<th class="c-item">ITEM</th>' +
-        '<th class="c-cor">COR</th>' +
-        '<th class="c-tam">TAMANHO</th>' +
-        '<th class="c-bord">BORDADO</th>' +
+        '<th>QTDE</th>' +
+        '<th>ITEM</th>' +
+        '<th>COR</th>' +
+        '<th>TAMANHO</th>' +
+        '<th>BORDADO</th>' +
       '</tr></thead>' +
       '<tbody>' +
         secRow('MASCULINO') +
-        row('PALETO')+row('CALÇA')+row('TERNO MICROFIBRA')+row('CAMISA MANGA LONGA')+
+        row('PALETO')+row('CAL\u00c7A')+row('TERNO MICROFIBRA')+row('CAMISA MANGA LONGA')+
         row('CAMISA MANGA CURTA GOLA ESTRUTURADA CINZA/GELO')+row('CAMISA POLO CINZA')+
         row('JAQUETA NYLON PRETA')+row('GRAVATA')+row('CINTO')+row('MEIA')+row('SAPATO')+
         secRow('FEMININO') +
-        row('BLAZER')+row('CALÇA')+row('CAMISA MANGA LONGA')+row('CAMISA MANGA CURTA')+
+        row('BLAZER')+row('CAL\u00c7A')+row('CAMISA MANGA LONGA')+row('CAMISA MANGA CURTA')+
         row('CAMISA MANGA 3/4')+row('CAMISA POLO')+row('1 COLETE')+row('SAIA')+
-        row('VESTIDO COM MANGA CURTA')+row('VESTIDO SEM MANGA')+row('BLUSA DE LÃ')+
+        row('VESTIDO COM MANGA CURTA')+row('VESTIDO SEM MANGA')+row('BLUSA DE L\u00c3')+
         row('ECHARPE')+row('MEIA')+row('SAPATO COM SALTO')+row('SAPATO SEM SALTO')+
         secRow('OPERACIONAL') +
         row('CONJUNTO OXFORD ASG/LIMPEZA/COPEIRA','PRETO')+
-        row('CAMISA BRIM MANUTENÇÃO','CINZA')+
-        row('CALÇA BRIM MANUTENÇÃO','CINZA')+
+        row('CAMISA BRIM MANUTEN\u00c7\u00c3O','CINZA')+
+        row('CAL\u00c7A BRIM MANUTEN\u00c7\u00c3O','CINZA')+
         row('SAPATO soft work','Branco')+
       '</tbody>' +
     '</table>' +
 
-    '<div class="validade">Autorização válida até o dia: <b>'+valAte.toLocaleDateString('pt-BR')+'</b></div>' +
+    '<div class="validade">Autorizacao valida ate o dia: <b>'+valAte.toLocaleDateString('pt-BR')+'</b></div>' +
 
     '<div class="sigs">' +
       '<div class="sig">' +
         '<div class="sig-ln"></div>' +
-        '<div class="sig-nm">Mônica Santos</div>' +
-        '<div class="sig-inf">RESPONSÁVEL/COMPRADOR</div>' +
+        '<div class="sig-nm">Monica Santos</div>' +
+        '<div class="sig-inf">RESPONSAVEL/COMPRADOR</div>' +
         '<div class="sig-inf">CONTATO: +55 11 96333-2165</div>' +
         '<div class="sig-inf">RG: _______________</div>' +
       '</div>' +
       '<div class="sig">' +
         '<div class="sig-ln"></div>' +
         '<div class="sig-nm">'+f.n.toUpperCase()+'</div>' +
-        '<div class="sig-inf">ASSINATURA DO FUNCIONÁRIO</div>' +
+        '<div class="sig-inf">ASSINATURA DO FUNCIONARIO</div>' +
       '</div>' +
     '</div>' +
 
     '<div class="footer">' +
-      '<b>Endereço de retirada:</b><br>' +
+      '<b>Endereco de retirada:</b><br>' +
       '<b>SETTE UNIFORMES</b><br>' +
-      'Fone (11) 2667-1147 – Rua Coronel Carlos Oliva, 243/245 – Tatuapé – Próx. Metrô / Shop. Boulevard Tatuapé<br>' +
-      'HORÁRIO DE ATENDIMENTO: 2ª feira a 5ª feira das 8:30h às 17:30h e 6ª feira das 8:30h às 16:30h.<br>' +
-      'CHEGAR COM 30 MINUTOS DE ANTECEDÊNCIA ANTES DO FECHAMENTO DA LOJA.<br>' +
-      '<b>Atenção:</b> A requisição deverá estar assinada pelo responsável no ato da retirada do uniforme pelo funcionário. ' +
-      'Em caso de dúvida, requisição vencida ou rasurada nossa atendente entrará em contato para esclarecimentos.' +
+      'Fone (11) 2667-1147 - Rua Coronel Carlos Oliva, 243/245 - Tatua\u00e9 - Prox. Metro / Shop. Boulevard Tatua\u00e9<br>' +
+      'HORARIO DE ATENDIMENTO: 2a feira a 5a feira das 8:30h as 17:30h e 6a feira das 8:30h as 16:30h.<br>' +
+      'CHEGAR COM 30 MINUTOS DE ANTECEDENCIA ANTES DO FECHAMENTO DA LOJA.<br>' +
+      '<b>Atencao:</b> A requisicao devera estar assinada pelo responsavel no ato da retirada do uniforme pelo funcionario. ' +
+      'Em caso de duvida, requisicao vencida ou rasurada nossa atendente entrara em contato para esclarecimentos.' +
     '</div>' +
 
   '</body></html>';
