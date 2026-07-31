@@ -3613,21 +3613,43 @@ var _lastPollHash = '';
 async function pollDriveChanges() {
   if (!driveReady || !rhFolderId) return;
   try {
-    const res = await driveRequest('files', 'GET', {
-      q: `'${rhFolderId}' in parents and trashed=false`,
+    // Verificar se token ainda é válido
+    var tokenTime = parseInt(localStorage.getItem('eq_drive_token_time')||'0');
+    var elapsed = Date.now() - tokenTime;
+    if (elapsed > 3400000) { // ~56min — token expira em 1h
+      console.warn('[Sync] Token próximo de expirar, reconectando...');
+      driveReady = false;
+      var el = document.getElementById('sync-timestamp');
+      if (el) el.textContent = '⚠️ Token expirado — reconecte o Drive';
+      return;
+    }
+
+    var res = await driveRequest('files', 'GET', {
+      q: "'" + rhFolderId + "' in parents and trashed=false",
       fields: 'files(id,name,modifiedTime)',
       orderBy: 'modifiedTime desc',
-      pageSize: 5
+      pageSize: '10'
     });
-    if (!res.files || !res.files.length) return;
-    const hash = res.files.map(f => f.id + f.modifiedTime).join('|');
+    if (!res || !res.files || !res.files.length) return;
+    var hash = res.files.map(function(f){ return f.id + f.modifiedTime; }).join('|');
     if (_lastPollHash && hash !== _lastPollHash) {
-      // Something changed on Drive from another machine
       await syncFromDrive();
+      var now = new Date().toLocaleTimeString('pt-BR');
+      var el = document.getElementById('sync-timestamp');
+      if (el) el.textContent = '🔄 Atualizado ' + now;
       toast('🔄 Dados atualizados de outra máquina');
     }
     _lastPollHash = hash;
-  } catch(e) {}
+    // Atualizar timestamp do último poll bem-sucedido
+    var el2 = document.getElementById('sync-timestamp');
+    if (el2 && !el2.textContent.includes('Atualizado')) {
+      el2.textContent = '☁️ Sincronizado ' + new Date().toLocaleTimeString('pt-BR');
+    }
+  } catch(e) {
+    console.warn('[Sync poll erro]', e);
+    var el3 = document.getElementById('sync-timestamp');
+    if (el3) el3.textContent = '⚠️ Erro de sync — ' + new Date().toLocaleTimeString('pt-BR');
+  }
 }
 
 // ============================================================
@@ -3707,7 +3729,7 @@ function connectWithToken() {
     init();
     _lastPollHash = '';
     if (!window._pollInterval) {
-      window._pollInterval = setInterval(pollDriveChanges, 30000); // poll every 30s
+      window._pollInterval = setInterval(pollDriveChanges, 20000); // poll every 20s
     }
   });
 }
@@ -4001,7 +4023,7 @@ async function syncManual() {
   await syncFromDrive();
   if (btn) { btn.innerHTML = '🔄 Sincronizar'; btn.disabled = false; }
   if (!window._pollInterval) {
-    window._pollInterval = setInterval(pollDriveChanges, 30000);
+    window._pollInterval = setInterval(pollDriveChanges, 20000);
   }
   toast('✅ Dados atualizados do Drive!');
 }
