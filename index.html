@@ -6058,7 +6058,7 @@ function openAvd(fid, dias) {
 
   body.innerHTML =
     '<div style="text-align:center;margin-bottom:16px;">' +
-      '<strong style="font-size:14pt;color:#1f5c44;">EQUILIBRYUM</strong>' +
+      '<strong style="font-size:14pt;color:#1f5c44;">Equilibryum</strong>' +
       '<br><span style="font-size:10pt;color:#555;">Especialidades Médicas &amp; Terapêuticas</span>' +
       '<br><strong style="font-size:12pt;">Avaliação de Período de Experiência – ' + dias + ' dias</strong>' +
     '</div>' +
@@ -6265,7 +6265,7 @@ function printRel() {
     '.footer{margin-top:20px;font-size:9px;color:#999;text-align:center;}' +
     '@media print{@page{margin:1.5cm;size:A4 landscape;}}' +
     '</style></head><body>' +
-    '<h1>EQUILIBRYUM – Relatório de Funcionários</h1>' +
+    '<h1>Equilibryum – Relatório de Funcionários</h1>' +
     '<div class="subtitle">' +
     'Empresa: <strong>' + empNome + '</strong> &nbsp;|&nbsp; ' +
     'Departamento: <strong>' + depNome + '</strong> &nbsp;|&nbsp; ' +
@@ -8053,7 +8053,7 @@ function gerarReciboUniforme() {
   var f = getDocFunc(); if (!f) return;
   var emps = DB.g('empresas');
   var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
-  var razao = (emp.razao || emp.nome || 'EQUILIBRYUM REAB CONSULT EM SAUDE S S LT').toUpperCase();
+  var razao = (emp.razao || emp.nome || 'Equilibryum').toUpperCase();
   var cnpj  = emp.cnpj || '05.441.897/000-1/02';
   var hoje  = new Date().toLocaleDateString('pt-BR');
   var valAte = new Date(); valAte.setDate(valAte.getDate()+30);
@@ -8203,7 +8203,7 @@ function gerarReciboEquipamentos() {
     'abaixo discriminado(s) em perfeito estado de conservação e funcionamento, me comprometendo a mantê-lo(s) '+
     'nestas mesmas características, ficando ciente que:</p>' +
     '<p>I – Assumo <strong>TOTAL</strong> responsabilidade civil, criminal, administrativo e ambiental pelo uso e direção do respectivo equipamento, '+
-    'havendo eventuais avarias e/ou despesas com multas e acidentes, estas serão ressarcidas à <strong>EQUILIBRYUM</strong>, '+
+    'havendo eventuais avarias e/ou despesas com multas e acidentes, estas serão ressarcidas à <strong>Equilibryum</strong>, '+
     'incluindo taxas administrativas e honorários advocatícios, salvo se culpa exclusiva de terceiros, '+
     'autorizando desde já, os respectivos descontos em folha de pagamento ou rescisão contratual.</p>' +
     '<p><strong>Relação de equipamentos:</strong></p>' +
@@ -11422,7 +11422,7 @@ function gerarRequisicaoUniforme() {
   var valFmt  = val  ? val.split('-').reverse().join('/')  : '';
 
   var cnpjStr = emp ? (emp.cnpj||'05.441.897/0001-02') : '05.441.897/0001-02';
-  var razaoStr = emp ? emp.razao : 'EQUILIBRYUM REAB CONSULT EM SAUDE S S LT';
+  var razaoStr = emp ? emp.razao : 'Equilibryum';
 
   var tamanhosStr = '';
   if (f.tamCamisa)  tamanhosStr += 'Camisa: '+f.tamCamisa+'  ';
@@ -11463,7 +11463,7 @@ function gerarRequisicaoUniforme() {
     '</style></head><body>' +
 
     '<div class="topRow">' +
-      '<div class="logoBox">' + (LOGO_EMP_B64 ? '<img src="'+LOGO_EMP_B64+'">' : '<strong>EQUILIBRYUM</strong>') + '</div>' +
+      '<div class="logoBox">' + (LOGO_EMP_B64 ? '<img src="'+LOGO_EMP_B64+'">' : '<strong>Equilibryum</strong>') + '</div>' +
       '<div class="infoBox">' +
         '<div class="infoRow"><div class="infoLabel">RAZÃO SOCIAL</div><div class="infoVal">' + razaoStr + '</div></div>' +
         '<div class="infoRow"><div class="infoLabel">CNPJ</div><div class="infoVal">' + cnpjStr + '</div></div>' +
@@ -11953,7 +11953,7 @@ function gerarFormExp() {
 
   var logoHtml = LOGO_EMP_B64
     ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:50px;max-width:160px;object-fit:contain;">'
-    : '<strong>EQUILIBRYUM</strong>';
+    : '<strong>Equilibryum</strong>';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
     '<title>Avaliação de Experiência – ' + f.n + '</title>' +
@@ -12302,7 +12302,7 @@ function gerarTemplatePJ() {
 
   var logoHtml = (typeof LOGO_EMP_B64 !== 'undefined' && LOGO_EMP_B64)
     ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:52px;max-width:170px;object-fit:contain;display:block;margin:0 auto 10px;">'
-    : '<div style="font-size:15pt;font-weight:700;color:#1a5c3a;margin-bottom:10px;">EQUILIBRYUM</div>';
+    : '<div style="font-size:15pt;font-weight:700;color:#1a5c3a;margin-bottom:10px;">Equilibryum</div>';
 
   var titulo    = temNas ? '&#127874; Aniversariantes PJ' : '&#128188; Prestadores de Servico PJ';
   var subtitulo = temNas
@@ -12466,10 +12466,10 @@ function _gerarListaPresencaObj(t) {
 
   var logoHtml = LOGO_EMP_B64
     ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:55px;max-width:180px;object-fit:contain;">'
-    : '<div style="font-size:14pt;font-weight:700;color:#1a5c3a;">EQUILIBRYUM</div>';
+    : '<div style="font-size:14pt;font-weight:700;color:#1a5c3a;">Equilibryum</div>';
 
   var emps   = DB.g('empresas');
-  var empNome = emps.length ? emps[0].razao || emps[0].nome || 'EQUILIBRYUM' : 'EQUILIBRYUM';
+  var empNome = emps.length ? emps[0].razao || emps[0].nome || 'Equilibryum' : 'Equilibryum';
   var empCnpj = emps.length ? emps[0].cnpj || '' : '';
 
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
@@ -12766,7 +12766,7 @@ function gerarMsgWhatsAppCron(id) {
 function _abrirMsgWhatsApp(c) {
   var dataFmt = c.data ? c.data.split('-').reverse().join('/') : '';
   var emps    = DB.g('empresas');
-  var empNome = emps.length ? (emps[0].razao||emps[0].nome||'EQUILIBRYUM') : 'EQUILIBRYUM';
+  var empNome = emps.length ? (emps[0].razao||emps[0].nome||'Equilibryum') : 'Equilibryum';
   var linhas  = [];
   linhas.push('🔔 *CONVOCAÇÃO DE TREINAMENTO*');
   linhas.push('🏥 *' + empNome + '*');
@@ -12822,7 +12822,7 @@ function gerarCracha(fid) {
 
   var logoHtml = LOGO_EMP_B64
     ? '<img src="' + LOGO_EMP_B64 + '" style="max-height:32px;max-width:120px;object-fit:contain;display:block;margin:0 auto;">'
-    : '<div style="font-size:8pt;font-weight:700;color:#2d6a4f;letter-spacing:.5px;text-align:center;">EQUILIBRYUM</div>';
+    : '<div style="font-size:8pt;font-weight:700;color:#2d6a4f;letter-spacing:.5px;text-align:center;">Equilibryum</div>';
 
   // Foto: retangular com cantos levemente arredondados, igual ao modelo
   var fotoHtml = foto
@@ -13679,7 +13679,7 @@ function gerarTermoAditivo() {
   var f = getDocFunc(); if (!f) return;
   var emps = DB.g('empresas');
   var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
-  var razao  = (emp.razao || emp.nome || 'EQUILIBRYUM - REABILITACAO E CONSULTORIA EM SAUDE LTDA').toUpperCase();
+  var razao  = (emp.razao || emp.nome || 'Equilibryum Reabilitação e Consultoria em Saúde').toUpperCase();
   var cnpj   = emp.cnpj  || '';
   var endEmp = emp.end   || '';
   var admFmt = f.adm ? f.adm.split('-').reverse().join('/') : '__/__/____';
@@ -13894,7 +13894,7 @@ function gerarCartaReferencia() {
   var f = getDocFunc(); if (!f) return;
   var emps = DB.g('empresas');
   var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
-  var razao = (emp.razao || emp.nome || 'EQUILIBRYUM').toUpperCase();
+  var razao = (emp.razao || emp.nome || 'Equilibryum').toUpperCase();
   var cnpj  = emp.cnpj || '';
   function fmtExt(d) {
     if (!d) return '';
@@ -13941,7 +13941,7 @@ function gerarCertificado() {
   var f = getDocFunc(); if (!f) return;
   var emps = DB.g('empresas');
   var emp  = emps.find(function(e){ return e.id === f.emp; }) || emps[0] || {};
-  var razao = emp.razao || emp.nome || 'EQUILIBRYUM';
+  var razao = emp.razao || emp.nome || 'Equilibryum';
 
   function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
   var treinamento = gv('cert-treinamento') || 'Treinamento';
