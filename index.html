@@ -7325,7 +7325,9 @@ async function subirArquivoCamp(btn) {
   inp.click();
 }
 
-async function savCamp(){
+function savCamp() { savCampAsync().catch(function(e){ console.error('savCamp erro:', e); }); }
+
+async function savCampAsync(){
   var titulo=document.getElementById('ca-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
   var list=DB.g('campanhas');var files=[];
   if(driveReady&&driveToken&&rhFolderId&&campFiles.length>0){
@@ -7345,9 +7347,10 @@ async function savCamp(){
   campFiles=[];
   // Upload fotos
   var pasta = 'Campanhas/Fotos/' + titulo.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,30);
-  var photos = await uploadPhotos(_campPhotos, pasta);
-  if (!photos.length && _campPhotos.length) {
-    photos = _campPhotos.map(function(p){ return {name:p.name, dataURL:p.dataURL}; });
+  var _safePhotos = _campPhotos || [];
+  var photos = await uploadPhotos(_safePhotos, pasta);
+  if (!photos.length && _safePhotos.length) {
+    photos = _safePhotos.map(function(p){ return {name:p.name, dataURL:p.dataURL}; });
   }
   _campPhotos = [];
   document.getElementById('ca-photos-preview').innerHTML = '';
