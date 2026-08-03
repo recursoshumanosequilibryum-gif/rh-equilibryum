@@ -7288,10 +7288,59 @@ async function delTrein(id){if(!confirm('Excluir treinamento?'))return;DB.s('tre
 // ============================================================
 var campFiles=[], editingCampId=null;
 function handleCampFile(inp){campFiles=Array.from(inp.files);var el=document.getElementById('ca-file-list');el.innerHTML=campFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
+async 
+async function subirArquivoCamp(btn) {
+  var cid = btn.getAttribute('data-cid');
+  var fi  = parseInt(btn.getAttribute('data-fi'));
+  if (!driveReady || !driveToken || !rhFolderId) { toast('Conecte o Drive primeiro.', 'warn'); return; }
+  var list = DB.g('campanhas');
+  var camp = list.find(function(x){ return x.id === cid; });
+  if (!camp || !camp.files || !camp.files[fi]) return;
+  var rec  = camp.files[fi];
+  var inp  = document.createElement('input'); inp.type = 'file';
+  inp.onchange = async function() {
+    var file = inp.files[0]; if (!file) return;
+    toast('Enviando para o Drive...');
+    try {
+      var form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify({ name: file.name, parents: [rhFolderId] })], { type: 'application/json' }));
+      form.append('file', file);
+      var r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+        { method: 'POST', headers: { 'Authorization': 'Bearer ' + driveToken }, body: form });
+      if (!r.ok) throw new Error('Upload falhou: ' + r.status);
+      var up = await r.json();
+      var l2 = DB.g('campanhas');
+      var ci2 = l2.findIndex(function(x){ return x.id === cid; });
+      if (ci2 >= 0 && l2[ci2].files && l2[ci2].files[fi]) {
+        l2[ci2].files[fi].id  = up.id;
+        l2[ci2].files[fi].url = up.webViewLink;
+        l2[ci2].files[fi].name = file.name;
+      }
+      DB.s('campanhas', l2);
+      await driveSync('campanhas');
+      rdCamp();
+      toast('Arquivo salvo no Drive!');
+    } catch(e) { toast('Erro ao enviar. Tente novamente.', 'warn'); }
+  };
+  inp.click();
+}
+
 async function savCamp(){
   var titulo=document.getElementById('ca-titulo').value.trim();if(!titulo){alert('Título obrigatório.');return;}
   var list=DB.g('campanhas');var files=[];
-  if(driveReady&&campFiles.length>0){for(var file of campFiles){try{var up=await uploadFileToDrive(file,'Campanhas');files.push({name:file.name,id:up.id,url:up.webViewLink});}catch(e){files.push({name:file.name});}}}
+  if(driveReady&&driveToken&&rhFolderId&&campFiles.length>0){
+    for(var ci=0;ci<campFiles.length;ci++){
+      var cfile=campFiles[ci];
+      try{
+        var cform=new FormData();
+        cform.append('metadata',new Blob([JSON.stringify({name:cfile.name,parents:[rhFolderId]})],{type:'application/json'}));
+        cform.append('file',cfile);
+        var _cr=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{method:'POST',headers:{'Authorization':'Bearer '+driveToken},body:cform});
+        if(_cr.ok){var _cup=await _cr.json();files.push({name:cfile.name,id:_cup.id,url:_cup.webViewLink});}
+        else{files.push({name:cfile.name});}
+      }catch(e){files.push({name:cfile.name});}
+    }
+  }
   else{files=campFiles.map(function(f){return {name:f.name};});}
   campFiles=[];
   // Upload fotos
@@ -7325,7 +7374,10 @@ function rdCamp(){
   var list=DB.g('campanhas');var el=document.getElementById('camp-list');
   if(!list.length){el.innerHTML='<div class="alert alert-info">&#128200; Nenhuma campanha cadastrada.</div>';return;}
   el.innerHTML=list.map(function(c){
-    var filesHtml=(c.files||[]).map(function(f){return f.url?'<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>':'<span class="btn btn-outline btn-sm">&#128206; '+f.name+'</span>';}).join('');
+    var filesHtml=(c.files||[]).map(function(f,fi){
+      if(f.url) return '<a href="'+f.url+'" target="_blank" class="btn btn-outline btn-sm">&#128206; '+f.name+'</a>';
+      return '<button onclick="subirArquivoCamp(this)" data-cid="'+c.id+'" data-fi="'+fi+'" class="btn btn-outline btn-sm" style="background:#fff3e0;border-color:#ffb74d;color:#e65100;">&#128228; '+f.name+'</button>';
+    }).join('');
     return '<div class="camp-card '+(c.cor||'green')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;"><div><div class="cc-title">'+c.titulo+(c.tipoCamp==='fixa'?' <span style="font-size:10px;background:#e3f2fd;color:#1565c0;border-radius:10px;padding:2px 8px;">🔁 Fixa</span>':' <span style="font-size:10px;background:#fff8e1;color:#f57f17;border-radius:10px;padding:2px 8px;">📅 Pontual</span>')+'</div><div class="cc-meta">&#128197; '+(c.ini?fd(c.ini):'—')+' até '+(c.fim?fd(c.fim):'—')+' | &#128100; '+(c.resp||'—')+'</div>'+(c.desc?'<p style="font-size:13px;color:var(--gray-600);margin-top:6px">'+c.desc+'</p>':'')+'</div>'+
       '<div style="display:flex;gap:6px;"><button class="btn-icon" data-cid="'+c.id+'" onclick="editCamp(this.dataset.cid)">&#9999;&#65039;</button><button class="btn-icon danger" data-cid="'+c.id+'" onclick="delCamp(this.dataset.cid)">&#128465;</button></div></div>'+
       (filesHtml?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+filesHtml+'</div>':'')+
