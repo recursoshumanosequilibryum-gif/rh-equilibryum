@@ -12582,6 +12582,42 @@ function uploadMaterial(inp) {
   toast('✅ ' + files.length + ' material(is) adicionado(s)!');
 }
 
+function subirMaterialDrive(mid) {
+  if (!driveReady) { toast('Conecte o Drive primeiro.', 'warn'); return; }
+  var list = DB.g('mat-trein');
+  var rec  = list.find(function(x){ return x.id === mid; });
+  if (!rec) { toast('Material não encontrado.'); return; }
+
+  // Create file input to pick the file again
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.pdf,.ppt,.pptx,.doc,.docx,.xlsx,.xls,.mp4,.png,.jpg';
+  inp.onchange = function() {
+    var file = inp.files[0]; if (!file) return;
+    toast('📤 Enviando ' + rec.nome + ' para o Drive...');
+    uploadFileToDrive(file, 'Treinamentos/Materiais').then(function(up){
+      var l2  = DB.g('mat-trein');
+      var idx = l2.findIndex(function(x){ return x.id === mid; });
+      if (idx >= 0) {
+        l2[idx].driveId  = up.id;
+        l2[idx].driveUrl = up.webViewLink;
+        l2[idx].arquivo  = file.name;
+        var ext = file.name.split('.').pop().toLowerCase();
+        var EXT_ICON = {pdf:'📄',ppt:'📊',pptx:'📊',doc:'📝',docx:'📝',xlsx:'📈',xls:'📈',mp4:'🎬',jpg:'🖼️',jpeg:'🖼️',png:'🖼️'};
+        l2[idx].icon = EXT_ICON[ext] || '📎';
+      }
+      DB.s('mat-trein', l2);
+      driveSync('mat-trein');
+      rdMateriais();
+      toast('✅ ' + rec.nome + ' salvo no Drive! ☁️');
+    }).catch(function(e){
+      toast('❌ Erro ao enviar: ' + (e.message||'tente novamente'), 'warn');
+    });
+  };
+  inp.click();
+}
+
+
 function rdMateriais() {
   var busca = (document.getElementById('mat-busca')||{value:''}).value.toLowerCase();
   var list  = DB.g('mat-trein').filter(function(m){
@@ -12612,7 +12648,9 @@ function rdMateriais() {
       : '';
     var btnVer = m.driveUrl
       ? '<button onclick="event.stopPropagation();window.open(\'' + m.driveUrl + '\',\'_blank\')" style="margin-top:4px;padding:5px 12px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">👁️ Visualizar</button>'
-      : '<span style="font-size:10px;color:#e65100;margin-top:4px;">⚠️ Conecte o Drive para visualizar</span>';
+      : (driveReady
+          ? '<button onclick="event.stopPropagation();subirMaterialDrive(\'' + m.id + '\')" style="margin-top:4px;padding:5px 12px;background:#e65100;color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📤 Subir para Drive</button>'
+          : '<span style="font-size:10px;color:#e65100;margin-top:4px;">⚠️ Conecte o Drive para visualizar</span>');
     var abreAttr = m.driveUrl ? 'title="Clique para abrir no Drive"' : '';
     return '<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;min-height:unset;align-items:center;" ' + abreAttr + '>' +
       '<div style="text-align:center;font-size:26px;">' + (m.icon||'📎') + '</div>' +
