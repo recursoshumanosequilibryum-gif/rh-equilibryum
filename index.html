@@ -12723,8 +12723,8 @@ function rdMateriais() {
       (m.arquivo && m.arquivo !== m.nome ? '<div style="font-size:10px;color:var(--gray-400);text-align:center;word-break:break-all;">' + m.arquivo + '</div>' : '') +
       '<div style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap;">' + revBadge + '</div>' +
       '<div style="font-size:10px;color:var(--gray-400);text-align:center;">📅 ' + dataFmt + (m.driveUrl ? ' ☁️' : ' 💾') + '</div>' +
+      btnVer +
       '<div style="display:flex;gap:4px;justify-content:center;margin-top:4px;">' +
-        (m.driveUrl ? '<a href="' + m.driveUrl + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:11px;" onclick="event.stopPropagation()">&#128065; Abrir</a>' : '') +
         '<button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();delMaterial(\'' + m.id + '\')">🗑️</button>' +
       '</div>' +
     '</div>';
