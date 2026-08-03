@@ -12554,18 +12554,11 @@ function uploadMaterial(inp) {
       driveId: '',
       driveUrl: ''
     };
-    if (driveReady) {
-      uploadFileToDrive(file, 'Treinamentos/Materiais').then(function(up){
-        rec.driveId  = up.id;
-        rec.driveUrl = up.webViewLink;
-        var l2 = DB.g('mat-trein');
-        var i  = l2.findIndex(function(x){ return x.id === rec.id; });
-        if (i >= 0) l2[i] = rec;
-        DB.s('mat-trein', l2);
-        driveSync('mat-trein');
-        rdMateriais();
-        toast('☁️ ' + rec.nome + ' salvo no Drive!');
-      }).catch(function(){ toast('⚠️ ' + rec.nome + ' salvo localmente.'); });
+    if (driveReady && driveToken && rhFolderId) {
+      uploadArquivoDriveMat(file, rec).catch(function(e){
+        console.warn('Upload material erro:', e);
+        toast('⚠️ ' + rec.nome + ' salvo localmente (verifique o Drive).');
+      });
     }
     list.push(rec);
   });
@@ -12583,6 +12576,38 @@ function uploadMaterial(inp) {
   toast('✅ ' + files.length + ' material(is) adicionado(s)!');
 }
 
+async function uploadArquivoDriveMat(file, rec) {
+  // Upload direto para a pasta RH (rhFolderId) sem subpasta
+  var form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({
+    name: file.name,
+    parents: [rhFolderId]
+  })], { type: 'application/json' }));
+  form.append('file', file);
+
+  var r = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+    { method: 'POST', headers: { 'Authorization': 'Bearer ' + driveToken }, body: form }
+  );
+  if (!r.ok) {
+    var err = await r.text();
+    throw new Error('Drive upload falhou: ' + err);
+  }
+  var up = await r.json();
+  var l2  = DB.g('mat-trein');
+  var idx = l2.findIndex(function(x){ return x.id === rec.id; });
+  if (idx >= 0) {
+    l2[idx].driveId  = up.id;
+    l2[idx].driveUrl = up.webViewLink;
+    l2[idx].arquivo  = file.name;
+  }
+  DB.s('mat-trein', l2);
+  await driveSync('mat-trein');
+  rdMateriais();
+  toast('☁️ ' + rec.nome + ' salvo no Drive!');
+}
+
+
 function subirMaterialDrive(mid) {
   if (!driveReady) { toast('Conecte o Drive primeiro.', 'warn'); return; }
   var list = DB.g('mat-trein');
@@ -12596,22 +12621,11 @@ function subirMaterialDrive(mid) {
   inp.onchange = function() {
     var file = inp.files[0]; if (!file) return;
     toast('📤 Enviando ' + rec.nome + ' para o Drive...');
-    uploadFileToDrive(file, 'Treinamentos/Materiais').then(function(up){
-      var l2  = DB.g('mat-trein');
-      var idx = l2.findIndex(function(x){ return x.id === mid; });
-      if (idx >= 0) {
-        l2[idx].driveId  = up.id;
-        l2[idx].driveUrl = up.webViewLink;
-        l2[idx].arquivo  = file.name;
-        var ext = file.name.split('.').pop().toLowerCase();
-        var EXT_ICON = {pdf:'📄',ppt:'📊',pptx:'📊',doc:'📝',docx:'📝',xlsx:'📈',xls:'📈',mp4:'🎬',jpg:'🖼️',jpeg:'🖼️',png:'🖼️'};
-        l2[idx].icon = EXT_ICON[ext] || '📎';
-      }
-      DB.s('mat-trein', l2);
-      driveSync('mat-trein');
-      rdMateriais();
+    rec.id = mid; // ensure id is set
+    uploadArquivoDriveMat(file, rec).then(function(){
       toast('✅ ' + rec.nome + ' salvo no Drive! ☁️');
     }).catch(function(e){
+      console.warn('subirMaterial erro:', e);
       toast('❌ Erro ao enviar: ' + (e.message||'tente novamente'), 'warn');
     });
   };
@@ -12649,9 +12663,7 @@ function rdMateriais() {
       : '';
     var btnVer = m.driveUrl
       ? '<button onclick="event.stopPropagation();window.open(\'' + m.driveUrl + '\',\'_blank\')" style="margin-top:4px;padding:5px 12px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">👁️ Visualizar</button>'
-      : (driveReady
-          ? '<button onclick="event.stopPropagation();subirMaterialDrive(\'' + m.id + '\')" style="margin-top:4px;padding:5px 12px;background:#e65100;color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📤 Subir para Drive</button>'
-          : '<span style="font-size:10px;color:#e65100;margin-top:4px;">⚠️ Conecte o Drive para visualizar</span>');
+      : '<button onclick="event.stopPropagation();subirMaterialDrive(\'' + m.id + '\')" style="margin-top:4px;padding:5px 12px;background:#e65100;color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📤 Subir para Drive</button>';
     var abreAttr = m.driveUrl ? 'title="Clique para abrir no Drive"' : '';
     return '<div class="card" style="padding:14px;display:flex;flex-direction:column;gap:6px;min-height:unset;align-items:center;" ' + abreAttr + '>' +
       '<div style="text-align:center;font-size:26px;">' + (m.icon||'📎') + '</div>' +
