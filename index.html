@@ -3587,7 +3587,7 @@ const DB = {
 // ── Auto-sync: debounce 2s, then save changed keys to Drive ──
 var _autoSyncTimer = null;
 var _pendingSyncKeys = new Set();
-const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devoluções'];
+const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devoluções','mat-trein'];
 function scheduleAutoSync(k) {
   if (!driveReady || !rhFolderId) return;
   if (DRIVE_KEYS.includes(k)) _pendingSyncKeys.add(k);
@@ -3986,7 +3986,7 @@ async function loadDriveJSON(filename) {
 }
 
 async function syncFromDrive() {
-  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras'];
+  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','mat-trein'];
   let synced = 0;
   for (const k of keys) {
     try {
@@ -4005,6 +4005,7 @@ async function syncFromDrive() {
   initRelFilters();
   rdRel();
   rdBenef();
+  rdMateriais();
   // Reload current visible section
   const active = document.querySelector('.section-page.active');
   if (active) {
