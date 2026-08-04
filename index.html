@@ -7909,13 +7909,13 @@ function abrirEImprimirDoc(docHTML, filename, f) {
   try { sigMon = localStorage.getItem('eq_monica_assinatura'); } catch(e){}
   try { sigBru = localStorage.getItem('eq_bruno_assinatura');  } catch(e){}
 
-  // If BOTH already saved → generate directly, no need to open modal
-  if (sigMon && sigBru) {
-    _abrirDocFinal(docHTML, filename, f, sigMon, sigBru);
+  // Se pelo menos Monica assinou → gerar direto sem abrir modal
+  if (sigMon) {
+    _abrirDocFinal(docHTML, filename, f, sigMon, sigBru || '');
     return;
   }
 
-  // Otherwise open modal so user can sign the missing ones
+  // Sem nenhuma assinatura → abrir modal para assinar
   document.getElementById('sig-doc-name').textContent  = filename.replace(/_/g,' ');
   document.getElementById('sig-func-name').textContent = f ? f.n : '—';
   document.getElementById('sig-data-hoje').textContent = fd(td());
