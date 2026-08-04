@@ -7324,7 +7324,6 @@ async function delTrein(id){if(!confirm('Excluir treinamento?'))return;DB.s('tre
 // ============================================================
 var campFiles=[], editingCampId=null;
 function handleCampFile(inp){campFiles=Array.from(inp.files);var el=document.getElementById('ca-file-list');el.innerHTML=campFiles.map(function(f){return '<div class="doc-item"><span>&#128206; '+f.name+'</span></div>';}).join('');}
-async 
 async function subirArquivoCamp(btn) {
   var cid = btn.getAttribute('data-cid');
   var fi  = parseInt(btn.getAttribute('data-fi'));
