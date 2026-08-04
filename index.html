@@ -13393,7 +13393,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Token ainda válido — conectar automaticamente
     driveToken = savedToken;
     driveReady = true;
-    document.getElementById('token-wizard').style.display = 'none';
+    // Esconder TODAS as telas de login
+    ['token-wizard','setup-wizard'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    var ov = document.getElementById('sync-overlay');
+    if (ov) ov.classList.remove('open');
     document.getElementById('drive-bar').style.display = 'flex';
     updDriveStatus(true, 'Drive compartilhado');
     document.getElementById('user-avatar').textContent = 'U';
