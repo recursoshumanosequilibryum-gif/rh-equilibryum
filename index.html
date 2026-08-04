@@ -612,6 +612,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       <span class="card-title">👥 Funcionários</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="openModal(&#39;modal-func&#39;)">+ Novo Funcionário</button>
+        <button class="btn btn-primary btn-sm" style="background:#1565c0;" onclick="importarAdmissao()">📥 Importar Admissão</button>
       </div>
     </div>
 
@@ -2018,6 +2019,40 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
   </div>
 </div>
 
+
+<!-- MODAL IMPORTAR ADMISSAO -->
+<div class="modal-bg" id="modal-importar-adm">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title">📥 Importar do Formulário de Admissão</span>
+      <button class="modal-close" onclick="closeModal('modal-importar-adm')">&#215;</button>
+    </div>
+    <div style="padding:16px 20px;">
+      <div id="adm-loading" style="text-align:center;padding:24px;color:var(--gray-500);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>
+        Carregando respostas do formulário...
+      </div>
+      <div id="adm-lista" style="display:none;">
+        <div style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">
+          Selecione o candidato para importar os dados automaticamente para o cadastro:
+        </div>
+        <div id="adm-rows" style="display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;"></div>
+      </div>
+      <div id="adm-empty" style="display:none;text-align:center;padding:32px;color:var(--gray-400);">
+        <div style="font-size:32px;margin-bottom:8px;">📋</div>
+        <div>Nenhuma resposta encontrada na planilha.</div>
+        <div style="font-size:12px;margin-top:6px;">Verifique se a planilha está compartilhada publicamente.</div>
+      </div>
+      <div id="adm-erro" style="display:none;text-align:center;padding:24px;color:#c62828;">
+        <div style="font-size:13px;" id="adm-erro-msg"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-importar-adm')">Fechar</button>
+      <button class="btn btn-primary btn-sm" onclick="importarAdmissao(true)">🔄 Recarregar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL FLASH EMPRESAS -->
 <div class="modal-bg" id="modal-flash-empresas">
@@ -13357,6 +13392,175 @@ function initSidebarState() {
 // ============================================================
 // STARTUP — runs when page loads
 // ============================================================
+// ============================================================
+// IMPORTAR DO FORMULÁRIO DE ADMISSÃO
+// ============================================================
+var _ADM_SHEET_ID = '1Qkdy9PZI42zNuxFoB_U75wI7PRHV55jwRdBynV2epYE';
+var _ADM_GID      = '1174063845';
+
+async function importarAdmissao(reload) {
+  openModal('modal-importar-adm');
+  var loading = document.getElementById('adm-loading');
+  var lista   = document.getElementById('adm-lista');
+  var empty   = document.getElementById('adm-empty');
+  var erro    = document.getElementById('adm-erro');
+  var rows    = document.getElementById('adm-rows');
+
+  loading.style.display = 'block';
+  lista.style.display   = 'none';
+  empty.style.display   = 'none';
+  erro.style.display    = 'none';
+
+  try {
+    // Fetch via Sheets API público (JSON export)
+    var url = 'https://docs.google.com/spreadsheets/d/' + _ADM_SHEET_ID +
+              '/gviz/tq?tqx=out:json&gid=' + _ADM_GID;
+    var r = await fetch(url);
+    if (!r.ok) throw new Error('Erro ao acessar a planilha (' + r.status + ')');
+    var txt = await r.text();
+    // Remove o wrapper google.visualization.Query.setResponse(...)
+    var json = JSON.parse(txt.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+    var cols = json.table.cols.map(function(c){ return c.label; });
+    var dataRows = json.table.rows || [];
+
+    loading.style.display = 'none';
+
+    if (!dataRows.length) { empty.style.display = 'block'; return; }
+
+    lista.style.display = 'block';
+    rows.innerHTML = '';
+
+    // Mostrar as últimas 50 respostas (mais recentes primeiro)
+    var recent = dataRows.slice(-50).reverse();
+    recent.forEach(function(row, ri) {
+      var cells = row.c || [];
+      function getCol(kw) {
+        var idx = cols.findIndex(function(c){ return c && c.toLowerCase().includes(kw.toLowerCase()); });
+        return idx >= 0 && cells[idx] && cells[idx].v != null ? String(cells[idx].v) : '';
+      }
+      var nome  = getCol('nome') || getCol('name') || 'Sem nome';
+      var cpf   = getCol('cpf')  || '';
+      var cargo = getCol('cargo') || getCol('função') || getCol('funcao') || '';
+      var data  = getCol('data') || getCol('timestamp') || '';
+
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;';
+      card.innerHTML =
+        '<div>' +
+          '<div style="font-weight:700;font-size:13px;">' + nome + '</div>' +
+          '<div style="font-size:11.5px;color:var(--gray-500);">' +
+            (cpf ? 'CPF: ' + cpf + ' &nbsp;|&nbsp; ' : '') +
+            (cargo ? cargo + ' &nbsp;|&nbsp; ' : '') +
+            (data ? data.substring(0,10) : '') +
+          '</div>' +
+        '</div>' +
+        '<button class="btn btn-primary btn-sm" style="white-space:nowrap;">📋 Importar</button>';
+
+      card.querySelector('button').onclick = (function(rowData, colsData) {
+        return function() { confirmarImportAdm(rowData, colsData); };
+      })(cells, cols);
+
+      rows.appendChild(card);
+    });
+
+  } catch(e) {
+    loading.style.display = 'none';
+    erro.style.display    = 'block';
+    document.getElementById('adm-erro-msg').textContent =
+      '❌ ' + (e.message || 'Erro ao carregar planilha') +
+      '. Verifique se a planilha está compartilhada publicamente (qualquer pessoa com o link pode ver).';
+  }
+}
+
+function confirmarImportAdm(cells, cols) {
+  function getCol(kw) {
+    var idx = cols.findIndex(function(c){ return c && c.toLowerCase().includes(kw.toLowerCase()); });
+    return idx >= 0 && cells[idx] && cells[idx].v != null ? String(cells[idx].v).trim() : '';
+  }
+
+  // Mapear colunas para campos do sistema
+  var nome    = getCol('nome completo') || getCol('nome') || '';
+  var cpf     = getCol('cpf')    || '';
+  var rg      = getCol('rg')     || '';
+  var nasc    = getCol('nascimento') || getCol('data de nasc') || '';
+  var cel     = getCol('celular') || getCol('telefone') || getCol('whatsapp') || '';
+  var email   = getCol('e-mail') || getCol('email') || '';
+  var cargo   = getCol('cargo')  || getCol('função') || getCol('funcao') || '';
+  var cep     = getCol('cep')    || '';
+  var end     = getCol('endereço') || getCol('endereco') || getCol('rua') || '';
+  var bairro  = getCol('bairro') || '';
+  var cidade  = getCol('cidade') || '';
+  var uf      = getCol('estado') || getCol('uf') || '';
+  var banco   = getCol('banco')  || '';
+  var agencia = getCol('agência') || getCol('agencia') || '';
+  var conta   = getCol('conta')  || '';
+  var mae     = getCol('mãe') || getCol('mae') || getCol('nome da mãe') || '';
+  var pai     = getCol('pai') || getCol('nome do pai') || '';
+  var estciv  = getCol('estado civil') || '';
+  var escola  = getCol('escolaridade') || '';
+  var pis     = getCol('pis') || '';
+
+  // Formatar data de nascimento
+  if (nasc) {
+    try {
+      var d = new Date(nasc);
+      if (!isNaN(d)) nasc = d.toISOString().slice(0,10);
+    } catch(e) {}
+  }
+
+  // Abrir modal de novo funcionário e pré-preencher
+  closeModal('modal-importar-adm');
+  openModal('modal-func');
+
+  setTimeout(function() {
+    function fill(id, val) {
+      var el = document.getElementById(id);
+      if (el && val) el.value = val;
+    }
+    fill('fn',    nome);
+    fill('fcpf',  cpf.replace(/\D/g,'').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'));
+    fill('frg',   rg);
+    fill('fnasc', nasc);
+    fill('ftel',  cel.replace(/\D/g,''));
+    fill('femail',email);
+    fill('fcar',  cargo);
+    fill('fcep',  cep.replace(/\D/g,''));
+    fill('fend',  end);
+    fill('fbairro', bairro);
+    fill('fcidade', cidade);
+    fill('fuf',   uf);
+    fill('fbanco',  banco);
+    fill('fag',   agencia);
+    fill('fcc',   conta);
+    fill('fmae',  mae);
+    fill('fpai',  pai);
+    fill('fpis',  pis);
+
+    // Estado civil
+    if (estciv) {
+      var selEc = document.getElementById('festciv');
+      if (selEc) {
+        Array.from(selEc.options).forEach(function(o){
+          if (o.text.toLowerCase().includes(estciv.toLowerCase())) selEc.value = o.value;
+        });
+      }
+    }
+
+    // Escolaridade
+    if (escola) {
+      var selEs = document.getElementById('fesc');
+      if (selEs) {
+        Array.from(selEs.options).forEach(function(o){
+          if (o.text.toLowerCase().includes(escola.toLowerCase())) selEs.value = o.value;
+        });
+      }
+    }
+
+    toast('✅ Dados importados! Revise e complete o cadastro antes de salvar.');
+  }, 400);
+}
+
+
 function init() {
   // Fechar todas as telas de login
   var overlay = document.getElementById('sync-overlay');
