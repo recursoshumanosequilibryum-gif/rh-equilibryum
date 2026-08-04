@@ -13357,6 +13357,26 @@ function initSidebarState() {
 // ============================================================
 // STARTUP — runs when page loads
 // ============================================================
+function init() {
+  // Fechar todas as telas de login
+  var overlay = document.getElementById('sync-overlay');
+  if (overlay) overlay.classList.remove('open');
+  var wizard = document.getElementById('setup-wizard');
+  if (wizard) wizard.style.display = 'none';
+  var tokWiz = document.getElementById('token-wizard');
+  if (tokWiz) tokWiz.style.display = 'none';
+  var bar = document.getElementById('drive-bar');
+  if (bar) bar.style.display = 'flex';
+
+  // Inicializar UI
+  updDash();
+  rdFunc();
+  rdBenef();
+  rdRel();
+  rdUni();
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
   // Restore CLIENT_ID from storage
   var saved = localStorage.getItem('eq_client_id');
