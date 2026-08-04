@@ -13571,6 +13571,12 @@ function init() {
   var bar = document.getElementById('drive-bar');
   if (bar) bar.style.display = 'flex';
 
+  // Iniciar polling se ainda não estiver rodando
+  if (!window._pollInterval && driveReady) {
+    _lastPollHash = '';
+    window._pollInterval = setInterval(pollDriveChanges, 20000);
+  }
+
   // Inicializar UI
   updDash();
   rdFunc();
