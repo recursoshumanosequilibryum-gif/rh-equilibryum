@@ -8099,12 +8099,16 @@ async function _abrirDocFinal(docHTML, filename, f, sigMonica, sigBruno) {
   // Place signature block before </body>
   finalHTML = finalHTML.replace('</body>', compSig + '</body>');
 
-  var win = window.open('', '_blank', 'width=960,height=750');
-  if (win) {
-    win.document.write(finalHTML);
-    win.document.close();
-    setTimeout(function(){ win.focus(); win.print(); }, 700);
-  }
+  // Abrir documento via blob URL (evita bloqueio de popup)
+  var blob = new Blob([finalHTML], { type: 'text/html;charset=utf-8' });
+  var blobUrl = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = blobUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 3000);
 
   if (driveReady && f) {
     try {
@@ -10799,13 +10803,28 @@ function showSyncOverlay() {
   document.getElementById('sync-done').style.display = 'none';
 
   if (CLIENT_ID) {
-    // CID known — show connect button immediately, no waiting
+    // CID known — show connect button immediately
     document.getElementById('sync-msg').textContent = 'Clique para entrar com sua conta Google.';
     document.getElementById('sync-actions').style.display = 'flex';
   } else {
-    // First time — show setup wizard
-    overlay.classList.remove('open');
-    document.getElementById('setup-wizard').style.display = 'flex';
+    // Sem CLIENT_ID — verificar se tem token compartilhado salvo
+    var tkSaved = localStorage.getItem('eq_drive_token');
+    if (tkSaved && !tkSaved.startsWith('ya29.')) {
+      // Token compartilhado salvo — reconectar automaticamente
+      overlay.classList.remove('open');
+      driveToken = tkSaved;
+      driveReady = true;
+      document.getElementById('token-wizard').style.display = 'none';
+      document.getElementById('drive-bar').style.display = 'flex';
+      updDriveStatus(true, 'Drive compartilhado');
+      document.getElementById('user-avatar').textContent = 'U';
+      localStorage.setItem('eq_drive_token_time', Date.now().toString());
+      syncFromDrive().then(function(){ init(); }).catch(function(){ init(); });
+    } else {
+      // Primeira vez — mostrar wizard de configuração
+      overlay.classList.remove('open');
+      document.getElementById('setup-wizard').style.display = 'flex';
+    }
   }
 }
 
@@ -13604,7 +13623,9 @@ document.addEventListener('DOMContentLoaded', function() {
   var savedTime  = parseInt(localStorage.getItem('eq_drive_token_time')||'0');
   var elapsed    = Date.now() - savedTime;
 
-  if (savedToken && elapsed < 3400000) {
+  var isSharedToken = savedToken && !savedToken.startsWith('ya29.');
+  var maxAge = isSharedToken ? 82800000 : 3400000; // shared=23h, OAuth=56min
+  if (savedToken && elapsed < maxAge) {
     // Token ainda válido — conectar automaticamente
     driveToken = savedToken;
     driveReady = true;
