@@ -3761,12 +3761,10 @@ function connectWithToken() {
   document.getElementById('drive-bar').style.display = 'flex';
   updDriveStatus(true, 'Drive compartilhado');
   document.getElementById('user-avatar').textContent = 'U';
-  syncFromDrive().then(() => {
+  syncFromDrive().then(function() {
     init();
-    _lastPollHash = '';
-    if (!window._pollInterval) {
-      window._pollInterval = setInterval(pollDriveChanges, 20000); // poll every 20s
-    }
+  }).catch(function() {
+    init();
   });
 }
 
@@ -13572,9 +13570,11 @@ function init() {
   if (bar) bar.style.display = 'flex';
 
   // Iniciar polling se ainda não estiver rodando
-  if (!window._pollInterval && driveReady) {
+  if (!window._pollInterval) {
     _lastPollHash = '';
-    window._pollInterval = setInterval(pollDriveChanges, 20000);
+    window._pollInterval = setInterval(function() {
+      if (driveReady && rhFolderId) pollDriveChanges();
+    }, 20000);
   }
 
   // Inicializar UI
@@ -13614,10 +13614,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('user-avatar').textContent = 'U';
     syncFromDrive().then(function() {
       init();
-      _lastPollHash = '';
-      if (!window._pollInterval) {
-        window._pollInterval = setInterval(pollDriveChanges, 20000);
-      }
+    }).catch(function(){
+      init();
     });
   } else {
     // Sem token ou expirado — mostrar tela de login
