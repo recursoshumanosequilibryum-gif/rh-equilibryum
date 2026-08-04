@@ -13337,8 +13337,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
   initSidebarState();
 
-  // Always show sync overlay first
-  showSyncOverlay();
+  // Auto-reconectar com token salvo
+  var savedToken = localStorage.getItem('eq_drive_token');
+  var savedTime  = parseInt(localStorage.getItem('eq_drive_token_time')||'0');
+  var elapsed    = Date.now() - savedTime;
+
+  if (savedToken && elapsed < 3400000) {
+    // Token ainda válido — conectar automaticamente
+    driveToken = savedToken;
+    driveReady = true;
+    document.getElementById('token-wizard').style.display = 'none';
+    document.getElementById('drive-bar').style.display = 'flex';
+    updDriveStatus(true, 'Drive compartilhado');
+    document.getElementById('user-avatar').textContent = 'U';
+    syncFromDrive().then(function() {
+      init();
+      _lastPollHash = '';
+      if (!window._pollInterval) {
+        window._pollInterval = setInterval(pollDriveChanges, 20000);
+      }
+    });
+  } else {
+    // Sem token ou expirado — mostrar tela de login
+    showSyncOverlay();
+  }
 });
 
 // ── Treinamento: participants checkbox panel ──
