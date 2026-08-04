@@ -8609,6 +8609,21 @@ async function imprimirRelCampanhas() {
   // Helper: convert any image source to base64 dataURL
   async function toBase64(src) {
     if (!src) return '';
+    if (src.startsWith('data:')) return src;
+    // Convert Drive webViewLink to download URL
+    if (src.includes('drive.google.com/file/d/')) {
+      var m2 = src.match(/\/file\/d\/([^\/\?]+)/);
+      if (m2 && m2[1] && driveReady && driveToken) {
+        try {
+          var dr = await fetch('https://www.googleapis.com/drive/v3/files/' + m2[1] + '?alt=media',
+            { headers: { 'Authorization': 'Bearer ' + driveToken } });
+          if (dr.ok) {
+            var db = await dr.blob();
+            return await new Promise(function(res){ var rd=new FileReader(); rd.onload=function(e){res(e.target.result);}; rd.onerror=function(){res('');}; rd.readAsDataURL(db); });
+          }
+        } catch(e2) { return ''; }
+      }
+    }
     // Already a dataURL
     if (src.startsWith('data:')) return src;
     // Drive URL or external — fetch and convert
@@ -8892,9 +8907,20 @@ async function imprimirRelTreinamentos() {
     if(!src) return '';
     if(src.startsWith('data:')) return src;
     try{
-      var headers={};
-      if(driveReady&&driveToken&&src.includes('googleapis.com')) headers['Authorization']='Bearer '+driveToken;
-      var r=await fetch(src,{headers:headers});
+      var fetchUrl = src;
+      var headers = {};
+      // Drive webViewLink → convert to download URL via Drive API
+      if(src.includes('drive.google.com/file/d/')) {
+        var m = src.match(/\/file\/d\/([^\/\?]+)/);
+        if(m && m[1] && driveReady && driveToken) {
+          fetchUrl = 'https://www.googleapis.com/drive/v3/files/' + m[1] + '?alt=media';
+          headers['Authorization'] = 'Bearer ' + driveToken;
+        }
+      } else if(driveReady && driveToken && src.includes('googleapis.com')) {
+        headers['Authorization'] = 'Bearer ' + driveToken;
+      }
+      var r=await fetch(fetchUrl,{headers:headers});
+      if(!r.ok) return '';
       var blob=await r.blob();
       return await new Promise(function(resolve){
         var reader=new FileReader();
