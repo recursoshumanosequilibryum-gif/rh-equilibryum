@@ -13448,6 +13448,14 @@ async function importarAdmissao(reload) {
     var cols = json.table.cols.map(function(c){ return c.label; });
     var dataRows = json.table.rows || [];
 
+    // A planilha pode ter linhas "vazias fantasmas" no final (formatação antiga,
+    // sem resposta real). Filtramos essas antes de pegar as mais recentes,
+    // senão a busca pelas últimas 50 linhas pode não pegar nenhuma resposta real.
+    dataRows = dataRows.filter(function(row) {
+      var cells = row.c || [];
+      return cells.some(function(c) { return c && c.v != null && String(c.v).trim() !== ''; });
+    });
+
     loading.style.display = 'none';
 
     if (!dataRows.length) { empty.style.display = 'block'; return; }
@@ -13455,7 +13463,7 @@ async function importarAdmissao(reload) {
     lista.style.display = 'block';
     rows.innerHTML = '';
 
-    // Mostrar as últimas 50 respostas (mais recentes primeiro)
+    // Mostrar as últimas 50 respostas reais (mais recentes primeiro)
     var recent = dataRows.slice(-50).reverse();
     recent.forEach(function(row, ri) {
       var cells = row.c || [];
@@ -14391,15 +14399,16 @@ function gerarAdiantamento() {
   var razao = (emp.razao || emp.nome || 'EQUILIBRYUM').toUpperCase();
   var hoje  = new Date().toLocaleDateString('pt-BR');
 
+  var logoSrc = _LOGO_L1;
+  var logoHtml = '<img src="'+logoSrc+'" style="max-height:70px;max-width:250px;object-fit:contain;">';
+
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Solicitação de Adiantamento Salarial</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
       'body{font-family:Arial,sans-serif;font-size:11pt;color:#000;padding:2cm 2.5cm;}' +
-      '.logo-box{text-align:center;margin-bottom:30px;padding-bottom:14px;border-bottom:2px solid #1a5c3a;}' +
-      '.logo-img{max-height:60px;max-width:200px;object-fit:contain;}' +
-      '.logo-txt{font-size:16pt;font-weight:900;color:#1a5c3a;letter-spacing:1px;}' +
+      '.logo{margin-bottom:20px;}' +
       '.cod{font-size:8.5pt;color:#666;text-align:right;margin-bottom:2px;}' +
-      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:28px;color:#1a5c3a;}' +
+      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:24px;padding-bottom:8px;border-bottom:2px solid #000;}' +
       'p{font-size:11pt;line-height:1.8;text-align:justify;margin-bottom:16px;}' +
       '.campo{border-bottom:1px solid #000;display:inline-block;min-width:220px;text-align:center;font-weight:700;}' +
       '.spacer{margin-top:40px;}' +
@@ -14413,11 +14422,7 @@ function gerarAdiantamento() {
 
     '<div class="cod">Código: FOR015 &nbsp;|&nbsp; Data: ' + hoje + '</div>' +
 
-    '<div class="logo-box">' +
-      (typeof LOGO_EMP_B64 !== "undefined" && LOGO_EMP_B64
-        ? '<img src="' + LOGO_EMP_B64 + '" class="logo-img">'
-        : '<div class="logo-txt">EQUILIBRYUM</div>') +
-    '</div>' +
+    '<div class="logo">' + logoHtml + '</div>' +
 
     '<h1>Solicitação de Adiantamento Salarial</h1>' +
 
@@ -14456,15 +14461,16 @@ function gerarAuxilioCombustivel() {
   var dep   = deps.find(function(d){ return d.id === f.dep; });
   var unid  = dep ? (dep.nome || dep.n || '').toUpperCase() : razao;
 
+  var logoSrc = _LOGO_L1;
+  var logoHtml = '<img src="'+logoSrc+'" style="max-height:70px;max-width:250px;object-fit:contain;">';
+
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Solicitação de Auxílio Combustível</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
       'body{font-family:Arial,sans-serif;font-size:11pt;color:#000;padding:2cm 2.5cm;}' +
-      '.logo-box{text-align:center;margin-bottom:30px;padding-bottom:14px;border-bottom:2px solid #1a5c3a;}' +
-      '.logo-img{max-height:60px;max-width:200px;object-fit:contain;}' +
-      '.logo-txt{font-size:16pt;font-weight:900;color:#1a5c3a;letter-spacing:1px;}' +
+      '.logo{margin-bottom:20px;}' +
       '.cod{font-size:8.5pt;color:#666;text-align:right;margin-bottom:2px;}' +
-      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:28px;color:#1a5c3a;}' +
+      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:24px;padding-bottom:8px;border-bottom:2px solid #000;}' +
       'h2{font-size:11pt;font-weight:700;text-align:center;margin:24px 0 10px;text-decoration:underline;}' +
       'p{font-size:11pt;line-height:1.8;text-align:justify;margin-bottom:14px;}' +
       '.campo{border-bottom:1px solid #000;display:inline-block;min-width:200px;text-align:center;font-weight:700;}' +
@@ -14479,11 +14485,7 @@ function gerarAuxilioCombustivel() {
 
     '<div class="cod">Código: FOR016 &nbsp;|&nbsp; Data: ' + hoje + '</div>' +
 
-    '<div class="logo-box">' +
-      (typeof LOGO_EMP_B64 !== "undefined" && LOGO_EMP_B64
-        ? '<img src="' + LOGO_EMP_B64 + '" class="logo-img">'
-        : '<div class="logo-txt">EQUILIBRYUM</div>') +
-    '</div>' +
+    '<div class="logo">' + logoHtml + '</div>' +
 
     '<h1>Solicitação de Auxílio Combustível</h1>' +
 
