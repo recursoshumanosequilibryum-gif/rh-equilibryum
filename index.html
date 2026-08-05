@@ -3256,6 +3256,14 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
 
     <!-- ABA APROVADOS -->
     <div id="vt-aprov" style="display:none">
+      <div style="background:#f8f9fa;border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:12.5px;color:var(--gray-600);margin-bottom:8px;">🔗 Link do Formulário de Admissão (para enviar ao aprovado)</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" id="cfg-adm-link" placeholder="https://recursoshumanosequilibryum-gif.github.io/formulario-admissao/" style="flex:1;">
+          <button class="btn btn-outline btn-sm" onclick="salvarConfigAdmissao()">💾 Salvar</button>
+        </div>
+        <textarea id="cfg-adm-msg" rows="3" placeholder="Mensagem de aprovação (use {nome} e {link})" style="width:100%;font-size:12.5px;"></textarea>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <div style="font-size:13px;color:var(--gray-600);">Candidatos aprovados e data prevista de início.</div>
         <button class="btn btn-primary btn-sm" onclick="addAprovado()">+ Adicionar Aprovado</button>
@@ -10592,6 +10600,28 @@ function renderCandidatos() {
 }
 
 // ── Aprovados ──────────────────────────────────────────────────
+function getConfigAdmissao() {
+  var cfg = DB.go('cfg_admissao');
+  if (!cfg.msg) {
+    cfg.msg = 'Olá {nome}! 🎉 Parabéns, você foi aprovado(a)!\n\nPara darmos continuidade ao processo de admissão, por favor preencha a Ficha de Admissão no link abaixo:\n{link}\n\nQualquer dúvida, estamos à disposição!';
+  }
+  return cfg;
+}
+function salvarConfigAdmissao() {
+  var link = (document.getElementById('cfg-adm-link')||{}).value || '';
+  var msg  = (document.getElementById('cfg-adm-msg')||{}).value || '';
+  DB.so('cfg_admissao', { link: link, msg: msg });
+  toast('Link de admissão salvo!');
+}
+function enviarConviteAdmissao(nome, tel) {
+  var cfg = getConfigAdmissao();
+  if (!cfg.link) { toast('Cadastre o link do formulário de admissão antes de enviar.', 'warn'); return; }
+  var msg = cfg.msg.replace(/\{nome\}/g, nome || '').replace(/\{link\}/g, cfg.link);
+  var whanEl   = document.getElementById('whan');   if (whanEl)   whanEl.value = tel || '';
+  var whamsgEl = document.getElementById('whamsg'); if (whamsgEl) whamsgEl.value = msg;
+  openModal('modal-wha');
+}
+
 function addAprovado() {
   vagaAprovados.push({id:uid(),nome:'',tel:'',email:'',dtInicio:'',obs:''});
   renderAprovados();
@@ -10600,6 +10630,13 @@ function addAprovado() {
 function renderAprovados() {
   var el = document.getElementById('vg-aprov-list'); if(!el) return;
   el.innerHTML = '';
+
+  // Preenche a caixa de link/mensagem sem sobrescrever enquanto o usuário digita
+  var cfgAdm = getConfigAdmissao();
+  var linkEl = document.getElementById('cfg-adm-link');
+  if (linkEl && document.activeElement !== linkEl) linkEl.value = cfgAdm.link || '';
+  var msgCfgEl = document.getElementById('cfg-adm-msg');
+  if (msgCfgEl && document.activeElement !== msgCfgEl) msgCfgEl.value = cfgAdm.msg || '';
 
   // Section 1: Candidatos com "Aprovado na etapa"
   var aprovCands = vagaCandidatos.filter(function(c){ return c.st === 'Aprovado na etapa'; });
@@ -10622,8 +10659,12 @@ function renderAprovados() {
         (c.curriculo && c.curriculo.url ?
           '<a href="' + c.curriculo.url + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px;">📄 Currículo</a>' :
           (c.curriculo ? '<span style="font-size:12px;color:var(--gray-600);">📄 ' + c.curriculo.name + '</span>' : '')) +
+        '<button class="btn btn-whatsapp btn-sm btn-convite-adm" style="font-size:12px;">📲 Convite Admissão</button>' +
         '<span class="badge badge-green">Aprovado na etapa</span>';
       el.appendChild(row);
+      row.querySelector('.btn-convite-adm').onclick = (function(nome, tel){
+        return function(){ enviarConviteAdmissao(nome, tel); };
+      })(c.nome, c.tel);
     });
     var divider = document.createElement('div');
     divider.style.cssText = 'border-top:1px solid var(--gray-100);margin:16px 0 12px;';
@@ -10664,8 +10705,12 @@ function renderAprovados() {
         '<input type="date" value="'+(a.dtInicio||'')+'" oninput="vagaAprovados['+i+'].dtInicio=this.value" style="font-size:12px;padding:5px 8px;">'+
       '</div>'+
       '<input type="text" placeholder="Obs." value="'+(a.obs||'')+'" oninput="vagaAprovados['+i+'].obs=this.value">'+
+      '<button class="btn-icon btn-convite-adm" title="Enviar convite de admissão">📲</button>'+
       '<button class="btn-icon danger" onclick="vagaAprovados.splice('+i+',1);renderAprovados()">🗑️</button>';
     el.appendChild(row);
+    row.querySelector('.btn-convite-adm').onclick = (function(nome, tel){
+      return function(){ enviarConviteAdmissao(nome, tel); };
+    })(a.nome, a.tel);
   });
 }
 
