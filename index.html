@@ -8908,7 +8908,7 @@ function gerarReciboEPI() {
 // ── RECIBO UNIFORME ────────────────────────────────────────
 function gerarReciboUniforme() {
   var f = getDocFunc(); if (!f) return;
-  var logoSrc = (typeof _LOGO_L2 !== 'undefined' && _LOGO_L2) ? _LOGO_L2 : '';
+  var logoSrc = (typeof _LOGO_L1 !== 'undefined' && _LOGO_L1) ? _LOGO_L1 : '';
 
   var rows = '';
   for (var i = 0; i < 18; i++) {
@@ -12476,7 +12476,7 @@ function gerarRequisicaoUniforme() {
     '</style></head><body>' +
 
     '<div class="topRow">' +
-      '<div class="logoBox">' + (_LOGO_L2 ? '<img src="'+_LOGO_L2+'">' : '<strong>EQUILIBRYUM</strong>') + '</div>' +
+      '<div class="logoBox">' + (_LOGO_L1 ? '<img src="'+_LOGO_L1+'">' : '<strong>EQUILIBRYUM</strong>') + '</div>' +
       '<div class="infoBox">' +
         '<div class="infoRow"><div class="infoLabel">RAZÃO SOCIAL</div><div class="infoVal">' + razaoStr + '</div></div>' +
         '<div class="infoRow"><div class="infoLabel">CNPJ</div><div class="infoVal">' + cnpjStr + '</div></div>' +
@@ -15268,7 +15268,7 @@ function cabecalhoForm(codigo, titulo, autor) {
     '<div style="flex:1;padding:3px 6px;border-right:1px solid #000;"><strong>Setor:</strong> RH</div>' +
     '<div style="flex:1;padding:3px 6px;border-right:1px solid #000;"><strong>Autor:</strong> '+autor+'</div>' +
     '<div style="flex:1;padding:3px 6px;"><strong>Versão:</strong> 1.0</div></div></div>' +
-    '<div style="padding:6px 10px;border-left:1px solid #000;display:flex;align-items:center;"><img src="'+_LOGO_L2+'" style="max-height:50px;max-width:70px;object-fit:contain;"></div>' +
+    '<div style="padding:6px 10px;border-left:1px solid #000;display:flex;align-items:center;"><img src="'+_LOGO_L1+'" style="max-height:50px;max-width:70px;object-fit:contain;"></div>' +
     '</div></div>';
 }
 
