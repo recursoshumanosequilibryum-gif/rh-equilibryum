@@ -4271,9 +4271,11 @@ async function pollDriveChanges() {
         console.warn('[Sync] Token próximo de expirar, renovando silenciosamente...');
         silentReconnect();
       } else if (!CLIENT_ID) {
-        // Token compartilhado — apenas avisa
+        // Token compartilhado antigo, sem Client ID salvo — não é possível
+        // renovar sozinho. Mostra aviso bem visível (botão vermelho).
+        showReconnectButton();
         var el0 = document.getElementById('sync-timestamp');
-        if (el0) el0.textContent = '⚠️ Reconecte o Drive';
+        if (el0) el0.textContent = '⚠️ Peça um token novo ao admin';
       }
       return;
     }
@@ -4369,12 +4371,22 @@ function skipDrive() {
 
 // OUTROS USUÁRIOS: entrar com token compartilhado pelo admin
 function connectWithToken() {
-  const token = document.getElementById('token-inp').value.trim();
-  if (!token) { alert('Cole o token de acesso.'); return; }
+  const raw = document.getElementById('token-inp').value.trim();
+  if (!raw) { alert('Cole o token de acesso.'); return; }
+  // O token compartilhado pode vir no formato "token||clientId" (novo formato,
+  // permite que esta máquina renove sozinha quando o token expirar).
+  // Formatos antigos (só o token) continuam funcionando normalmente.
+  const parts = raw.split('||');
+  const token = parts[0].trim();
+  const cid = (parts[1] || '').trim();
   driveToken = token;
   driveReady = true;
   localStorage.setItem('eq_drive_token', token);
   localStorage.setItem('eq_drive_token_time', Date.now().toString());
+  if (cid) {
+    CLIENT_ID = cid;
+    localStorage.setItem('eq_client_id', cid);
+  }
   document.getElementById('token-wizard').style.display = 'none';
   document.getElementById('drive-bar').style.display = 'flex';
   updDriveStatus(true, 'Drive compartilhado');
@@ -4388,13 +4400,14 @@ function connectWithToken() {
 
 function copyToken() {
   const t = document.getElementById('wizard-token-txt').value;
-  navigator.clipboard.writeText(t).then(() => toast('Token copiado! ✅'));
+  navigator.clipboard.writeText(t + '||' + CLIENT_ID).then(() => toast('Token copiado! ✅'));
 }
 
 function shareTokenWha() {
   const t = document.getElementById('wizard-token-txt').value;
   const link = 'https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/';
-  const msg = 'Ola! Segue o token de acesso ao Sistema RH Equilibryum: ' + t + ' Link: ' + link + ' Cole o token quando o sistema pedir.';
+  const payload = t + '||' + CLIENT_ID;
+  const msg = 'Ola! Segue o token de acesso ao Sistema RH Equilibryum: ' + payload + ' Link: ' + link + ' Cole o token quando o sistema pedir.';
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
