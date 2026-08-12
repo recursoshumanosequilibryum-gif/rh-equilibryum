@@ -12331,6 +12331,8 @@ function gerarRequisicaoUniformeSimples() {
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
       'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#000;padding:2cm 2.5cm;}' +
+      '.logo{margin-bottom:20px;}' +
+      '.logo img{max-height:70px;max-width:250px;object-fit:contain;}' +
       '.data{font-weight:700;margin-bottom:18px;}' +
       '.titulo{font-weight:700;margin-bottom:22px;}' +
       '.campo{margin-bottom:14px;}' +
@@ -12349,6 +12351,9 @@ function gerarRequisicaoUniformeSimples() {
       '.carimbo img{max-width:260px;}' +
       '@media print{@page{size:A4;margin:0;}body{padding:1.8cm 2.2cm;}}' +
     '</style></head><body>' +
+
+    (typeof _LOGO_L1 !== 'undefined' && _LOGO_L1 ?
+      '<div class="logo"><img src="' + _LOGO_L1 + '"></div>' : '') +
 
     '<div class="data">' + dataFmt + '</div>' +
     '<div class="titulo">SOLICITO UNIFORME CONFORME ESPECIFICAÇÃO ABAIXO:</div>' +
@@ -12376,8 +12381,8 @@ function gerarRequisicaoUniformeSimples() {
       'Sexta: 08h00min às 16h00min' +
     '</div>' +
 
-    (typeof _LOGO_L2 !== 'undefined' && _LOGO_L2 ?
-      '<div class="carimbo"><img src="' + _LOGO_L2 + '"></div>' : '') +
+    (typeof _CARIMBO_REQ_MSS !== 'undefined' && _CARIMBO_REQ_MSS ?
+      '<div class="carimbo"><img src="data:image/png;base64,' + _CARIMBO_REQ_MSS + '"></div>' : '') +
 
     '</body></html>';
 
