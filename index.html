@@ -14960,9 +14960,9 @@ function gerarCartaINSS() {
 
 function abrirModalTermoAditivo() {
   var f = getDocFunc(); if (!f) return;
-  // Pre-fill folga date
+  // Campo de folga começa em branco — o usuário preenche manualmente
   var dtEl = document.getElementById('adt-folga');
-  if (dtEl && !dtEl.value) dtEl.value = new Date().toISOString().slice(0,10);
+  if (dtEl) dtEl.value = '';
   // Reset clausula 4
   var ck4 = document.getElementById('adt-tem-clausula4');
   if (ck4) { ck4.checked = false; }
@@ -14995,7 +14995,7 @@ function gerarTermoAditivo() {
   var intervExt  = gv('adt-intervalo-ext') || '__________';
   var sabEntrada = gv('adt-sab-entrada')   || '';
   var sabSaida   = gv('adt-sab-saida')     || '';
-  var folga      = gv('adt-folga')         || hoje;
+  var folga      = gv('adt-folga')         || '_____________________________';
   var ck4el      = document.getElementById('adt-tem-clausula4');
   var cl4Valor   = gv('adt-cl4-valor')   || '__________';
   var cl4Extenso = gv('adt-cl4-extenso') || '__________________________________________';
