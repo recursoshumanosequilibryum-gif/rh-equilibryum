@@ -4616,7 +4616,27 @@ async function flushAutoSync() {
   _pendingSyncKeys.clear();
   for (const k of keys) {
     const isObj = ['uni-est'].includes(k);
-    const data = isObj ? DB.go(k) : DB.g(k);
+    var data = isObj ? DB.go(k) : DB.g(k);
+
+    // Antes de sobrescrever o Drive, busca a versão mais recente de lá e
+    // mescla — assim, se outra máquina salvou algo novo nesse meio-tempo
+    // que ainda não chegou aqui, esse registro é preservado em vez de
+    // ser apagado pela gravação desta máquina.
+    if (!isObj && Array.isArray(data)) {
+      try {
+        var remoto = await loadDriveJSON('eq_' + k + '.json');
+        if (Array.isArray(remoto)) {
+          var idsLocais = {};
+          data.forEach(function(item){ if (item && item.id) idsLocais[item.id] = true; });
+          var faltando = remoto.filter(function(item){ return item && item.id && !idsLocais[item.id]; });
+          if (faltando.length) {
+            data = data.concat(faltando);
+            DB.s(k, data); // atualiza também a cópia local desta máquina
+          }
+        }
+      } catch(e) { console.warn('[Sync] Verificação antes de salvar falhou para', k, e); }
+    }
+
     await saveDriveJSON('eq_' + k + '.json', data);
   }
   const now = new Date().toLocaleTimeString('pt-BR');
