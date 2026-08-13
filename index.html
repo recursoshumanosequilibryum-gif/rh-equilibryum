@@ -14836,8 +14836,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }).catch(function(){
       init();
     });
+  } else if (savedToken && CLIENT_ID) {
+    // Token expirado, mas já conhecemos o Client ID desta máquina —
+    // tenta renovar sozinho, em silêncio (sem popup nem clique), antes
+    // de recorrer à tela de login manual.
+    document.getElementById('drive-bar').style.display = 'flex';
+    updDriveStatus(true, 'Reconectando…');
+    silentReconnect();
+    // Se em alguns segundos não conseguir reconectar sozinho, cai para
+    // a tela normal de login manual (comportamento antigo, preservado).
+    setTimeout(function() {
+      if (!driveReady) showSyncOverlay();
+    }, 4000);
   } else {
-    // Sem token ou expirado — mostrar tela de login
+    // Sem token ou sem Client ID — mostrar tela de login
     showSyncOverlay();
   }
 });
