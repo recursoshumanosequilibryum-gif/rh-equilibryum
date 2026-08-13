@@ -4604,14 +4604,16 @@ var _autoSyncTimer = null;
 var _pendingSyncKeys = new Set();
 const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','cronograma-trein'];
 function scheduleAutoSync(k) {
-  if (!driveReady || !rhFolderId) return;
+  if (!driveReady) return;
   var _k = k === 'devoluções' ? 'devolucoes' : k;
   if (DRIVE_KEYS.includes(_k)) _pendingSyncKeys.add(_k);
   clearTimeout(_autoSyncTimer);
   _autoSyncTimer = setTimeout(flushAutoSync, 2000);
 }
 async function flushAutoSync() {
-  if (!driveReady || !rhFolderId || !_pendingSyncKeys.size) return;
+  if (!driveReady || !_pendingSyncKeys.size) return;
+  if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
+  if (!rhFolderId) return; // sem pasta identificada, não é seguro gravar
   const keys = Array.from(_pendingSyncKeys);
   _pendingSyncKeys.clear();
   for (const k of keys) {
@@ -4647,7 +4649,9 @@ async function flushAutoSync() {
 // ── Polling: recarrega do Drive a cada 60s se outra aba/máquina salvou ──
 var _lastPollHash = '';
 async function pollDriveChanges() {
-  if (!driveReady || !rhFolderId) return;
+  if (!driveReady) return;
+  if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
+  if (!rhFolderId) return;
   try {
     // Verificar se token ainda é válido
     var tokenTime = parseInt(localStorage.getItem('eq_drive_token_time')||'0');
@@ -5039,6 +5043,10 @@ async function loadDriveJSON(filename) {
 }
 
 async function syncFromDrive() {
+  // Garante que a pasta "RH Equilibryum" foi identificada antes de ler —
+  // sem isso, a leitura falha silenciosamente e nada é atualizado.
+  if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
+  if (!rhFolderId) { toast('⚠️ Não foi possível acessar a pasta do Drive.', 'warn'); return; }
   const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','cronograma-trein'];
   let synced = 0;
   for (const k of keys) {
