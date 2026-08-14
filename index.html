@@ -634,6 +634,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <!-- Busca + ordenação -->
     <div class="sort-bar" style="margin-bottom:12px;">
       <input type="text" id="func-search" placeholder="🔍 Buscar por nome, CPF ou cargo..." oninput="rdFunc()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:220px;outline:none;" onfocus="this.style.borderColor=&#39;var(--green)&#39;" onblur="this.style.borderColor=&#39;var(--gray-200)&#39;">
+      <select class="sort-sel" id="func-emp-filter" onchange="rdFunc()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">🏢 Todas as empresas</option>
+      </select>
       <label>Ordenar por:</label>
       <select class="sort-sel" id="func-sort-campo" onchange="rdFunc()">
         <option value="nome">Nome (A-Z)</option>
@@ -5696,9 +5699,25 @@ function rdFunc() {
   var campo  = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
   var dir    = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
   var search = ((document.getElementById('func-search')||{}).value || '').toLowerCase().trim();
+  var empF   = (document.getElementById('func-emp-filter')||{}).value || '';
   var rawList = DB.g('funcionarios');
   var deps = DB.g('departamentos');
   var emps = DB.g('empresas');
+
+  // Popular o filtro de empresas (sem perder a seleção atual)
+  var empFilterEl = document.getElementById('func-emp-filter');
+  if (empFilterEl && empFilterEl.dataset.count != emps.length) {
+    var valAtual = empFilterEl.value;
+    empFilterEl.innerHTML = '<option value="">🏢 Todas as empresas</option>';
+    emps.forEach(function(e){
+      var o = document.createElement('option');
+      o.value = e.id;
+      o.textContent = e.razao || e.nome || 'Empresa';
+      empFilterEl.appendChild(o);
+    });
+    empFilterEl.value = valAtual;
+    empFilterEl.dataset.count = emps.length;
+  }
 
   // Stats cards
   var statsEl = document.getElementById('func-stats');
@@ -5745,6 +5764,11 @@ function rdFunc() {
              (f.cpf|| '').toLowerCase().includes(search) ||
              (f.car|| '').toLowerCase().includes(search);
     });
+  }
+
+  // Filter by empresa
+  if (empF) {
+    filtered = filtered.filter(function(f){ return f.emp === empF; });
   }
 
   var list = applySort(filtered, campo, dir, deps, emps, null);
