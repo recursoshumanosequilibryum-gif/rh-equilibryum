@@ -1448,6 +1448,12 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Gera a descrição de cargo (missão, atividades, competências) a partir do cargo selecionado.</p>
         <button class="btn btn-primary btn-sm" style="background:#5e35b1;" onclick="abrirModalDescricaoCargo()">🗂️ Gerar</button>
       </div>
+      <!-- Ficha Cadastral - Alteração de Convênio -->
+      <div class="trein-card" style="border-left:4px solid #00838f;">
+        <div class="tc-header"><div><div class="tc-title">🏥 Ficha de Movimentação Cadastral (Convênio)</div><div class="tc-meta">FMC – Inclusão / Alteração / Exclusão de plano</div></div></div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Ficha para o convênio médico/odontológico, com os dados do funcionário já preenchidos.</p>
+        <button class="btn btn-primary btn-sm" style="background:#00838f;" onclick="gerarFichaConvenio()">🏥 Gerar</button>
+      </div>
       <!-- Adiantamento Salarial -->
       <div class="trein-card" style="border-left:4px solid #1565c0;">
         <div class="tc-header"><div><div class="tc-title">💰 Solicitação de Adiantamento Salarial</div><div class="tc-meta">FOR015 – Adiantamento de 40%</div></div></div>
@@ -15705,6 +15711,138 @@ function gerarDescricaoCargo() {
     '</body></html>';
 
   abrirEImprimirDoc(doc, 'Descricao_Cargo_' + cargo.replace(/\s+/g,'_'), null);
+}
+
+// ── FICHA DE MOVIMENTAÇÃO CADASTRAL (CONVÊNIO) ──────────────
+function gerarFichaConvenio() {
+  var f = getDocFunc(); if (!f) return;
+  var emps = DB.g('empresas');
+  var emp  = emps.find(function(e){ return e.id === f.emp; }) || {};
+  var razaoEmp = emp.razao || emp.nome || '';
+  var logoSrc = (typeof _LOGO_L1 !== 'undefined' && _LOGO_L1) ? _LOGO_L1 : '';
+
+  function fmtData(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p.length === 3 ? (p[2]+'/'+p[1]+'/'+p[0]) : d;
+  }
+  var sexoAbrev = f.sex === 'Masculino' ? 'M' : (f.sex === 'Feminino' ? 'F' : (f.sex || ''));
+
+  function campo(label, valor, largura) {
+    return '<div class="campo" style="flex:'+(largura||1)+';">' +
+      '<div class="campo-label">' + label + '</div>' +
+      '<div class="campo-val">' + (valor || '&nbsp;') + '</div>' +
+    '</div>';
+  }
+  function chk(label) {
+    return '<span class="chk">☐ ' + label + '</span>';
+  }
+  function linhaDependente(n) {
+    return '<div class="dep-bloco">' +
+      '<div class="dep-num">' + n + '</div>' +
+      '<div style="flex:1;">' +
+        '<div class="campo-row">' +
+          campo('NOME DO DEPENDENTE ('+n+')', '', 3) +
+          campo('SEXO', '', 1) +
+          campo('PARENTESCO', '', 1) +
+          campo('NASCIMENTO', '', 1) +
+        '</div>' +
+        '<div class="campo-row">' +
+          campo('CPF DO DEPENDENTE', '', 2) +
+          campo('NOME DA MÃE DO DEPENDENTE', '', 3) +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Ficha de Movimentação Cadastral – ' + f.n + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Arial,sans-serif;font-size:9.5pt;color:#000;padding:1.3cm 1.5cm;}' +
+      '.logo{margin-bottom:10px;}' +
+      '.logo img{max-height:50px;max-width:170px;object-fit:contain;}' +
+      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;border-bottom:2px solid #00838f;padding-bottom:8px;color:#00838f;}' +
+      'h2{font-size:10.5pt;font-weight:700;background:#e0f2f1;padding:5px 8px;margin:14px 0 8px;color:#00695c;}' +
+      '.chk-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:9.5pt;}' +
+      '.chk{border:1px solid #999;border-radius:3px;padding:3px 8px;}' +
+      '.campo-row{display:flex;gap:8px;margin-bottom:6px;}' +
+      '.campo{border:1px solid #999;border-radius:3px;padding:4px 6px;min-width:0;}' +
+      '.campo-label{font-size:7.5pt;color:#555;text-transform:uppercase;letter-spacing:.2px;margin-bottom:2px;}' +
+      '.campo-val{font-size:10pt;font-weight:600;min-height:14px;word-break:break-word;}' +
+      '.dep-bloco{display:flex;gap:8px;border-top:1px dashed #ccc;padding-top:8px;margin-top:8px;}' +
+      '.dep-num{font-weight:700;color:#00838f;font-size:11pt;width:16px;}' +
+      '.rodape{margin-top:22px;display:flex;justify-content:space-between;gap:20px;}' +
+      '.rodape .campo{flex:1;min-height:44px;}' +
+      '.instrucoes{margin-top:18px;font-size:8pt;color:#444;line-height:1.6;}' +
+      '@media print{@page{size:A4;margin:0;}body{padding:1.1cm 1.3cm;}}' +
+    '</style></head><body>' +
+    (logoSrc ? '<div class="logo"><img src="'+logoSrc+'"></div>' : '') +
+    '<h1>Ficha de Movimentação Cadastral (FMC)</h1>' +
+
+    '<h2>TITULAR</h2>' +
+    '<div class="chk-row">' + chk('INCLUSÃO') + chk('ALTERAÇÃO') + chk('TRANSFERÊNCIA DE EMPRESA') + chk('TRANSFERÊNCIA DE PLANO') + chk('EXCLUSÃO') + '</div>' +
+    '<div class="chk-row">' + chk('INCLUSÃO NO PLANO ODONTOLÓGICO') + chk('EXCLUSÃO DO PLANO ODONTOLÓGICO') + '</div>' +
+
+    '<div class="campo-row">' +
+      campo('CÓDIGO DA EMPRESA', '', 1) +
+      campo('NOME DA EMPRESA', razaoEmp, 3) +
+      campo('CATEGORIA DE PLANO', '', 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('NÚMERO DA CARTEIRINHA', '', 1) +
+      campo('NOME DO TITULAR (NOME DO FUNCIONÁRIO)', f.n, 3) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('DATA DE ADMISSÃO', fmtData(f.adm), 1) +
+      campo('DATA DE NASCIMENTO', fmtData(f.nas), 1) +
+      campo('Nº DA CHAPA', '', 1) +
+      campo('FUNÇÃO', f.car, 1) +
+      campo('PIS/PASEP OU CNS', f.pis, 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('CPF', f.cpf, 1) +
+      campo('RG', f.rg, 1) +
+      campo('ÓRGÃO EMISSOR DO RG', '', 1) +
+      campo('ESTADO CIVIL', f.ec, 1) +
+      campo('SEXO', sexoAbrev, 1) +
+      campo('TELEFONE', f.tel, 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('NOME DA MÃE DO TITULAR', '', 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('ENDEREÇO', f.end, 3) +
+      campo('NÚMERO', '', 1) +
+      campo('COMPLEMENTO', '', 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('BAIRRO', '', 1) +
+      campo('CEP', f.cep, 1) +
+      campo('CIDADE', '', 1) +
+      campo('UF', '', 1) +
+    '</div>' +
+
+    '<h2>DEPENDENTES</h2>' +
+    '<div class="chk-row">' + chk('INCLUSÃO') + chk('ALTERAÇÃO') + chk('EXCLUSÃO') + '</div>' +
+    '<div class="chk-row">' + chk('INCLUSÃO NO PLANO ODONTOLÓGICO') + chk('EXCLUSÃO DO PLANO ODONTOLÓGICO') + '</div>' +
+    linhaDependente(1) + linhaDependente(2) + linhaDependente(3) + linhaDependente(4) + linhaDependente(5) + linhaDependente(6) + linhaDependente(7) +
+
+    '<div class="rodape">' +
+      campo('Protocolo Ameplan', '', 1) +
+      campo('Carimbo/Assinatura Empresa', '', 1) +
+    '</div>' +
+
+    '<div class="instrucoes">' +
+      'a) Obrigatório o preenchimento de todos os campos.<br>' +
+      'b) Indicar com um "X" no campo para o TITULAR e um "X" no campo correspondente aos Dependentes para o tipo de movimentação desejada.<br>' +
+      'c) Enviar juntamente com esta Ficha (FMC) preenchida, cópia das certidões de casamento (esposa/esposo) ou Declaração de União Estável em cartório (companheira/companheiro); certidão de nascimento para os filhos ou Termo de Guarda para os equiparados.<br>' +
+      'd) Exceto para inclusão do TITULAR, as demais movimentações devem informar o Nº da carteirinha do Titular ou Dependente, se for o caso.<br>' +
+      'e) Encaminhar vínculo empregatício do beneficiário em caso de inclusão de titular.' +
+    '</div>' +
+    '</body></html>';
+
+  abrirEImprimirDoc(doc, 'Ficha_Convenio_' + f.n.replace(/\s+/g,'_'), f);
 }
 
 
