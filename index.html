@@ -1466,6 +1466,18 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Ficha para o convênio médico/odontológico, com os dados do funcionário já preenchidos.</p>
         <button class="btn btn-primary btn-sm" style="background:#00838f;" onclick="gerarFichaConvenio()">🏥 Gerar</button>
       </div>
+      <!-- Ciência de Período de Experiência (Promoção) -->
+      <div class="trein-card" style="border-left:4px solid #6d4c41;">
+        <div class="tc-header"><div><div class="tc-title">📈 Ciência de Período de Experiência – Promoção</div><div class="tc-meta">FOR07 – Promoção de cargo e salário</div></div></div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Termo de ciência do período de experiência de 90 dias após promoção de cargo.</p>
+        <button class="btn btn-primary btn-sm" style="background:#6d4c41;" onclick="abrirModalPromocaoExp()">📈 Gerar</button>
+      </div>
+      <!-- Carta de Promoção -->
+      <div class="trein-card" style="border-left:4px solid #ad1457;">
+        <div class="tc-header"><div><div class="tc-title">🎉 Carta de Promoção de Cargo</div><div class="tc-meta">Comunicado oficial de promoção</div></div></div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Carta comunicando oficialmente a promoção do funcionário ao novo cargo.</p>
+        <button class="btn btn-primary btn-sm" style="background:#ad1457;" onclick="abrirModalCartaPromocao()">🎉 Gerar</button>
+      </div>
       <!-- Adiantamento Salarial -->
       <div class="trein-card" style="border-left:4px solid #1565c0;">
         <div class="tc-header"><div><div class="tc-title">💰 Solicitação de Adiantamento Salarial</div><div class="tc-meta">FOR015 – Adiantamento de 40%</div></div></div>
@@ -2067,6 +2079,58 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-descricao-cargo')">Cancelar</button>
       <button class="btn btn-primary" style="background:#5e35b1;" onclick="gerarDescricaoCargo()">🗂️ Gerar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CIÊNCIA DE PERÍODO DE EXPERIÊNCIA (PROMOÇÃO) -->
+<div class="modal-bg" id="modal-promocao-exp">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title">📈 Ciência de Período de Experiência – Promoção</span>
+      <button class="modal-close" onclick="closeModal('modal-promocao-exp')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Cargo Promovido <span style="color:#c0392b">*</span></label>
+        <input type="text" id="pexp-cargo" placeholder="Novo cargo">
+      </div>
+      <div class="form-group">
+        <label>Nova Remuneração</label>
+        <input type="text" id="pexp-remun" placeholder="R$ 0,00">
+      </div>
+      <div class="form-group">
+        <label>Data de Início da Promoção</label>
+        <input type="date" id="pexp-data">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-promocao-exp')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#6d4c41;" onclick="gerarPromocaoExp()">📈 Gerar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARTA DE PROMOÇÃO -->
+<div class="modal-bg" id="modal-carta-promocao">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title">🎉 Carta de Promoção de Cargo</span>
+      <button class="modal-close" onclick="closeModal('modal-carta-promocao')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Cargo Promovido <span style="color:#c0392b">*</span></label>
+        <input type="text" id="cprom-cargo" placeholder="Novo cargo">
+      </div>
+      <div class="form-group">
+        <label>Data de Início</label>
+        <input type="date" id="cprom-data">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-carta-promocao')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#ad1457;" onclick="gerarCartaPromocao()">🎉 Gerar</button>
     </div>
   </div>
 </div>
@@ -15869,6 +15933,190 @@ function gerarFichaConvenio() {
     '</body></html>';
 
   abrirEImprimirDoc(doc, 'Ficha_Convenio_' + f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── CIÊNCIA DE PERÍODO DE EXPERIÊNCIA (PROMOÇÃO) ────────────
+function abrirModalPromocaoExp() {
+  var f = getDocFunc(); if (!f) return;
+  var dtEl = document.getElementById('pexp-data');
+  if (dtEl) dtEl.value = new Date().toISOString().slice(0,10);
+  var cEl = document.getElementById('pexp-cargo'); if (cEl) cEl.value = '';
+  var rEl = document.getElementById('pexp-remun'); if (rEl) rEl.value = '';
+  openModal('modal-promocao-exp');
+}
+
+function gerarPromocaoExp() {
+  var f = getDocFunc(); if (!f) return;
+  function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  var cargoNovo = gv('pexp-cargo');
+  if (!cargoNovo) { alert('Informe o cargo promovido.'); return; }
+  var remun    = gv('pexp-remun');
+  var dataIni  = gv('pexp-data') || new Date().toISOString().slice(0,10);
+  var cargoAnt = f.car || '';
+
+  function fmtData(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p.length === 3 ? (p[2]+'/'+p[1]+'/'+p[0]) : d;
+  }
+  function somaDias(d, n) {
+    if (!d) return '';
+    var dt = new Date(d+'T00:00:00');
+    dt.setDate(dt.getDate()+n);
+    return dt.getDate().toString().padStart(2,'0')+'/'+(dt.getMonth()+1).toString().padStart(2,'0')+'/'+dt.getFullYear();
+  }
+  var previsaoTermino = somaDias(dataIni, 90);
+  var logoSrc = (typeof _LOGO_L1 !== 'undefined' && _LOGO_L1) ? _LOGO_L1 : '';
+
+  function campo(label, valor, largura) {
+    return '<div class="campo" style="flex:'+(largura||1)+';">' +
+      '<div class="campo-label">' + label + '</div>' +
+      '<div class="campo-val">' + (valor || '&nbsp;') + '</div>' +
+    '</div>';
+  }
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Ciência de Período de Experiência – ' + f.n + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Arial,sans-serif;font-size:10.5pt;color:#000;padding:1.6cm 2cm;}' +
+      '.logo{margin-bottom:12px;}' +
+      '.logo img{max-height:55px;max-width:180px;object-fit:contain;}' +
+      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.3px;margin-bottom:16px;border-bottom:2px solid #6d4c41;padding-bottom:8px;color:#6d4c41;}' +
+      '.campo-row{display:flex;gap:8px;margin-bottom:8px;}' +
+      '.campo{border:1px solid #999;border-radius:3px;padding:5px 7px;}' +
+      '.campo-label{font-size:7.5pt;color:#555;text-transform:uppercase;letter-spacing:.2px;margin-bottom:2px;}' +
+      '.campo-val{font-size:10.5pt;font-weight:600;min-height:14px;}' +
+      'p{margin-bottom:10px;text-align:justify;line-height:1.6;}' +
+      'ul{margin:0 0 12px 20px;}' +
+      'li{margin-bottom:3px;}' +
+      '.ass-area{margin-top:34px;}' +
+      '.ass-linha{margin-bottom:16px;}' +
+      '.ass-linha .linha{display:inline-block;border-bottom:1px solid #000;min-width:280px;margin-right:10px;}' +
+      '@media print{@page{size:A4;margin:0;}body{padding:1.4cm 1.8cm;}}' +
+    '</style></head><body>' +
+    (logoSrc ? '<div class="logo"><img src="'+logoSrc+'"></div>' : '') +
+    '<h1>Ciência de Período de Experiência – Promoção de Cargo e Salário</h1>' +
+
+    '<div class="campo-row">' + campo('Colaborador(a)', f.n, 2) + '</div>' +
+    '<div class="campo-row">' +
+      campo('Cargo Anterior', cargoAnt, 1) +
+      campo('Cargo Promovido', cargoNovo, 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('Nova Remuneração', remun, 1) +
+      campo('Data de Início da Promoção', fmtData(dataIni), 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('Período de Experiência na Nova Função', '90 (noventa) dias', 1) +
+      campo('Previsão de Término', previsaoTermino, 1) +
+    '</div>' +
+
+    '<p>A empresa acima identificada informa que o(a) colaborador(a) <strong>' + f.n + '</strong> foi promovido(a) para a função de <strong>' + cargoNovo + '</strong>, passando a exercer suas atividades a partir de <strong>' + fmtData(dataIni) + '</strong>.</p>' +
+
+    '<p>Em conformidade com as normas internas da empresa e legislação aplicável, fica estabelecido que a presente promoção está condicionada à avaliação de desempenho no período de experiência de 90 (noventa) dias, durante o qual serão observados:</p>' +
+    '<ul>' +
+      '<li>Adaptação ao novo cargo</li>' +
+      '<li>Cumprimento das atribuições e metas</li>' +
+      '<li>Postura profissional</li>' +
+      '<li>Assiduidade e pontualidade</li>' +
+      '<li>Desenvolvimento das competências necessárias</li>' +
+    '</ul>' +
+
+    '<p>Ao término dos 90 dias, o desempenho será formalmente avaliado, podendo resultar em:</p>' +
+    '<ul>' +
+      '<li>✔ Efetivação no cargo e manutenção da remuneração ajustada</li>' +
+      '<li>✔ Prorrogação de acompanhamento, se previsto internamente</li>' +
+      '<li>✔ Retorno ao cargo anterior, caso não haja aderência às expectativas da função</li>' +
+    '</ul>' +
+
+    '<p>O(a) colaborador(a) declara estar ciente e de acordo com as condições descritas neste documento.</p>' +
+
+    '<div class="ass-area">' +
+      '<div style="font-weight:700;margin-bottom:14px;">Assinaturas:</div>' +
+      '<div class="ass-linha">Colaborador(a): <span class="linha">' + f.n + '</span> Data: ____/____/______</div>' +
+      '<div class="ass-linha">Gestor(a)/Responsável: <span class="linha">' + (f.ges||'') + '</span> Data: ____/____/______</div>' +
+      '<div class="ass-linha">RH / Departamento Pessoal: <span class="linha"></span> Data: ____/____/______</div>' +
+    '</div>' +
+    '</body></html>';
+
+  closeModal('modal-promocao-exp');
+  abrirEImprimirDoc(doc, 'Ciencia_Experiencia_Promocao_' + f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── CARTA DE PROMOÇÃO DE CARGO ──────────────────────────────
+function abrirModalCartaPromocao() {
+  var f = getDocFunc(); if (!f) return;
+  var dtEl = document.getElementById('cprom-data');
+  if (dtEl) dtEl.value = new Date().toISOString().slice(0,10);
+  var cEl = document.getElementById('cprom-cargo'); if (cEl) cEl.value = '';
+  openModal('modal-carta-promocao');
+}
+
+function gerarCartaPromocao() {
+  var f = getDocFunc(); if (!f) return;
+  function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  var cargoNovo = gv('cprom-cargo');
+  if (!cargoNovo) { alert('Informe o cargo promovido.'); return; }
+  var dataIni = gv('cprom-data') || new Date().toISOString().slice(0,10);
+
+  var emps = DB.g('empresas');
+  var emp  = emps.find(function(e){ return e.id === f.emp; }) || {};
+  var razaoEmp = emp.razao || emp.nome || 'Equilibryum';
+
+  function fmtData(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p.length === 3 ? (p[2]+'/'+p[1]+'/'+p[0]) : d;
+  }
+  function fmtDataExtensoLocal(d) {
+    if (!d) d = new Date().toISOString().slice(0,10);
+    var meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    var p = d.split('-');
+    return 'São Paulo, ' + parseInt(p[2]) + ' de ' + meses[parseInt(p[1])-1] + ' de ' + p[0];
+  }
+  var trat = f.sex === 'Feminino' ? 'Sra.' : (f.sex === 'Masculino' ? 'Sr.' : 'Sr.(a)');
+  var pronome = f.sex === 'Feminino' ? 'a' : (f.sex === 'Masculino' ? 'o' : 'o(a)');
+  var logoSrc = (typeof _LOGO_L1 !== 'undefined' && _LOGO_L1) ? _LOGO_L1 : '';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Carta de Promoção – ' + f.n + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
+      'body{font-family:Arial,sans-serif;font-size:11pt;color:#000;padding:2cm 2.5cm;}' +
+      '.logo{margin-bottom:18px;}' +
+      '.logo img{max-height:60px;max-width:200px;object-fit:contain;}' +
+      '.data-linha{text-align:right;margin-bottom:22px;font-size:11pt;}' +
+      'h1{font-size:14pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.3px;margin-bottom:24px;color:#ad1457;}' +
+      'p{margin-bottom:14px;text-align:justify;line-height:1.8;}' +
+      '.assinatura{margin-top:56px;text-align:center;}' +
+      '.ass-linha{border-top:1px solid #000;width:280px;margin:0 auto 6px;}' +
+      '@media print{@page{size:A4;margin:0;}body{padding:1.8cm 2.2cm;}}' +
+    '</style></head><body>' +
+    (logoSrc ? '<div class="logo"><img src="'+logoSrc+'"></div>' : '') +
+    '<div class="data-linha">' + fmtDataExtensoLocal(dataIni) + '</div>' +
+    '<h1>Carta de Promoção de Cargo</h1>' +
+
+    '<p>Prezado(a) ' + trat + ',</p>' +
+
+    '<p>A <strong>' + razaoEmp + '</strong> tem o prazer de comunicar oficialmente sua promoção ao cargo de <strong>' + cargoNovo + '</strong>, com início a partir de <strong>' + fmtData(dataIni) + '</strong>.</p>' +
+
+    '<p>Esta decisão reflete o reconhecimento da empresa pelo seu desempenho profissional, comprometimento, responsabilidade e contribuição para os resultados da organização durante o período em que vem atuando conosco.</p>' +
+
+    '<p>Na nova função, suas responsabilidades serão ampliadas de acordo com as atribuições do cargo, confiando a empresa em sua capacidade, dedicação e competência para continuar contribuindo com o crescimento e desenvolvimento de nossas atividades.</p>' +
+
+    '<p>Informações adicionais referentes às condições da nova função, remuneração e responsabilidades serão formalizadas conforme as diretrizes internas da empresa. Parabenizamos ' + pronome + ' por esta conquista profissional e desejamos pleno sucesso nesta nova etapa de sua carreira.</p>' +
+
+    '<p>Atenciosamente,</p>' +
+
+    '<div class="assinatura">' +
+      '<div class="ass-linha"></div>' +
+      'Gestor Responsável — Recursos Humanos' +
+    '</div>' +
+    '</body></html>';
+
+  closeModal('modal-carta-promocao');
+  abrirEImprimirDoc(doc, 'Carta_Promocao_' + f.n.replace(/\s+/g,'_'), f);
 }
 
 
