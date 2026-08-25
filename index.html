@@ -9235,28 +9235,35 @@ function sigConfirmar() { sigConfirmarAmbos(); }
 async function _abrirDocFinal(docHTML, filename, f, sigMonica, sigBruno) {
   var finalHTML = docHTML;
 
+  // A Ficha de Movimentação Cadastral (Convênio) já vem com seu próprio
+  // rodapé (Protocolo/Carimbo) e é calibrada para caber em 1 página só —
+  // pula a injeção de assinatura/margem, que empurraria para a página 2.
+  var isFichaConvenio = finalHTML.indexOf('Ficha de Movimentação Cadastral') > -1;
+
   // Detect company
   var docEmpresa = 'equilibryum';
   if (finalHTML.indexOf('LONGHI') > 0 || finalHTML.indexOf('Longhi') > 0) docEmpresa = 'longhi';
 
-  // Build signature block — compact, same-page guaranteed
-  var compSig = gerarAssinaturaEmpresa(docEmpresa, sigMonica, sigBruno);
+  if (!isFichaConvenio) {
+    // Build signature block — compact, same-page guaranteed
+    var compSig = gerarAssinaturaEmpresa(docEmpresa, sigMonica, sigBruno);
 
-  // Inject compact CSS to prevent signature from overflowing to next page
-  var compactCss = '<style>' +
-    'body{font-size:10pt!important;}' +
-    '.assinaturas,.sig-rodape{page-break-inside:avoid!important;break-inside:avoid!important;}' +
-    '@media print{' +
-      '@page{size:A4;margin:1.2cm;}' +
-      'body{font-size:9.5pt!important;}' +
-    '}' +
-  '</style>';
+    // Inject compact CSS to prevent signature from overflowing to next page
+    var compactCss = '<style>' +
+      'body{font-size:10pt!important;}' +
+      '.assinaturas,.sig-rodape{page-break-inside:avoid!important;break-inside:avoid!important;}' +
+      '@media print{' +
+        '@page{size:A4;margin:1.2cm;}' +
+        'body{font-size:9.5pt!important;}' +
+      '}' +
+    '</style>';
 
-  // Inject CSS before </head>
-  finalHTML = finalHTML.replace('</head>', compactCss + '</head>');
+    // Inject CSS before </head>
+    finalHTML = finalHTML.replace('</head>', compactCss + '</head>');
 
-  // Place signature block before </body>
-  finalHTML = finalHTML.replace('</body>', compSig + '</body>');
+    // Place signature block before </body>
+    finalHTML = finalHTML.replace('</body>', compSig + '</body>');
+  }
 
   // Abrir documento via blob URL (evita bloqueio de popup)
   var blob = new Blob([finalHTML], { type: 'text/html;charset=utf-8' });
