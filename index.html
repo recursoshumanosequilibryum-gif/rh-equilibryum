@@ -15849,23 +15849,24 @@ function gerarFichaConvenio() {
     '<title>Ficha de Movimentação Cadastral – ' + f.n + '</title>' +
     '<style>' +
       '*{box-sizing:border-box;margin:0;padding:0;}' +
-      'body{font-family:Arial,sans-serif;font-size:9.5pt;color:#000;padding:1.3cm 1.5cm;}' +
-      '.logo{margin-bottom:10px;}' +
-      '.logo img{max-height:50px;max-width:170px;object-fit:contain;}' +
-      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;border-bottom:2px solid #00838f;padding-bottom:8px;color:#00838f;}' +
-      'h2{font-size:10.5pt;font-weight:700;background:#e0f2f1;padding:5px 8px;margin:14px 0 8px;color:#00695c;}' +
-      '.chk-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:9.5pt;}' +
-      '.chk{border:1px solid #999;border-radius:3px;padding:3px 8px;}' +
-      '.campo-row{display:flex;gap:8px;margin-bottom:6px;}' +
-      '.campo{border:1px solid #999;border-radius:3px;padding:4px 6px;min-width:0;}' +
-      '.campo-label{font-size:7.5pt;color:#555;text-transform:uppercase;letter-spacing:.2px;margin-bottom:2px;}' +
-      '.campo-val{font-size:10pt;font-weight:600;min-height:14px;word-break:break-word;}' +
-      '.dep-bloco{display:flex;gap:8px;border-top:1px dashed #ccc;padding-top:8px;margin-top:8px;}' +
-      '.dep-num{font-weight:700;color:#00838f;font-size:11pt;width:16px;}' +
-      '.rodape{margin-top:22px;display:flex;justify-content:space-between;gap:20px;}' +
-      '.rodape .campo{flex:1;min-height:44px;}' +
-      '.instrucoes{margin-top:18px;font-size:8pt;color:#444;line-height:1.6;}' +
-      '@media print{@page{size:A4;margin:0;}body{padding:1.1cm 1.3cm;}}' +
+      'html,body{height:100%;}' +
+      'body{font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0.9cm 1.3cm;}' +
+      '.logo{margin-bottom:6px;}' +
+      '.logo img{max-height:38px;max-width:140px;object-fit:contain;}' +
+      'h1{font-size:11.5pt;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;border-bottom:2px solid #00838f;padding-bottom:5px;color:#00838f;}' +
+      'h2{font-size:9.5pt;font-weight:700;background:#e0f2f1;padding:3px 7px;margin:8px 0 5px;color:#00695c;}' +
+      '.chk-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:5px;font-size:8pt;}' +
+      '.chk{border:1px solid #999;border-radius:3px;padding:2px 6px;}' +
+      '.campo-row{display:flex;gap:6px;margin-bottom:3px;}' +
+      '.campo{border:1px solid #999;border-radius:3px;padding:2px 5px;min-width:0;}' +
+      '.campo-label{font-size:6.3pt;color:#555;text-transform:uppercase;letter-spacing:.2px;margin-bottom:1px;}' +
+      '.campo-val{font-size:8.5pt;font-weight:600;min-height:11px;word-break:break-word;line-height:1.15;}' +
+      '.dep-bloco{display:flex;gap:6px;border-top:1px dashed #ccc;padding-top:4px;margin-top:4px;page-break-inside:avoid;}' +
+      '.dep-num{font-weight:700;color:#00838f;font-size:9pt;width:14px;}' +
+      '.rodape{margin-top:10px;display:flex;justify-content:space-between;gap:16px;}' +
+      '.rodape .campo{flex:1;min-height:26px;}' +
+      '.instrucoes{margin-top:8px;font-size:6.8pt;color:#444;line-height:1.35;}' +
+      '@media print{@page{size:A4;margin:0;}body{padding:0.7cm 1.1cm;}}' +
     '</style></head><body>' +
     (logoSrc ? '<div class="logo"><img src="'+logoSrc+'"></div>' : '') +
     '<h1>Ficha de Movimentação Cadastral (FMC)</h1>' +
