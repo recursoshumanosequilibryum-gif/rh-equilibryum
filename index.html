@@ -5190,10 +5190,31 @@ async function syncManual() {
 
 // Save any DB key to Drive
 async function driveSync(key) {
-  const data = DB.g(key);
+  if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
+  var data = DB.g(key);
+
+  // Antes de sobrescrever, busca a versão mais recente do Drive e mescla —
+  // evita apagar registros salvos por outra máquina nesse meio-tempo
+  // (mesma proteção usada no salvamento automático do restante do sistema).
+  if (Array.isArray(data)) {
+    try {
+      var remoto = await loadDriveJSON('eq_' + key + '.json');
+      if (Array.isArray(remoto)) {
+        var idsLocais = {};
+        data.forEach(function(item){ if (item && item.id) idsLocais[item.id] = true; });
+        var faltando = remoto.filter(function(item){ return item && item.id && !idsLocais[item.id]; });
+        if (faltando.length) {
+          data = data.concat(faltando);
+          DB.s(key, data); // atualiza também a cópia local desta máquina
+        }
+      }
+    } catch(e) { console.warn('[Sync] Verificação antes de salvar falhou para', key, e); }
+  }
+
   await saveDriveJSON('eq_' + key + '.json', data);
 }
 async function driveSyncObj(key) {
+  if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
   const data = DB.go(key);
   await saveDriveJSON('eq_' + key + '.json', data);
 }
@@ -15845,7 +15866,7 @@ function gerarDescricaoCargo() {
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
     '<title>Descrição de Cargo – ' + cargo + '</title>' +
     '<style>' +
-      '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;}' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
       'html,body{height:100%;}' +
       'body{font-family:Arial,sans-serif;font-size:8.3pt;color:#000;padding:0.6cm 1.1cm;}' +
       '.titulo-banner{background:#1F3B4D;color:#fff;text-align:center;padding:8px 10px 6px;margin-bottom:5px;}' +
@@ -15914,7 +15935,7 @@ function gerarFichaConvenio() {
   var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
     '<title>Ficha de Movimentação Cadastral – ' + f.n + '</title>' +
     '<style>' +
-      '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;}' +
+      '*{box-sizing:border-box;margin:0;padding:0;}' +
       'html,body{height:100%;}' +
       'body{font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0.6cm 1.1cm;}' +
       '.logo{margin-bottom:3px;}' +
