@@ -5276,20 +5276,24 @@ async function syncManual() {
 }
 
 // Save any DB key to Drive
-async function driveSync(key) {
+async function driveSync(key, idsExcluidos) {
   if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
   var data = DB.g(key);
+  var setExcluidos = {};
+  (idsExcluidos||[]).forEach(function(id){ setExcluidos[id] = true; });
 
   // Antes de sobrescrever, busca a versão mais recente do Drive e mescla —
   // evita apagar registros salvos por outra máquina nesse meio-tempo
   // (mesma proteção usada no salvamento automático do restante do sistema).
+  // Itens passados em idsExcluidos foram excluídos de propósito agora
+  // mesmo, então não são trazidos de volta pela mesclagem.
   if (Array.isArray(data)) {
     try {
       var remoto = await loadDriveJSON('eq_' + key + '.json');
       if (Array.isArray(remoto)) {
         var idsLocais = {};
         data.forEach(function(item){ if (item && item.id) idsLocais[item.id] = true; });
-        var faltando = remoto.filter(function(item){ return item && item.id && !idsLocais[item.id]; });
+        var faltando = remoto.filter(function(item){ return item && item.id && !idsLocais[item.id] && !setExcluidos[item.id]; });
         if (faltando.length) {
           data = data.concat(faltando);
           DB.s(key, data); // atualiza também a cópia local desta máquina
@@ -14881,7 +14885,9 @@ function advArquivoSelecionado() {
   document.getElementById('adv-arquivo-nome').textContent = file ? ('Selecionado: ' + file.name) : '';
 }
 
+var _advSalvando = false;
 async function savAdvertencia() {
+  if (_advSalvando) return; // evita salvar duas vezes com cliques repetidos
   var fid    = (document.getElementById('adv-func')||{}).value;
   var tipo   = (document.getElementById('adv-tipo')||{}).value;
   var data   = (document.getElementById('adv-data')||{}).value;
@@ -14892,38 +14898,48 @@ async function savAdvertencia() {
   if (!tipo) { alert('Selecione o tipo.'); return; }
   if (!data) { alert('Informe a data.'); return; }
 
-  var f = DB.g('funcionarios').find(function(x){ return x.id === fid; });
+  _advSalvando = true;
+  var btnSalvar = document.querySelector('#modal-advertencia .modal-footer .btn-primary');
+  var textoOriginalBtn = btnSalvar ? btnSalvar.textContent : '';
+  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = 'Salvando...'; }
 
-  var list = DB.g('advertencias');
-  var registro;
-  if (editingAdvId) {
-    registro = list.find(function(x){ return x.id === editingAdvId; });
-    if (!registro) { editingAdvId = null; return; }
-  } else {
-    registro = { id: uid() };
-    list.push(registro);
-  }
-  registro.fid    = fid;
-  registro.tipo   = tipo;
-  registro.data   = data;
-  registro.dias   = (tipo === 'Suspensão') ? (dias || '') : '';
-  registro.motivo = motivo;
+  try {
+    var f = DB.g('funcionarios').find(function(x){ return x.id === fid; });
 
-  // Upload do arquivo (se selecionado) — vai para a pasta do funcionário no Drive,
-  // igual aos outros documentos já anexados no sistema.
-  if (_advArquivoSelecionado && driveReady && f) {
-    try {
-      var resultado = await uploadFileToDrive(_advArquivoSelecionado, f.n);
-      registro.arquivoNome = resultado.name;
-      registro.arquivoUrl  = resultado.webViewLink || '';
-    } catch(e) {
-      console.warn('Upload do anexo falhou:', e);
-      toast('⚠️ Registro salvo, mas o anexo não pôde ser enviado.', 'warn');
+    var list = DB.g('advertencias');
+    var registro;
+    if (editingAdvId) {
+      registro = list.find(function(x){ return x.id === editingAdvId; });
+      if (!registro) { editingAdvId = null; return; }
+    } else {
+      registro = { id: uid() };
+      list.push(registro);
     }
-  }
+    registro.fid    = fid;
+    registro.tipo   = tipo;
+    registro.data   = data;
+    registro.dias   = (tipo === 'Suspensão') ? (dias || '') : '';
+    registro.motivo = motivo;
 
-  DB.s('advertencias', list);
-  if (driveReady) await driveSync('advertencias');
+    // Upload do arquivo (se selecionado) — vai para a pasta do funcionário no Drive,
+    // igual aos outros documentos já anexados no sistema.
+    if (_advArquivoSelecionado && driveReady && f) {
+      try {
+        var resultado = await uploadFileToDrive(_advArquivoSelecionado, f.n);
+        registro.arquivoNome = resultado.name;
+        registro.arquivoUrl  = resultado.webViewLink || '';
+      } catch(e) {
+        console.warn('Upload do anexo falhou:', e);
+        toast('⚠️ Registro salvo, mas o anexo não pôde ser enviado.', 'warn');
+      }
+    }
+
+    DB.s('advertencias', list);
+    if (driveReady) await driveSync('advertencias');
+  } finally {
+    _advSalvando = false;
+    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = textoOriginalBtn; }
+  }
 
   editingAdvId = null;
   _advArquivoSelecionado = null;
@@ -14952,7 +14968,7 @@ function editAdvertencia(id) {
 function delAdvertencia(id) {
   if (!confirm('Excluir este lançamento? O anexo salvo no Drive não será apagado.')) return;
   DB.s('advertencias', DB.g('advertencias').filter(function(x){ return x.id !== id; }));
-  if (driveReady) driveSync('advertencias');
+  if (driveReady) driveSync('advertencias', [id]);
   rdAdvertencias();
 }
 
