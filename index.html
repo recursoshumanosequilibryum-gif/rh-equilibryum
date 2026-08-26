@@ -544,6 +544,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav(&#39;beneficios&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg><span>Benefícios
   </span></div>
+  <div class="nav-item" onclick="nav(&#39;advertencias&#39;,this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span>Advertências &amp; Suspensões
+  </span></div>
   <div class="nav-item" onclick="nav(&#39;documentos&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span>Gerar Documentos
   </span></div>
@@ -1843,6 +1846,90 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal(&#39;modal-pendencia&#39;)">Cancelar</button>
       <button class="btn btn-primary" onclick="savPendencia()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADVERTÊNCIAS & SUSPENSÕES -->
+<div class="section-page" id="sec-advertencias">
+  <div id="adv-kpi-bar" class="stats-grid"></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🚨 Advertências &amp; Suspensões</span>
+      <button class="btn btn-primary" onclick="abrirModalAdvertencia()">+ Novo Lançamento</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+      <input type="text" id="adv-busca" placeholder="🔍 Buscar por funcionário..." oninput="rdAdvertencias()" style="flex:1;min-width:200px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      <select id="adv-filtro-tipo" onchange="rdAdvertencias()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Todos os tipos</option>
+        <option value="Advertência Verbal">🟨 Advertência Verbal</option>
+        <option value="Advertência Escrita">🟧 Advertência Escrita</option>
+        <option value="Suspensão">🟥 Suspensão</option>
+      </select>
+      <select id="adv-filtro-mes" onchange="rdAdvertencias()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Todos os meses</option>
+        <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+        <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+        <option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option>
+        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select id="adv-filtro-ano" onchange="rdAdvertencias()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Todos os anos</option>
+      </select>
+    </div>
+    <div id="adv-lista"></div>
+    <div id="adv-vazio" style="text-align:center;padding:48px;color:var(--gray-400);">
+      <div style="font-size:40px;margin-bottom:10px;">✅</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhuma advertência ou suspensão cadastrada</div>
+      <div style="font-size:12px;">Clique em "+ Novo Lançamento" para adicionar</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADVERTÊNCIA/SUSPENSÃO -->
+<div class="modal-bg" id="modal-advertencia">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-title" id="adv-modal-title">🚨 Novo Lançamento</span>
+      <button class="modal-close" onclick="closeModal(&#39;modal-advertencia&#39;)">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Funcionário *</label>
+        <select id="adv-func" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;"><option value="">Selecione o funcionário</option></select>
+      </div>
+      <div class="form-group">
+        <label>Tipo *</label>
+        <select id="adv-tipo" onchange="toggleAdvDias()" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="Advertência Verbal">🟨 Advertência Verbal</option>
+          <option value="Advertência Escrita">🟧 Advertência Escrita</option>
+          <option value="Suspensão">🟥 Suspensão</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Data *</label>
+        <input type="date" id="adv-data" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group" id="adv-dias-group" style="display:none;">
+        <label>Dias de Suspensão</label>
+        <input type="number" id="adv-dias" min="1" placeholder="Ex.: 3" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group form-full">
+        <label>Motivo / Descrição</label>
+        <textarea id="adv-motivo" rows="3" placeholder="Descreva o motivo, a ocorrência, testemunhas..." style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+      </div>
+      <div class="form-group form-full">
+        <label>Documento Assinado (PDF/Foto)</label>
+        <div class="upload-area" id="adv-upload-area">
+          <div id="adv-upload-texto">📎 Clique ou arraste o arquivo aqui</div>
+          <input type="file" id="adv-arquivo" accept=".pdf,.jpg,.jpeg,.png" onchange="advArquivoSelecionado()">
+        </div>
+        <div id="adv-arquivo-nome" style="font-size:12px;color:var(--gray-600);margin-top:4px;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal(&#39;modal-advertencia&#39;)">Cancelar</button>
+      <button class="btn btn-primary" onclick="savAdvertencia()">💾 Salvar</button>
     </div>
   </div>
 </div>
@@ -4700,7 +4787,7 @@ const DB = {
 // ── Auto-sync: debounce 2s, then save changed keys to Drive ──
 var _autoSyncTimer = null;
 var _pendingSyncKeys = new Set();
-const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','cronograma-trein'];
+const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','cronograma-trein'];
 function scheduleAutoSync(k) {
   if (!driveReady) return;
   var _k = k === 'devoluções' ? 'devolucoes' : k;
@@ -5145,7 +5232,7 @@ async function syncFromDrive() {
   // sem isso, a leitura falha silenciosamente e nada é atualizado.
   if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
   if (!rhFolderId) { toast('⚠️ Não foi possível acessar a pasta do Drive.', 'warn'); return; }
-  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','cronograma-trein'];
+  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','cronograma-trein'];
   let synced = 0;
   for (const k of keys) {
     try {
@@ -5169,7 +5256,7 @@ async function syncFromDrive() {
   const active = document.querySelector('.section-page.active');
   if (active) {
     const id = active.id.replace('sec-','');
-    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:function(){ rdRel(); rdDevRelatorio(); }, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc };
+    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:function(){ rdRel(); rdDevRelatorio(); }, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc, advertencias:rdAdvertencias };
     if (rd[id]) rd[id]();
   }
   toast('✅ ' + synced + ' registros carregados do Drive ☁️');
@@ -5307,6 +5394,7 @@ function openModal(id) {
   if (id === 'modal-trein') { fillFuncSel('tr-parts',true); trPartsFillPanel([]); }
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
+  if (id === 'modal-advertencia') { fillFuncSel('adv-func'); if (!editingAdvId) { document.getElementById('adv-data').value = td(); } }
   if (id === 'modal-benef-comp') { fillFuncSel('bcomp-funcs', true); fillBenefRelMeses(); }
 }
 function closeModal(id) {
@@ -5355,13 +5443,14 @@ function exTab(id, btn) {
 function nav(id, el) {
   if (id === 'pj') { rdPJ(); }
   if (id === 'pendencias') { rdPendencias(); }
+  if (id === 'advertencias') { rdAdvertencias(); }
   document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
   var secEl = document.getElementById('sec-' + id);
   if (!secEl) { console.warn('Section not found: sec-' + id); return; }
   secEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', advertencias:'Advertências & Suspensões', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
   const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
   if (rd[id]) rd[id]();
@@ -14757,6 +14846,192 @@ function delPendencia(pid) {
   DB.s('pendencias', DB.g('pendencias').filter(function(x){ return x.id !== pid; }));
   if (driveReady) driveSync('pendencias');
   rdPendencias();
+}
+
+// ════════════════════════════════════════════════════════════
+// ADVERTÊNCIAS & SUSPENSÕES
+// ════════════════════════════════════════════════════════════
+var editingAdvId = null;
+var _advArquivoSelecionado = null;
+
+function abrirModalAdvertencia() {
+  editingAdvId = null;
+  _advArquivoSelecionado = null;
+  document.getElementById('adv-modal-title').textContent = '🚨 Novo Lançamento';
+  document.getElementById('adv-tipo').value = 'Advertência Verbal';
+  document.getElementById('adv-dias').value = '';
+  document.getElementById('adv-motivo').value = '';
+  document.getElementById('adv-arquivo').value = '';
+  document.getElementById('adv-arquivo-nome').textContent = '';
+  document.getElementById('adv-upload-texto').textContent = '📎 Clique ou arraste o arquivo aqui';
+  toggleAdvDias();
+  openModal('modal-advertencia');
+}
+
+function toggleAdvDias() {
+  var tipo = (document.getElementById('adv-tipo')||{}).value;
+  var grp  = document.getElementById('adv-dias-group');
+  if (grp) grp.style.display = (tipo === 'Suspensão') ? 'flex' : 'none';
+}
+
+function advArquivoSelecionado() {
+  var inp = document.getElementById('adv-arquivo');
+  var file = inp.files && inp.files[0];
+  _advArquivoSelecionado = file || null;
+  document.getElementById('adv-arquivo-nome').textContent = file ? ('Selecionado: ' + file.name) : '';
+}
+
+async function savAdvertencia() {
+  var fid    = (document.getElementById('adv-func')||{}).value;
+  var tipo   = (document.getElementById('adv-tipo')||{}).value;
+  var data   = (document.getElementById('adv-data')||{}).value;
+  var dias   = (document.getElementById('adv-dias')||{}).value;
+  var motivo = (document.getElementById('adv-motivo')||{}).value.trim();
+
+  if (!fid)  { alert('Selecione o funcionário.'); return; }
+  if (!tipo) { alert('Selecione o tipo.'); return; }
+  if (!data) { alert('Informe a data.'); return; }
+
+  var f = DB.g('funcionarios').find(function(x){ return x.id === fid; });
+
+  var list = DB.g('advertencias');
+  var registro;
+  if (editingAdvId) {
+    registro = list.find(function(x){ return x.id === editingAdvId; });
+    if (!registro) { editingAdvId = null; return; }
+  } else {
+    registro = { id: uid() };
+    list.push(registro);
+  }
+  registro.fid    = fid;
+  registro.tipo   = tipo;
+  registro.data   = data;
+  registro.dias   = (tipo === 'Suspensão') ? (dias || '') : '';
+  registro.motivo = motivo;
+
+  // Upload do arquivo (se selecionado) — vai para a pasta do funcionário no Drive,
+  // igual aos outros documentos já anexados no sistema.
+  if (_advArquivoSelecionado && driveReady && f) {
+    try {
+      var resultado = await uploadFileToDrive(_advArquivoSelecionado, f.n);
+      registro.arquivoNome = resultado.name;
+      registro.arquivoUrl  = resultado.webViewLink || '';
+    } catch(e) {
+      console.warn('Upload do anexo falhou:', e);
+      toast('⚠️ Registro salvo, mas o anexo não pôde ser enviado.', 'warn');
+    }
+  }
+
+  DB.s('advertencias', list);
+  if (driveReady) await driveSync('advertencias');
+
+  editingAdvId = null;
+  _advArquivoSelecionado = null;
+  closeModal('modal-advertencia');
+  rdAdvertencias();
+  toast('✅ Lançamento salvo!');
+}
+
+function editAdvertencia(id) {
+  var reg = DB.g('advertencias').find(function(x){ return x.id === id; });
+  if (!reg) return;
+  editingAdvId = id;
+  _advArquivoSelecionado = null;
+  openModal('modal-advertencia');
+  document.getElementById('adv-modal-title').textContent = '✏️ Editar Lançamento';
+  document.getElementById('adv-func').value  = reg.fid || '';
+  document.getElementById('adv-tipo').value  = reg.tipo || 'Advertência Verbal';
+  document.getElementById('adv-data').value  = reg.data || '';
+  document.getElementById('adv-dias').value  = reg.dias || '';
+  document.getElementById('adv-motivo').value = reg.motivo || '';
+  document.getElementById('adv-arquivo').value = '';
+  document.getElementById('adv-arquivo-nome').textContent = reg.arquivoNome ? ('Anexo atual: ' + reg.arquivoNome) : '';
+  toggleAdvDias();
+}
+
+function delAdvertencia(id) {
+  if (!confirm('Excluir este lançamento? O anexo salvo no Drive não será apagado.')) return;
+  DB.s('advertencias', DB.g('advertencias').filter(function(x){ return x.id !== id; }));
+  if (driveReady) driveSync('advertencias');
+  rdAdvertencias();
+}
+
+function rdAdvertencias() {
+  var list  = DB.g('advertencias');
+  var funcs = DB.g('funcionarios');
+  var busca = ((document.getElementById('adv-busca')||{}).value || '').toLowerCase().trim();
+  var fTipo = (document.getElementById('adv-filtro-tipo')||{}).value || '';
+  var fMes  = (document.getElementById('adv-filtro-mes')||{}).value || '';
+  var fAno  = (document.getElementById('adv-filtro-ano')||{}).value || '';
+
+  // Popular filtro de anos com base nos registros existentes
+  var anoSel = document.getElementById('adv-filtro-ano');
+  if (anoSel) {
+    var anoAtualSel = anoSel.value;
+    var anos = Array.from(new Set(list.map(function(a){ return (a.data||'').slice(0,4); }).filter(Boolean))).sort().reverse();
+    var anoAgora = new Date().getFullYear().toString();
+    if (anos.indexOf(anoAgora) === -1) anos.unshift(anoAgora);
+    anoSel.innerHTML = '<option value="">Todos os anos</option>' + anos.map(function(a){ return '<option value="'+a+'">'+a+'</option>'; }).join('');
+    anoSel.value = anoAtualSel;
+  }
+
+  function nomeFunc(fid) {
+    var f = funcs.find(function(x){ return x.id === fid; });
+    return f ? f.n : '(funcionário removido)';
+  }
+
+  var filtrada = list.filter(function(a) {
+    if (fTipo && a.tipo !== fTipo) return false;
+    if (fMes && (a.data||'').slice(5,7) !== fMes) return false;
+    if (fAno && (a.data||'').slice(0,4) !== fAno) return false;
+    if (busca && nomeFunc(a.fid).toLowerCase().indexOf(busca) === -1) return false;
+    return true;
+  }).sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+
+  // KPIs: total no mês atual e no ano atual (sobre a base completa, não filtrada)
+  var hoje = new Date();
+  var mesAtual = String(hoje.getMonth()+1).padStart(2,'0');
+  var anoAtual = String(hoje.getFullYear());
+  var noMes = list.filter(function(a){ return (a.data||'').slice(0,7) === (anoAtual+'-'+mesAtual); }).length;
+  var noAno = list.filter(function(a){ return (a.data||'').slice(0,4) === anoAtual; }).length;
+  var suspensoesAno = list.filter(function(a){ return (a.data||'').slice(0,4) === anoAtual && a.tipo === 'Suspensão'; }).length;
+
+  var kpiBar = document.getElementById('adv-kpi-bar');
+  if (kpiBar) {
+    kpiBar.innerHTML =
+      '<div class="stat-card yellow"><div class="stat-icon">📅</div><div><div class="stat-value">'+noMes+'</div><div class="stat-label">Neste mês</div></div></div>' +
+      '<div class="stat-card blue"><div class="stat-icon">🗓️</div><div><div class="stat-value">'+noAno+'</div><div class="stat-label">Neste ano ('+anoAtual+')</div></div></div>' +
+      '<div class="stat-card red"><div class="stat-icon">🚫</div><div><div class="stat-value">'+suspensoesAno+'</div><div class="stat-label">Suspensões em '+anoAtual+'</div></div></div>';
+  }
+
+  var listaEl = document.getElementById('adv-lista');
+  var vazioEl = document.getElementById('adv-vazio');
+  if (!filtrada.length) {
+    listaEl.innerHTML = '';
+    vazioEl.style.display = 'block';
+    return;
+  }
+  vazioEl.style.display = 'none';
+
+  var corTipo = { 'Advertência Verbal':'badge-yellow', 'Advertência Escrita':'badge-blue', 'Suspensão':'badge-red' };
+
+  listaEl.innerHTML = filtrada.map(function(a) {
+    return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--gray-100);border-radius:var(--radius-sm);margin-bottom:10px;flex-wrap:wrap;">' +
+      '<div style="flex:1;min-width:200px;">' +
+        '<div style="font-weight:700;font-size:14px;color:var(--gray-800);">' + nomeFunc(a.fid) + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">' +
+          '<span class="badge ' + (corTipo[a.tipo]||'badge-gray') + '">' + a.tipo + (a.dias ? ' ('+a.dias+' dia'+(a.dias>1?'s':'')+')' : '') + '</span>' +
+          '<span style="font-size:12px;color:var(--gray-500);">📅 ' + fd(a.data) + '</span>' +
+        '</div>' +
+        (a.motivo ? '<div style="font-size:12.5px;color:var(--gray-600);margin-top:6px;">' + a.motivo + '</div>' : '') +
+        (a.arquivoUrl ? '<a href="'+a.arquivoUrl+'" target="_blank" style="font-size:12px;color:var(--blue);display:inline-block;margin-top:6px;">📎 '+(a.arquivoNome||'Ver anexo')+'</a>' : '') +
+      '</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<button class="btn-icon" data-id="'+a.id+'" onclick="editAdvertencia(this.dataset.id)" title="Editar">✏️</button>' +
+        '<button class="btn-icon danger" data-id="'+a.id+'" onclick="delAdvertencia(this.dataset.id)" title="Excluir">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function toggleSidebar() {
