@@ -6487,6 +6487,13 @@ function rdFer() {
   var hoje = td();
   var rawList = DB.g('ferias');
 
+  // Só mostra funcionários ativos — quando alguém é desligado, some
+  // automaticamente daqui (o registro de férias em si não é apagado).
+  rawList = rawList.filter(function(r) {
+    var f = funcs.find(function(x){ return x.id === r.fid; });
+    return f && f.st !== 'Desligado';
+  });
+
   // Calcula, para cada registro, a data limite legal (Art. 134 CLT: as férias
   // devem ser concedidas até 12 meses após o fim do período aquisitivo) e o
   // status de prazo (vencida / próxima a vencer / no prazo).
@@ -6517,8 +6524,12 @@ function rdFer() {
     rawList = rawList.filter(function(r){ return r._alerta === fAlerta; });
   }
 
-  // KPIs de alerta (sobre a base completa, não filtrada, para sempre mostrar o total real)
-  var todasComPrazo = DB.g('ferias').map(function(r) {
+  // KPIs de alerta (sobre a base de ativos, sem filtro de busca/status, para sempre mostrar o total real dos ativos)
+  var feriasAtivos = DB.g('ferias').filter(function(r) {
+    var f = funcs.find(function(x){ return x.id === r.fid; });
+    return f && f.st !== 'Desligado';
+  });
+  var todasComPrazo = feriasAtivos.map(function(r) {
     var dataLimite = r.af ? add(r.af, 365) : null;
     var diasParaLimite = dataLimite ? Math.round((new Date(dataLimite) - new Date(hoje)) / 86400000) : null;
     var jaSaiu = r.st === 'Concluída' || r.st === 'Em andamento';
@@ -6529,8 +6540,8 @@ function rdFer() {
   });
   var totVencidas = todasComPrazo.filter(function(x){ return x === 'vencida'; }).length;
   var totProximas = todasComPrazo.filter(function(x){ return x === 'proxima'; }).length;
-  var totAProgramar = DB.g('ferias').filter(function(r){ return r.st === 'A programar'; }).length;
-  var totAgendadas  = DB.g('ferias').filter(function(r){ return r.st === 'Agendada'; }).length;
+  var totAProgramar = feriasAtivos.filter(function(r){ return r.st === 'A programar'; }).length;
+  var totAgendadas  = feriasAtivos.filter(function(r){ return r.st === 'Agendada'; }).length;
 
   var kpiBar = document.getElementById('fer-kpi-bar');
   if (kpiBar) {
