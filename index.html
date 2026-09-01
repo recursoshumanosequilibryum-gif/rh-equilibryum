@@ -5691,7 +5691,7 @@ function autoRegistrarFerias(f) {
   const jaExiste = ferias.some(r => r.fid === f.id && r.ai === f.adm && r.auto);
   if (jaExiste) return;
   // Período aquisitivo: admissão até 1 ano depois
-  const aiFim = add(f.adm, 365);
+  const aiFim = add(f.adm, 364);
   ferias.push({
     id: uid(), fid: f.id, auto: true,
     ai: f.adm, af: aiFim,
@@ -6498,7 +6498,7 @@ function rdFer() {
   // devem ser concedidas até 12 meses após o fim do período aquisitivo) e o
   // status de prazo (vencida / próxima a vencer / no prazo).
   rawList = rawList.map(function(r) {
-    var dataLimite = r.af ? add(r.af, 365) : null;
+    var dataLimite = r.af ? add(r.af, 336) : null;
     var diasParaLimite = dataLimite ? Math.round((new Date(dataLimite) - new Date(hoje)) / 86400000) : null;
     var jaSaiu = r.st === 'Concluída' || r.st === 'Em andamento';
     var alerta = '';
@@ -6530,7 +6530,7 @@ function rdFer() {
     return f && f.st !== 'Desligado';
   });
   var todasComPrazo = feriasAtivos.map(function(r) {
-    var dataLimite = r.af ? add(r.af, 365) : null;
+    var dataLimite = r.af ? add(r.af, 336) : null;
     var diasParaLimite = dataLimite ? Math.round((new Date(dataLimite) - new Date(hoje)) / 86400000) : null;
     var jaSaiu = r.st === 'Concluída' || r.st === 'Em andamento';
     if (!dataLimite || jaSaiu) return null;
