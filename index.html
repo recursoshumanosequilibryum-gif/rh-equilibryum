@@ -769,8 +769,36 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 
 <!-- FÉRIAS -->
 <div class="section-page" id="sec-ferias">
+  <div id="fer-kpi-bar" class="stats-grid"></div>
   <div class="card">
     <div class="card-header"><span class="card-title">🏖 Férias</span><button class="btn btn-primary" onclick="openModal(&#39;modal-fer&#39;)">+ Programar</button></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;">
+      <input type="text" id="fer-busca" placeholder="🔍 Buscar por funcionário..." oninput="rdFer()" style="flex:1;min-width:180px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      <select id="fer-filtro-emp" onchange="rdFer()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">🏢 Todas as empresas</option>
+      </select>
+      <select id="fer-filtro-dep" onchange="rdFer()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">📁 Todos os departamentos</option>
+      </select>
+      <select id="fer-filtro-status" onchange="rdFer()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Todos os status</option>
+        <option value="A programar">🟨 A programar</option>
+        <option value="Agendada">🟦 Agendada</option>
+        <option value="Em andamento">🟩 Em andamento</option>
+        <option value="Concluída">⬜ Concluída</option>
+      </select>
+      <select id="fer-filtro-alerta" onchange="rdFer()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Sem filtro de prazo</option>
+        <option value="vencida">⚠️ Vencidas</option>
+        <option value="proxima">⏰ Próximas a vencer (≤60d)</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:12px;">
+      <span>🏳 Legenda do prazo (Art. 134 CLT — férias devem sair até 12 meses após o fim do período aquisitivo):</span>
+      <span class="badge badge-red">⚠️ Vencida</span>
+      <span class="badge badge-yellow">⏰ Vence em breve (≤60d)</span>
+      <span class="badge badge-green">No prazo</span>
+    </div>
     <div class="sort-bar">
       <label>Ordenar por:</label>
       <select class="sort-sel" id="fer-sort-campo" onchange="rdFer()">
@@ -778,6 +806,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <option value="ini">Data de Início</option>
         <option value="ret">Data de Retorno</option>
         <option value="status">Status</option>
+        <option value="limite">Data Limite (CLT)</option>
       </select>
       <select class="sort-dir" id="fer-sort-dir" onchange="rdFer()">
         <option value="asc">↑ Crescente</option>
@@ -785,7 +814,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
       </select>
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Funcionário</th><th>Per. Aquisitivo</th><th>Início</th><th>Retorno</th><th>Dias</th><th>Status</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Funcionário</th><th>Per. Aquisitivo</th><th>Data Limite (CLT)</th><th>Início</th><th>Retorno</th><th>Dias</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody id="tb-fer"></tbody>
     </table></div>
   </div>
@@ -5863,6 +5892,7 @@ function getSortVal(obj, campo, deps, emps, funcs) {
     case 'ret':     return obj.ret || '';
     case 'cargo':   return (obj.car || '').toLowerCase();
     case 'status':  return (obj.st || '').toLowerCase();
+    case '_dataLimite': return obj._dataLimite || '';
     case 'empresa': {
       var emp = emps ? emps.find(function(e){ return e.id === obj.emp; }) : null;
       return emp ? emp.razao.toLowerCase() : '';
@@ -6430,21 +6460,112 @@ function rdFer() {
   var campo = (document.getElementById('fer-sort-campo')||{value:'nome'}).value || 'nome';
   var dir   = (document.getElementById('fer-sort-dir')  ||{value:'asc'}).value  || 'asc';
   var funcs = DB.g('funcionarios');
+  var deps  = DB.g('departamentos');
+  var emps  = DB.g('empresas');
+  var busca = ((document.getElementById('fer-busca')||{}).value || '').toLowerCase().trim();
+  var fEmp  = (document.getElementById('fer-filtro-emp')||{}).value || '';
+  var fDep  = (document.getElementById('fer-filtro-dep')||{}).value || '';
+  var fSt   = (document.getElementById('fer-filtro-status')||{}).value || '';
+  var fAlerta = (document.getElementById('fer-filtro-alerta')||{}).value || '';
+
+  // Popular filtros de empresa/departamento (sem perder a seleção atual)
+  var empSel = document.getElementById('fer-filtro-emp');
+  if (empSel && empSel.dataset.count != emps.length) {
+    var vAtualEmp = empSel.value;
+    empSel.innerHTML = '<option value="">🏢 Todas as empresas</option>' + emps.map(function(e){ return '<option value="'+e.id+'">'+(e.razao||e.nome)+'</option>'; }).join('');
+    empSel.value = vAtualEmp;
+    empSel.dataset.count = emps.length;
+  }
+  var depSel = document.getElementById('fer-filtro-dep');
+  if (depSel && depSel.dataset.count != deps.length) {
+    var vAtualDep = depSel.value;
+    depSel.innerHTML = '<option value="">📁 Todos os departamentos</option>' + deps.map(function(d){ return '<option value="'+d.id+'">'+d.nome+'</option>'; }).join('');
+    depSel.value = vAtualDep;
+    depSel.dataset.count = deps.length;
+  }
+
+  var hoje = td();
   var rawList = DB.g('ferias');
-  // For name sort, use funcNome
-  var sortCampo = campo === 'nome' ? 'funcNome' : campo;
+
+  // Calcula, para cada registro, a data limite legal (Art. 134 CLT: as férias
+  // devem ser concedidas até 12 meses após o fim do período aquisitivo) e o
+  // status de prazo (vencida / próxima a vencer / no prazo).
+  rawList = rawList.map(function(r) {
+    var dataLimite = r.af ? add(r.af, 365) : null;
+    var diasParaLimite = dataLimite ? Math.round((new Date(dataLimite) - new Date(hoje)) / 86400000) : null;
+    var jaSaiu = r.st === 'Concluída' || r.st === 'Em andamento';
+    var alerta = '';
+    if (dataLimite && !jaSaiu) {
+      if (diasParaLimite < 0) alerta = 'vencida';
+      else if (diasParaLimite <= 60) alerta = 'proxima';
+    }
+    return Object.assign({}, r, { _dataLimite: dataLimite, _diasParaLimite: diasParaLimite, _alerta: alerta });
+  });
+
+  // Filtros
+  if (fEmp || fDep || fSt || busca) {
+    rawList = rawList.filter(function(r) {
+      var f = funcs.find(function(x){ return x.id === r.fid; });
+      if (fEmp && (!f || f.emp !== fEmp)) return false;
+      if (fDep && (!f || f.dep !== fDep)) return false;
+      if (fSt && r.st !== fSt) return false;
+      if (busca && (!f || f.n.toLowerCase().indexOf(busca) === -1)) return false;
+      return true;
+    });
+  }
+  if (fAlerta) {
+    rawList = rawList.filter(function(r){ return r._alerta === fAlerta; });
+  }
+
+  // KPIs de alerta (sobre a base completa, não filtrada, para sempre mostrar o total real)
+  var todasComPrazo = DB.g('ferias').map(function(r) {
+    var dataLimite = r.af ? add(r.af, 365) : null;
+    var diasParaLimite = dataLimite ? Math.round((new Date(dataLimite) - new Date(hoje)) / 86400000) : null;
+    var jaSaiu = r.st === 'Concluída' || r.st === 'Em andamento';
+    if (!dataLimite || jaSaiu) return null;
+    if (diasParaLimite < 0) return 'vencida';
+    if (diasParaLimite <= 60) return 'proxima';
+    return null;
+  });
+  var totVencidas = todasComPrazo.filter(function(x){ return x === 'vencida'; }).length;
+  var totProximas = todasComPrazo.filter(function(x){ return x === 'proxima'; }).length;
+  var totAProgramar = DB.g('ferias').filter(function(r){ return r.st === 'A programar'; }).length;
+  var totAgendadas  = DB.g('ferias').filter(function(r){ return r.st === 'Agendada'; }).length;
+
+  var kpiBar = document.getElementById('fer-kpi-bar');
+  if (kpiBar) {
+    kpiBar.innerHTML =
+      '<div class="stat-card red"><div class="stat-icon">⚠️</div><div><div class="stat-value">'+totVencidas+'</div><div class="stat-label">Férias vencidas</div></div></div>' +
+      '<div class="stat-card yellow"><div class="stat-icon">⏰</div><div><div class="stat-value">'+totProximas+'</div><div class="stat-label">Próximas a vencer (≤60d)</div></div></div>' +
+      '<div class="stat-card blue"><div class="stat-icon">📅</div><div><div class="stat-value">'+totAgendadas+'</div><div class="stat-label">Agendadas</div></div></div>' +
+      '<div class="stat-card"><div class="stat-icon">🗓️</div><div><div class="stat-value">'+totAProgramar+'</div><div class="stat-label">A programar</div></div></div>';
+  }
+
+  // For name sort, use funcNome; for limite, usa a data limite calculada
+  var sortCampo = campo === 'nome' ? 'funcNome' : (campo === 'limite' ? '_dataLimite' : campo);
   var list = applySort(rawList, sortCampo, dir, null, null, funcs);
   const tb = document.getElementById('tb-fer');
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhuma férias registrada.</td></tr>'; return; }
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--gray-400)">Nenhuma férias registrada.</td></tr>'; return; }
   tb.innerHTML = list.map(r => {
     const f = funcs.find(x => x.id === r.fid);
     const bc = { Agendada:'badge-blue', 'Em andamento':'badge-green', Concluída:'badge-gray', 'A programar':'badge-yellow' }[r.st] || 'badge-gray';
     const iniTxt = r.ini ? fd(r.ini) : '<span style="color:var(--accent);font-size:12px">Aguardando programação</span>';
     const retTxt = r.ret ? fd(r.ret) : '—';
     const autoTag = r.auto ? '<span class="badge badge-blue" style="font-size:10px;margin-left:4px">Auto</span>' : '';
+    var limiteTxt = '—';
+    if (r._dataLimite) {
+      if (r._alerta === 'vencida') {
+        limiteTxt = '<span class="badge badge-red" title="Prazo legal já passou">⚠️ ' + fd(r._dataLimite) + '</span>';
+      } else if (r._alerta === 'proxima') {
+        limiteTxt = '<span class="badge badge-yellow" title="Vence em ' + r._diasParaLimite + ' dia(s)">⏰ ' + fd(r._dataLimite) + ' (' + r._diasParaLimite + 'd)</span>';
+      } else {
+        limiteTxt = '<span class="badge badge-green">' + fd(r._dataLimite) + '</span>';
+      }
+    }
     return `<tr>
       <td>${f?f.n:'—'}</td>
       <td>${fd(r.ai)} – ${fd(r.af)}</td>
+      <td>${limiteTxt}</td>
       <td>${iniTxt}</td>
       <td>${retTxt}</td>
       <td>${r.dias||30}d</td>
