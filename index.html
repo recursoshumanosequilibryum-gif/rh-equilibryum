@@ -522,10 +522,11 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav(&#39;usuarios&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Usuários
   </span></div>
-  <div class="nav-section">Gestão</div>
+  <div class="nav-section">Recrutamento e Seleção</div>
   <div class="nav-item" onclick="nav(&#39;vagas&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path><line x1="12" y1="12" x2="12" y2="16"></line><line x1="10" y1="14" x2="14" y2="14"></line></svg><span>Vagas
   </span></div>
+  <div class="nav-section">Gestão</div>
   <div class="nav-item" onclick="nav(&#39;experiencia&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span>Período de Experiência
   </span></div>
@@ -12034,8 +12035,26 @@ function renderCandidatos() {
     }
     currDiv.appendChild(currLabel);
     currDiv.appendChild(currStatus);
+    // Teste DISC — link para o resultado do teste comportamental do candidato
+    var discDiv = document.createElement('div');
+    discDiv.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    var discInp = document.createElement('input');
+    discInp.type = 'text';
+    discInp.placeholder = '🧭 Link do Teste DISC';
+    discInp.value = c.disc || '';
+    discInp.style.cssText = 'padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;min-width:170px;';
+    (function(idx2){ discInp.oninput = function(){ vagaCandidatos[idx2].disc = this.value; }; })(i);
+    discDiv.appendChild(discInp);
+    if (c.disc) {
+      var discLink = document.createElement('a');
+      discLink.href = c.disc; discLink.target = '_blank';
+      discLink.textContent = '🔗 Ver';
+      discLink.style.cssText = 'font-size:12px;color:var(--green);white-space:nowrap;';
+      discDiv.appendChild(discLink);
+    }
     l2.appendChild(obsInp);
     l2.appendChild(currDiv);
+    l2.appendChild(discDiv);
     row.appendChild(l1);
     row.appendChild(l2);
     el.appendChild(row);
@@ -12102,6 +12121,7 @@ function renderAprovados() {
         (c.curriculo && c.curriculo.url ?
           '<a href="' + c.curriculo.url + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px;">📄 Currículo</a>' :
           (c.curriculo ? '<span style="font-size:12px;color:var(--gray-600);">📄 ' + c.curriculo.name + '</span>' : '')) +
+        (c.disc ? '<a href="' + c.disc + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px;">🧭 Teste DISC</a>' : '') +
         '<button class="btn btn-whatsapp btn-sm btn-convite-adm" style="font-size:12px;">📲 Convite Admissão</button>' +
         '<span class="badge badge-green">Aprovado na etapa</span>';
       el.appendChild(row);
