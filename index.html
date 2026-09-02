@@ -2741,7 +2741,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
       <div class="form-group"><label>Início das Férias *</label><input id="feri" type="date" oninput="calcRet()"></div>
       <div class="form-group"><label>Dias</label><input id="ferd" type="number" value="30" min="5" max="30" oninput="calcRet()"></div>
       <div class="form-group"><label>Retorno (automático)</label><input id="ferr" type="date" readonly=""></div>
-      <div class="form-group"><label>Status</label><select id="ferst"><option>Agendada</option><option>Em andamento</option><option>Concluída</option></select></div>
+      <div class="form-group"><label>Status</label><select id="ferst"><option>A programar</option><option>Agendada</option><option>Em andamento</option><option>Concluída</option></select></div>
       <div class="form-group form-full"><label>Observações</label><textarea id="ferob" rows="2"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal(&#39;modal-fer&#39;)">Cancelar</button><button class="btn btn-primary" onclick="savFer()">💾 Salvar</button></div>
@@ -6602,7 +6602,7 @@ function editFer(id) {
   document.getElementById('feri').value  = r.ini  || '';
   document.getElementById('ferd').value  = r.dias || '30';
   document.getElementById('ferr').value  = r.ret  || '';
-  document.getElementById('ferst').value = (r.st === 'A programar' ? 'Agendada' : r.st) || 'Agendada';
+  document.getElementById('ferst').value = r.st || 'A programar';
   document.getElementById('ferob').value = r.obs  || '';
   document.querySelector('#modal-fer .modal-title').textContent = '✏️ Editar / Programar Férias';
   document.getElementById('modal-fer').classList.add('open');
