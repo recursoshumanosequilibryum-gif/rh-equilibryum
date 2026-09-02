@@ -704,6 +704,18 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
     <div style="font-size:13px;color:#888;margin-top:2px;">Acompanhe processos seletivos, candidatos e aprovações em um só lugar.</div>
   </div>
 
+  <!-- Teste DISC -->
+  <div style="background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:18px;">
+    <div style="font-weight:700;font-size:13px;color:var(--gray-700);margin-bottom:2px;">🧭 Teste DISC — Perfil Comportamental</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px;">Cole aqui o link do teste publicado. Depois é só copiar e enviar ao candidato, ou abrir o painel para ver as respostas.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="cfg-disc-link" placeholder="https://.../Perfil_Comportamental_DISC..." style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      <button class="btn btn-outline btn-sm" onclick="salvarLinkDisc()">💾 Salvar</button>
+      <button class="btn btn-primary btn-sm" onclick="copiarLinkDisc()">📋 Copiar link p/ candidato</button>
+      <button class="btn btn-outline btn-sm" onclick="abrirPainelDisc()">📊 Ver respostas</button>
+    </div>
+  </div>
+
   <!-- KPI banner -->
   <div id="vaga-kpi-bar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;"></div>
 
@@ -11742,8 +11754,34 @@ var editingVagaId = null;
 var vagaCandidatos = [];  // [{nome, tel, email, st, obs}]
 var vagaAprovados  = [];  // [{nome, tel, email, dtInicio, obs}]
 
+// ── Teste DISC: link para candidatos + painel de respostas ─────
+function getConfigDisc() {
+  return DB.go('cfg_disc');
+}
+function salvarLinkDisc() {
+  var link = (document.getElementById('cfg-disc-link')||{}).value.trim();
+  DB.so('cfg_disc', { link: link });
+  toast('Link do teste DISC salvo!');
+}
+function copiarLinkDisc() {
+  var cfg = getConfigDisc();
+  if (!cfg.link) { toast('Cadastre o link do teste DISC antes de copiar.', 'warn'); return; }
+  navigator.clipboard.writeText(cfg.link).then(function(){ toast('🔗 Link copiado!'); });
+}
+function abrirPainelDisc() {
+  var cfg = getConfigDisc();
+  if (!cfg.link) { toast('Cadastre o link do teste DISC antes de abrir o painel.', 'warn'); return; }
+  var sep = cfg.link.indexOf('?') > -1 ? '&' : '?';
+  window.open(cfg.link + sep + 'painel=equilibryum-rh2026', '_blank');
+}
+
 function rdVagas() {
   fillVagaFilters();
+  // Preenche o campo do link do teste DISC sem atrapalhar quem está digitando
+  var discLinkEl = document.getElementById('cfg-disc-link');
+  if (discLinkEl && document.activeElement !== discLinkEl) {
+    discLinkEl.value = getConfigDisc().link || '';
+  }
   var busca = ((document.getElementById('vaga-busca')||{}).value||'').toLowerCase();
   var stF   = (document.getElementById('vaga-filter-status')||{value:''}).value||'';
   var empF  = (document.getElementById('vaga-filter-emp')||{value:''}).value||'';
