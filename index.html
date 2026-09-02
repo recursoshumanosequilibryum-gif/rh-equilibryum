@@ -6441,6 +6441,8 @@ function calcRet() { const i = v('feri'), d = parseInt(v('ferd')) || 30; if (i) 
 async function savFer() {
   const fid = v('ferf'); if (!fid) { alert('Selecione funcionário.'); return; }
   const list = DB.g('ferias');
+  var statusFinal = v('ferst');
+  var afFinal = v('feraf');
   if (editingFerId) {
     // edit mode
     const idx = list.findIndex(x => x.id === editingFerId);
@@ -6452,6 +6454,17 @@ async function savFer() {
   } else {
     list.push({ id: uid(), fid, ai: v('ferai'), af: v('feraf'), ini: v('feri'), dias: v('ferd'), ret: v('ferr'), st: v('ferst'), obs: v('ferob') });
   }
+
+  // Ao concluir as férias, abre automaticamente o próximo período aquisitivo
+  // "A programar" para esse funcionário — igual ao gerado na admissão, só que
+  // encadeado a partir do fim do período que acabou de ser concluído.
+  if (statusFinal === 'Concluída' && afFinal) {
+    var jaTemProximo = list.some(function(r){ return r.fid === fid && r.ai === afFinal; });
+    if (!jaTemProximo) {
+      list.push({ id: uid(), fid: fid, ai: afFinal, af: add(afFinal, 364), ini: '', dias: '30', ret: '', st: 'A programar', obs: '', auto: true });
+    }
+  }
+
   DB.s('ferias', list);
   if (driveReady) await driveSync('ferias');
   closeModal('modal-fer'); rdFer(); updDash(); toast('Férias salvas' + (driveReady ? ' ☁️' : '!'));
