@@ -3454,6 +3454,14 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <div class="form-group"><label>Vagas Disponíveis</label>
           <input id="vg-qtd" type="number" min="1" value="1" placeholder="1">
         </div>
+        <div class="form-group form-full">
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            <span>📍 Detalhamento por Unidade (opcional)</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addUnidadeVaga()" style="text-transform:none;letter-spacing:0;font-weight:600;">+ Adicionar Unidade</button>
+          </label>
+          <div style="font-size:11.5px;color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;margin:-2px 0 8px;">Use quando esta mesma vaga tiver quantidades e horários diferentes por unidade (ex.: 2 em Tatuapé, 1 em Perdizes). O total de vagas é somado sozinho.</div>
+          <div id="vg-unidades-list"></div>
+        </div>
         <div class="form-group"><label>Status</label>
           <select id="vg-status">
             <option value="Aberta">Aberta</option>
@@ -5406,7 +5414,7 @@ function openModal(id) {
     // Só resetar se for nova vaga (editingVagaId é null antes de chamar openModal)
     var isNewVaga = !editingVagaId;
     if (isNewVaga) {
-      vagaCandidatos = []; vagaAprovados = [];
+      vagaCandidatos = []; vagaAprovados = []; vagaUnidades = [];
       document.getElementById('vaga-modal-title').textContent = '💼 Nova Vaga';
     }
     // Reset tab sempre
@@ -5434,7 +5442,7 @@ function openModal(id) {
       document.getElementById('vg-tipo').value='CLT';
       document.getElementById('vg-escala').value='';
       document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){c.checked=false;});
-      renderCandidatos(); renderAprovados();
+      renderCandidatos(); renderAprovados(); renderUnidadesVaga();
     }
   }
   if (id === 'modal-trein') { fillFuncSel('tr-parts',true); trPartsFillPanel([]); }
@@ -11752,6 +11760,51 @@ function flashCheckAll(val) {
 // ============================================================
 var editingVagaId = null;
 var vagaCandidatos = [];  // [{nome, tel, email, st, obs}]
+var vagaUnidades = [];    // [{id, unidade, qtd, horario, escala, obs}]
+
+function addUnidadeVaga() {
+  vagaUnidades.push({ id: uid(), unidade: '', qtd: 1, horario: '', escala: '', obs: '' });
+  renderUnidadesVaga();
+}
+
+function removerUnidadeVaga(idx) {
+  vagaUnidades.splice(idx, 1);
+  renderUnidadesVaga();
+}
+
+function renderUnidadesVaga() {
+  var el = document.getElementById('vg-unidades-list');
+  if (!el) return;
+  var qtdField = document.getElementById('vg-qtd');
+
+  if (!vagaUnidades.length) {
+    el.innerHTML = '';
+    // Sem detalhamento por unidade: campo de quantidade volta a ser editável normalmente
+    if (qtdField) qtdField.readOnly = false;
+    return;
+  }
+
+  var total = 0;
+  el.innerHTML = vagaUnidades.map(function(u, i) {
+    total += parseInt(u.qtd) || 0;
+    return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:8px 10px;">' +
+      '<input type="text" placeholder="Unidade (ex.: Tatuapé)" value="'+(u.unidade||'')+'" oninput="vagaUnidades['+i+'].unidade=this.value" style="flex:1.4;min-width:120px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
+      '<input type="number" min="1" placeholder="Qtd" value="'+(u.qtd||1)+'" oninput="vagaUnidades['+i+'].qtd=this.value;renderUnidadesVaga()" style="width:64px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
+      '<input type="text" placeholder="Horário (ex.: 08h-17h)" value="'+(u.horario||'')+'" oninput="vagaUnidades['+i+'].horario=this.value" style="flex:1.2;min-width:110px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
+      '<input type="text" placeholder="Escala (ex.: Seg a Sex)" value="'+(u.escala||'')+'" oninput="vagaUnidades['+i+'].escala=this.value" style="flex:1.2;min-width:110px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
+      '<input type="text" placeholder="Obs." value="'+(u.obs||'')+'" oninput="vagaUnidades['+i+'].obs=this.value" style="flex:1;min-width:90px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
+      '<button type="button" class="btn-icon danger" onclick="removerUnidadeVaga('+i+')" title="Remover">🗑️</button>' +
+    '</div>';
+  }).join('') +
+  '<div style="font-size:12px;color:var(--gray-600);font-weight:600;margin-top:2px;">Total somado: ' + total + ' vaga' + (total!==1?'s':'') + '</div>';
+
+  // Quando há detalhamento por unidade, o total é calculado sozinho
+  if (qtdField) {
+    qtdField.value = total || 1;
+    qtdField.readOnly = true;
+  }
+}
+
 var vagaAprovados  = [];  // [{nome, tel, email, dtInicio, obs}]
 
 // ── Teste DISC: link para candidatos + painel de respostas ─────
@@ -11868,16 +11921,35 @@ function rdVagas() {
       '</div>';
     }
 
+    var temUnidades = vaga.unidades && vaga.unidades.length > 0;
+
     var infoGrid = [
       infoBloco('🏢','Empresa', emp ? emp.razao : ''),
       infoBloco('📁','Departamento', dep ? dep.nome : ''),
-      infoBloco('📍','Unidade', vaga.unidade),
-      infoBloco('⏰','Carga Horária', vaga.ch),
+      temUnidades ? '' : infoBloco('📍','Unidade', vaga.unidade),
+      temUnidades ? '' : infoBloco('⏰','Carga Horária', vaga.ch),
       infoBloco('💰','Salário', vaga.sal),
-      infoBloco('🗓️','Escala', vaga.escala),
+      temUnidades ? '' : infoBloco('🗓️','Escala', vaga.escala),
       infoBloco('📅','Abertura', vaga.aber ? fd(vaga.aber) : ''),
       infoBloco('⏳','Prazo', vaga.prazo ? (fd(vaga.prazo)+prazoAlerta) : '')
     ].filter(Boolean).join('');
+
+    var unidadesHtml = temUnidades ? (
+      '<div style="padding:12px 20px;border-bottom:1px solid #f0f0f0;">' +
+        '<div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">📍 Detalhamento por unidade</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          vaga.unidades.map(function(u){
+            return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f8faf9;border-radius:8px;padding:7px 12px;">' +
+              '<span style="font-weight:700;font-size:13px;color:#1a3a2a;min-width:110px;">'+u.unidade+'</span>' +
+              '<span style="background:#e8f5ee;color:#1f5c44;border-radius:12px;padding:2px 10px;font-size:11.5px;font-weight:700;">'+u.qtd+' vaga'+(u.qtd>1?'s':'')+'</span>' +
+              (u.horario ? '<span style="font-size:12px;color:#666;">⏰ '+u.horario+'</span>' : '') +
+              (u.escala ? '<span style="font-size:12px;color:#666;">🗓️ '+u.escala+'</span>' : '') +
+              (u.obs ? '<span style="font-size:12px;color:#999;">— '+u.obs+'</span>' : '') +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    ) : '';
 
     var card = document.createElement('div');
     card.style.cssText = 'background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #edf0f4;overflow:hidden;transition:box-shadow .2s,transform .2s;';
@@ -11905,6 +11977,8 @@ function rdVagas() {
 
       // Info grid (labeled blocks, mais didático que a lista corrida de ícones)
       (infoGrid ? '<div style="padding:12px 20px;display:flex;flex-wrap:wrap;gap:16px 24px;border-bottom:1px solid #f0f0f0;">'+infoGrid+'</div>' : '') +
+
+      unidadesHtml +
 
       // Description + benefits, cada um com seu rótulo
       (vaga.desc?'<div style="padding:12px 20px;border-bottom:1px solid #f0f0f0;">'+
@@ -12241,6 +12315,10 @@ async function savVaga() {
   });
 
   var list = DB.g('vagas');
+  var unidadesValidas = vagaUnidades.filter(function(u){ return (u.unidade||'').trim(); });
+  var qtdFinal = unidadesValidas.length
+    ? unidadesValidas.reduce(function(s,u){ return s + (parseInt(u.qtd)||0); }, 0) || 1
+    : (parseInt(v('vg-qtd'))||1);
   var rec = {
     id:          editingVagaId || uid(),
     titulo:      titulo.trim(),
@@ -12251,7 +12329,8 @@ async function savVaga() {
     sal:         v('vg-sal'),
     escala:      v('vg-escala'),
     tipo:        v('vg-tipo'),
-    qtd:         parseInt(v('vg-qtd'))||1,
+    qtd:         qtdFinal,
+    unidades:    unidadesValidas,
     status:      v('vg-status'),
     aber:        v('vg-aber'),
     prazo:       v('vg-prazo'),
@@ -12286,6 +12365,7 @@ function editVaga(id) {
   editingVagaId = id;
   vagaCandidatos = JSON.parse(JSON.stringify(vaga.candidatos||[]));
   vagaAprovados  = JSON.parse(JSON.stringify(vaga.aprovados||[]));
+  vagaUnidades   = JSON.parse(JSON.stringify(vaga.unidades||[]));
 
   openModal('modal-vaga');
   document.getElementById('vaga-modal-title').textContent = '✏️ Editar Vaga — ' + vaga.titulo;
@@ -12307,6 +12387,7 @@ function editVaga(id) {
       });
       renderCandidatos();
       renderAprovados();
+      renderUnidadesVaga();
     }, 150);
   }, 100);
 }
