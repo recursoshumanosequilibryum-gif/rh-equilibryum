@@ -943,6 +943,16 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
             <option value="">Todos</option>
           </select>
         </div>
+        <div class="form-group"><label>Unidade</label>
+          <select id="uni-mov-filter-unidade" onchange="rdUniMov()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Funcionário</label>
+          <select id="uni-mov-filter-func" onchange="rdUniMov()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+            <option value="">Todos</option>
+          </select>
+        </div>
         <button class="btn btn-outline btn-sm" onclick="exportUniCSV()">📄 Exportar CSV</button>
       </div>
       <div class="table-wrap">
@@ -7255,9 +7265,38 @@ async function savUniAjuste() {
 function rdUniMov() {
   const tipoF = (document.getElementById('uni-mov-filter-tipo') || {value:''}).value || '';
   const itemF = (document.getElementById('uni-mov-filter-item') || {value:''}).value || '';
+  const unidadeF = (document.getElementById('uni-mov-filter-unidade') || {value:''}).value || '';
+  const funcF = (document.getElementById('uni-mov-filter-func') || {value:''}).value || '';
+  const funcs = DB.g('funcionarios');
+  const emps  = DB.g('empresas');
+
+  // Popular filtro de Unidade (empresa) sem perder a seleção atual
+  var unidadeSel = document.getElementById('uni-mov-filter-unidade');
+  if (unidadeSel && unidadeSel.dataset.count != emps.length) {
+    var vAtualU = unidadeSel.value;
+    unidadeSel.innerHTML = '<option value="">Todas</option>' + emps.map(function(e){ return '<option value="'+e.id+'">'+(e.razao||e.nome)+'</option>'; }).join('');
+    unidadeSel.value = vAtualU;
+    unidadeSel.dataset.count = emps.length;
+  }
+  // Popular filtro de Funcionário sem perder a seleção atual
+  var funcSel = document.getElementById('uni-mov-filter-func');
+  if (funcSel && funcSel.dataset.count != funcs.length) {
+    var vAtualF = funcSel.value;
+    funcSel.innerHTML = '<option value="">Todos</option>' + funcs.slice().sort(function(a,b){return a.n.localeCompare(b.n,'pt-BR');}).map(function(f){ return '<option value="'+f.n.replace(/"/g,'&quot;')+'">'+f.n+'</option>'; }).join('');
+    funcSel.value = vAtualF;
+    funcSel.dataset.count = funcs.length;
+  }
+
   let movs = DB.g('uni-mov');
   if (tipoF) movs = movs.filter(function(m) { return m.tipo === tipoF; });
   if (itemF) movs = movs.filter(function(m) { return m.item === itemF; });
+  if (funcF) movs = movs.filter(function(m) { return m.func === funcF; });
+  if (unidadeF) {
+    movs = movs.filter(function(m) {
+      var f = funcs.find(function(x){ return x.n === m.func; });
+      return f && f.emp === unidadeF;
+    });
+  }
   const tb = document.getElementById('tb-uni-mov');
   if (!tb) return;
   if (!movs.length) {
