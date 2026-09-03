@@ -12401,7 +12401,7 @@ function editVaga(id) {
 async function delVaga(id) {
   if (!confirm('Excluir esta vaga?')) return;
   DB.s('vagas', DB.g('vagas').filter(function(x){return x.id!==id;}));
-  if (driveReady) await driveSync('vagas');
+  if (driveReady) await driveSync('vagas', [id]);
   rdVagas();
 }
 
