@@ -3424,51 +3424,8 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <div class="form-group"><label>Departamento</label>
           <select id="vg-dep"><option value="">Selecione</option></select>
         </div>
-        <div class="form-group"><label>Unidade</label>
-          <input id="vg-unidade" type="text" placeholder="Ex.: TATUAPÉ">
-        </div>
-        <div class="form-group"><label>Carga Horária</label>
-          <input id="vg-ch" type="text" placeholder="Ex.: 44h/semana, 30h/semana">
-        </div>
-        <div class="form-group"><label>Salário (R$)</label>
-          <input id="vg-sal" type="text" placeholder="Ex.: 2.500,00 ou A combinar">
-        </div>
-        <div class="form-group"><label>Escala</label>
-          <select id="vg-escala">
-            <option value="">Selecione</option>
-            <option value="Seg a Sex">Seg a Sex</option>
-            <option value="Seg a Sab">Seg a Sab</option>
-            <option value="Escala 12x36">Escala 12x36</option>
-            <option value="A combinar">A combinar</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Tipo de Contrato</label>
-          <select id="vg-tipo">
-            <option value="CLT">CLT</option>
-            <option value="PJ">PJ</option>
-            <option value="Estágio">Estágio</option>
-            <option value="Temporário">Temporário</option>
-            <option value="Aprendiz">Aprendiz</option>
-          </select>
-        </div>
         <div class="form-group"><label>Vagas Disponíveis</label>
-          <input id="vg-qtd" type="number" min="1" value="1" placeholder="1">
-        </div>
-        <div class="form-group form-full">
-          <label style="display:flex;justify-content:space-between;align-items:center;">
-            <span>📍 Detalhamento por Unidade (opcional)</span>
-            <button type="button" class="btn btn-outline btn-sm" onclick="addUnidadeVaga()" style="text-transform:none;letter-spacing:0;font-weight:600;">+ Adicionar Unidade</button>
-          </label>
-          <div style="font-size:11.5px;color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;margin:-2px 0 8px;">Use quando esta mesma vaga tiver quantidades e horários diferentes por unidade (ex.: 2 em Tatuapé, 1 em Perdizes). O total de vagas é somado sozinho.</div>
-          <div id="vg-unidades-list"></div>
-        </div>
-        <div class="form-group"><label>Status</label>
-          <select id="vg-status">
-            <option value="Aberta">Aberta</option>
-            <option value="Em Seleção">Em Seleção</option>
-            <option value="Encerrada">Encerrada</option>
-            <option value="Cancelada">Cancelada</option>
-          </select>
+          <input id="vg-qtd" type="number" min="1" value="1" placeholder="1" readonly style="background:var(--gray-50);color:var(--gray-600);font-weight:700;">
         </div>
         <div class="form-group"><label>Data de Abertura</label>
           <input id="vg-aber" type="date">
@@ -3476,6 +3433,16 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <div class="form-group"><label>Prazo para Candidatura</label>
           <input id="vg-prazo" type="date">
         </div>
+
+        <div class="form-group form-full" style="margin-top:6px;">
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13.5px;color:var(--green-dark);">📍 Detalhamento por Unidade</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addUnidadeVaga()" style="text-transform:none;letter-spacing:0;font-weight:600;">+ Adicionar Unidade</button>
+          </label>
+          <div style="font-size:11.5px;color:var(--gray-400);font-weight:400;text-transform:none;letter-spacing:0;margin:2px 0 10px;">Uma vaga, várias unidades: cadastre quantas vagas, horário, escala, tipo de contrato, salário e status para cada unidade. O total de vagas acima é somado sozinho.</div>
+          <div id="vg-unidades-list"></div>
+        </div>
+
         <div class="form-group form-full"><label>Benefícios Oferecidos</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--gray-50);border-radius:var(--radius-sm);border:1.5px solid var(--gray-200);" id="vg-benef-checks">
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;"><input type="checkbox" value="VT – Vale Transporte"> 🚌 VT</label>
@@ -3501,7 +3468,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <!-- ABA CANDIDATOS -->
     <div id="vt-cands" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <div style="font-size:13px;color:var(--gray-600);">Candidatos em processo seletivo para esta vaga.</div>
+        <div style="font-size:13px;color:var(--gray-600);">Candidatos em processo seletivo para esta vaga — nome, contato, status, unidade e documentos.</div>
         <button class="btn btn-outline btn-sm" onclick="addCandidato()">+ Adicionar Candidato</button>
       </div>
       <div id="vg-cands-list"></div>
@@ -5414,7 +5381,8 @@ function openModal(id) {
     // Só resetar se for nova vaga (editingVagaId é null antes de chamar openModal)
     var isNewVaga = !editingVagaId;
     if (isNewVaga) {
-      vagaCandidatos = []; vagaAprovados = []; vagaUnidades = [];
+      vagaCandidatos = []; vagaAprovados = [];
+      vagaUnidades = [{ id: uid(), unidade: '', qtd: 1, horario: '', escala: '', tipo: 'CLT', sal: '', status: 'Aberta', obs: '' }];
       document.getElementById('vaga-modal-title').textContent = '💼 Nova Vaga';
     }
     // Reset tab sempre
@@ -5432,15 +5400,12 @@ function openModal(id) {
     if (depSel && isNewVaga) depSel.innerHTML = '<option value="">Selecione</option>';
     // Reset fields only for new vaga
     if (isNewVaga) {
-      ['titulo','unidade','ch','sal','desc','obs','benef-outros'].forEach(function(f){
+      ['titulo','desc','obs','benef-outros'].forEach(function(f){
         var el=document.getElementById('vg-'+f); if(el) el.value='';
       });
       document.getElementById('vg-qtd').value=1;
-      document.getElementById('vg-status').value='Aberta';
       document.getElementById('vg-aber').value=td();
       document.getElementById('vg-prazo').value='';
-      document.getElementById('vg-tipo').value='CLT';
-      document.getElementById('vg-escala').value='';
       document.querySelectorAll('#vg-benef-checks input[type=checkbox]').forEach(function(c){c.checked=false;});
       renderCandidatos(); renderAprovados(); renderUnidadesVaga();
     }
@@ -11763,13 +11728,13 @@ var vagaCandidatos = [];  // [{nome, tel, email, st, obs}]
 var vagaUnidades = [];    // [{id, unidade, qtd, horario, escala, obs}]
 
 function addUnidadeVaga() {
-  vagaUnidades.push({ id: uid(), unidade: '', qtd: 1, horario: '', escala: '', obs: '' });
+  vagaUnidades.push({ id: uid(), unidade: '', qtd: 1, horario: '', escala: '', tipo: 'CLT', sal: '', status: 'Aberta', obs: '' });
   renderUnidadesVaga();
 }
 
 function removerUnidadeVaga(idx) {
   vagaUnidades.splice(idx, 1);
-  renderUnidadesVaga();
+  if (!vagaUnidades.length) addUnidadeVaga(); else renderUnidadesVaga();
 }
 
 function renderUnidadesVaga() {
@@ -11778,31 +11743,44 @@ function renderUnidadesVaga() {
   var qtdField = document.getElementById('vg-qtd');
 
   if (!vagaUnidades.length) {
-    el.innerHTML = '';
-    // Sem detalhamento por unidade: campo de quantidade volta a ser editável normalmente
-    if (qtdField) qtdField.readOnly = false;
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--gray-400);font-size:12.5px;background:var(--gray-50);border-radius:var(--radius-sm);">Nenhuma unidade adicionada ainda.</div>';
+    if (qtdField) qtdField.value = 1;
     return;
   }
 
+  var cores = ['#1565c0','#2e7d5e','#e65100','#6d4c41','#8e24aa','#00838f'];
   var total = 0;
+  var statusOpts = ['Aberta','Em Seleção','Encerrada','Cancelada'];
+  var tipoOpts = ['CLT','PJ','Estágio','Temporário','Aprendiz'];
+
+  function campo(label, inputHtml) {
+    return '<div><label style="display:block;font-size:10px;color:var(--gray-500);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-bottom:3px;">'+label+'</label>'+inputHtml+'</div>';
+  }
+  var inpCss = 'width:100%;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;background:#fff;';
+
   el.innerHTML = vagaUnidades.map(function(u, i) {
     total += parseInt(u.qtd) || 0;
-    return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:8px 10px;">' +
-      '<input type="text" placeholder="Unidade (ex.: Tatuapé)" value="'+(u.unidade||'')+'" oninput="vagaUnidades['+i+'].unidade=this.value" style="flex:1.4;min-width:120px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
-      '<input type="number" min="1" placeholder="Qtd" value="'+(u.qtd||1)+'" oninput="vagaUnidades['+i+'].qtd=this.value;renderUnidadesVaga()" style="width:64px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
-      '<input type="text" placeholder="Horário (ex.: 08h-17h)" value="'+(u.horario||'')+'" oninput="vagaUnidades['+i+'].horario=this.value" style="flex:1.2;min-width:110px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
-      '<input type="text" placeholder="Escala (ex.: Seg a Sex)" value="'+(u.escala||'')+'" oninput="vagaUnidades['+i+'].escala=this.value" style="flex:1.2;min-width:110px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
-      '<input type="text" placeholder="Obs." value="'+(u.obs||'')+'" oninput="vagaUnidades['+i+'].obs=this.value" style="flex:1;min-width:90px;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;">' +
-      '<button type="button" class="btn-icon danger" onclick="removerUnidadeVaga('+i+')" title="Remover">🗑️</button>' +
+    var cor = cores[i % cores.length];
+    return '<div style="border:1.5px solid var(--gray-200);border-left:4px solid '+cor+';border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<span style="font-weight:800;font-size:12.5px;color:'+cor+';">📍 Unidade '+(i+1)+'</span>' +
+        '<button type="button" onclick="removerUnidadeVaga('+i+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;font-weight:600;">🗑️ Remover</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">' +
+        campo('Unidade', '<input type="text" placeholder="Ex.: Tatuapé" value="'+(u.unidade||'')+'" oninput="vagaUnidades['+i+'].unidade=this.value" style="'+inpCss+'">') +
+        campo('Qtd. de vaga', '<input type="number" min="1" value="'+(u.qtd||1)+'" oninput="vagaUnidades['+i+'].qtd=this.value;renderUnidadesVaga()" style="'+inpCss+'">') +
+        campo('Horário', '<input type="text" placeholder="Ex.: 08h-17h" value="'+(u.horario||'')+'" oninput="vagaUnidades['+i+'].horario=this.value" style="'+inpCss+'">') +
+        campo('Escala', '<input type="text" placeholder="Ex.: Seg a Sex" value="'+(u.escala||'')+'" oninput="vagaUnidades['+i+'].escala=this.value" style="'+inpCss+'">') +
+        campo('Tipo de Contrato', '<select onchange="vagaUnidades['+i+'].tipo=this.value" style="'+inpCss+'">' + tipoOpts.map(function(t){ return '<option'+(u.tipo===t?' selected':'')+'>'+t+'</option>'; }).join('') + '</select>') +
+        campo('Salário', '<input type="text" placeholder="Ex.: 2.500,00" value="'+(u.sal||'')+'" oninput="vagaUnidades['+i+'].sal=this.value" style="'+inpCss+'">') +
+        campo('Status da vaga', '<select onchange="vagaUnidades['+i+'].status=this.value" style="'+inpCss+'">' + statusOpts.map(function(s){ return '<option'+(u.status===s?' selected':'')+'>'+s+'</option>'; }).join('') + '</select>') +
+        campo('Obs.', '<input type="text" placeholder="Opcional" value="'+(u.obs||'')+'" oninput="vagaUnidades['+i+'].obs=this.value" style="'+inpCss+'">') +
+      '</div>' +
     '</div>';
   }).join('') +
-  '<div style="font-size:12px;color:var(--gray-600);font-weight:600;margin-top:2px;">Total somado: ' + total + ' vaga' + (total!==1?'s':'') + '</div>';
+  '<div style="font-size:12.5px;color:var(--green-dark);font-weight:700;margin-top:2px;">Total somado: ' + total + ' vaga' + (total!==1?'s':'') + '</div>';
 
-  // Quando há detalhamento por unidade, o total é calculado sozinho
-  if (qtdField) {
-    qtdField.value = total || 1;
-    qtdField.readOnly = true;
-  }
+  if (qtdField) qtdField.value = total || 1;
 }
 
 var vagaAprovados  = [];  // [{nome, tel, email, dtInicio, obs}]
@@ -11850,7 +11828,7 @@ function rdVagas() {
     var encerradas = all.filter(function(v){return v.status==='Encerrada';}).reduce(function(s,v){return s+(parseInt(v.qtd)||1);},0);
     var totalCands = all.reduce(function(s,v){return s+(v.candidatos?v.candidatos.length:0);},0);
     var totalAprov = all.reduce(function(s,v){
-      return s+Math.max((v.aprovados||[]).length,(v.candidatos||[]).filter(function(c){return c.st==='Aprovado na etapa';}).length);
+      return s+Math.max((v.aprovados||[]).length,(v.candidatos||[]).filter(candAprovado).length);
     },0);
     var kpis = [
       { label:'Vagas Abertas',   val:abertas,    color:'#2e7d32', bg:'#e8f5e9', icon:'🟢' },
@@ -11903,7 +11881,7 @@ function rdVagas() {
     var st      = ST[vaga.status] || ST['Encerrada'];
     var qtd     = parseInt(vaga.qtd)||1;
     var nCands  = (vaga.candidatos||[]).length;
-    var nAprov  = Math.max((vaga.aprovados||[]).length,(vaga.candidatos||[]).filter(function(c){return c.st==='Aprovado na etapa';}).length);
+    var nAprov  = Math.max((vaga.aprovados||[]).length,(vaga.candidatos||[]).filter(candAprovado).length);
     var progPct = Math.min(Math.round(nCands/Math.max(qtd,1)*100),100);
     var progClr = progPct>=100?'#2e7d32':progPct>=50?'#e65100':'#1565c0';
     var prazoOk = !vaga.prazo || vaga.prazo >= td() || vaga.status === 'Encerrada' || vaga.status === 'Cancelada';
@@ -11928,22 +11906,27 @@ function rdVagas() {
       infoBloco('📁','Departamento', dep ? dep.nome : ''),
       temUnidades ? '' : infoBloco('📍','Unidade', vaga.unidade),
       temUnidades ? '' : infoBloco('⏰','Carga Horária', vaga.ch),
-      infoBloco('💰','Salário', vaga.sal),
+      temUnidades ? '' : infoBloco('💰','Salário', vaga.sal),
       temUnidades ? '' : infoBloco('🗓️','Escala', vaga.escala),
       infoBloco('📅','Abertura', vaga.aber ? fd(vaga.aber) : ''),
       infoBloco('⏳','Prazo', vaga.prazo ? (fd(vaga.prazo)+prazoAlerta) : '')
     ].filter(Boolean).join('');
 
+    var statusCorUnidade = { 'Aberta':'#2e7d32','Em Seleção':'#1565c0','Encerrada':'#666','Cancelada':'#c62828' };
     var unidadesHtml = temUnidades ? (
       '<div style="padding:12px 20px;border-bottom:1px solid #f0f0f0;">' +
         '<div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">📍 Detalhamento por unidade</div>' +
         '<div style="display:flex;flex-direction:column;gap:6px;">' +
           vaga.unidades.map(function(u){
-            return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f8faf9;border-radius:8px;padding:7px 12px;">' +
-              '<span style="font-weight:700;font-size:13px;color:#1a3a2a;min-width:110px;">'+u.unidade+'</span>' +
+            var scor = statusCorUnidade[u.status] || '#666';
+            return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8faf9;border-radius:8px;padding:7px 12px;">' +
+              '<span style="font-weight:700;font-size:13px;color:#1a3a2a;min-width:100px;">'+u.unidade+'</span>' +
               '<span style="background:#e8f5ee;color:#1f5c44;border-radius:12px;padding:2px 10px;font-size:11.5px;font-weight:700;">'+u.qtd+' vaga'+(u.qtd>1?'s':'')+'</span>' +
+              (u.tipo ? '<span style="font-size:11.5px;background:#f5f5f5;color:#555;border-radius:10px;padding:2px 8px;">'+u.tipo+'</span>' : '') +
               (u.horario ? '<span style="font-size:12px;color:#666;">⏰ '+u.horario+'</span>' : '') +
               (u.escala ? '<span style="font-size:12px;color:#666;">🗓️ '+u.escala+'</span>' : '') +
+              (u.sal ? '<span style="font-size:12px;color:#666;">💰 '+u.sal+'</span>' : '') +
+              (u.status ? '<span style="font-size:11px;font-weight:700;color:'+scor+';">● '+u.status+'</span>' : '') +
               (u.obs ? '<span style="font-size:12px;color:#999;">— '+u.obs+'</span>' : '') +
             '</div>';
           }).join('') +
@@ -12054,36 +12037,42 @@ function onVagaEmpChange() {
 
 // ── Candidatos ────────────────────────────────────────────────
 function addCandidato() {
-  vagaCandidatos.push({id:uid(),nome:'',tel:'',email:'',st:'Em análise',obs:'',curriculo:null});
+  vagaCandidatos.push({id:uid(),nome:'',tel:'',email:'',st:'',unidade:'',obs:'',arquivos:[]});
   renderCandidatos();
 }
 
-async function handleCurriculoUpload(inp, idx) {
-  var file = inp.files[0];
-  if (!file) return;
-  var el = document.getElementById('curr-status-'+idx);
-  if (el) el.textContent = '⏳ Enviando...';
-  if (driveReady) {
-    try {
-      var up = await uploadFileToDrive(file, 'Vagas/Curriculos');
-      vagaCandidatos[idx].curriculo = { name: file.name, id: up.id, url: up.webViewLink };
-      if (el) el.innerHTML = '<a href="'+up.webViewLink+'" target="_blank" style="color:var(--green);font-size:12px;">📄 '+file.name+'</a>';
-      toast('Currículo enviado ao Drive ☁️');
-    } catch(e) {
-      // Save as dataURL fallback
-      var reader = new FileReader();
-      reader.onload = function(ev) {
-        vagaCandidatos[idx].curriculo = { name: file.name, dataURL: ev.target.result };
-        if (el) el.innerHTML = '<span style="color:var(--green);font-size:12px;">📄 '+file.name+'</span>';
-      };
-      reader.readAsDataURL(file);
+// Reconhece candidatos aprovados tanto no status novo ("Aprovado")
+// quanto no status antigo ("Aprovado na etapa"), sem perder histórico.
+function candAprovado(c) {
+  return c.st === 'Aprovado' || c.st === 'Aprovado na etapa';
+}
+
+async function handleArquivosCandUpload(inp, idx) {
+  var files = Array.prototype.slice.call(inp.files || []);
+  if (!files.length) return;
+  if (!vagaCandidatos[idx].arquivos) vagaCandidatos[idx].arquivos = [];
+  var statusEl = document.getElementById('arq-status-'+idx);
+  if (statusEl) statusEl.textContent = '⏳ Enviando ' + files.length + ' arquivo(s)...';
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    if (driveReady) {
+      try {
+        var up = await uploadFileToDrive(file, 'Vagas/Documentos');
+        vagaCandidatos[idx].arquivos.push({ name: file.name, url: up.webViewLink || '' });
+      } catch(e) {
+        vagaCandidatos[idx].arquivos.push({ name: file.name, url: '' });
+      }
+    } else {
+      vagaCandidatos[idx].arquivos.push({ name: file.name, url: '' });
     }
-  } else {
-    // No drive — store name only
-    vagaCandidatos[idx].curriculo = { name: file.name };
-    if (el) el.innerHTML = '<span style="color:var(--gray-600);font-size:12px;">📄 '+file.name+' (local)</span>';
   }
   inp.value = '';
+  renderCandidatos();
+}
+
+function removerArquivoCand(idx, ai) {
+  vagaCandidatos[idx].arquivos.splice(ai, 1);
+  renderCandidatos();
 }
 
 function renderCandidatos() {
@@ -12092,84 +12081,78 @@ function renderCandidatos() {
     el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray-400);">Nenhum candidato. Clique em "+ Adicionar Candidato".</div>';
     return;
   }
+
+  var statusOpts = ['Entrevista Online','Entrevista Presencial','Aprovado','Declinou','Reprovado'];
+  var statusCores = { 'Entrevista Online':'#1565c0','Entrevista Presencial':'#1565c0','Aprovado':'#2e7d32','Declinou':'#e65100','Reprovado':'#c62828' };
+  var unidadesVaga = (vagaUnidades||[]).filter(function(u){ return (u.unidade||'').trim(); });
+  var inpCss = 'width:100%;padding:7px 9px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;background:#fff;';
+  function campoLbl(label, inputHtml) {
+    return '<div><label style="display:block;font-size:10px;color:var(--gray-500);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-bottom:3px;">'+label+'</label>'+inputHtml+'</div>';
+  }
+
   el.innerHTML = '';
   vagaCandidatos.forEach(function(c, i) {
-    var row = document.createElement('div');
-    row.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--gray-100);';
-    // Linha 1: dados principais
-    var l1 = document.createElement('div');
-    l1.className = 'cand-row';
-    l1.style.marginBottom = '6px';
-    l1.innerHTML =
-      '<input type="text" placeholder="Nome *" value="'+c.nome+'" oninput="vagaCandidatos['+i+'].nome=this.value">'+
-      '<input type="text" placeholder="Telefone" value="'+c.tel+'" oninput="vagaCandidatos['+i+'].tel=this.value" style="max-width:140px;">'+
-      '<input type="email" placeholder="E-mail" value="'+c.email+'" oninput="vagaCandidatos['+i+'].email=this.value">'+
-      '<select onchange="vagaCandidatos['+i+'].st=this.value;autoSaveCandStatus()" style="max-width:140px;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;">'+
-        ['Em análise','Entrevista agendada','Aprovado na etapa','Reprovado','Desistiu'].map(function(s){
-          return '<option'+(c.st===s?' selected':'')+'>'+s+'</option>';
-        }).join('')+
-      '</select>'+
-      '<button class="btn-icon danger" title="Remover candidato" onclick="vagaCandidatos.splice('+i+',1);renderCandidatos()">🗑️</button>';
-    // Linha 2: obs + currículo
-    var l2 = document.createElement('div');
-    l2.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:0 2px;';
-    // Obs
-    var obsInp = document.createElement('input');
-    obsInp.type = 'text'; obsInp.placeholder = 'Observações';
-    obsInp.value = c.obs||'';
-    obsInp.style.cssText = 'flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;min-width:140px;';
-    (function(idx2){ obsInp.oninput = function(){ vagaCandidatos[idx2].obs = this.value; }; })(i);
-    // Currículo upload
-    var currDiv = document.createElement('div');
-    currDiv.style.cssText = 'display:flex;align-items:center;gap:8px;';
-    var currLabel = document.createElement('label');
-    currLabel.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 10px;border:1.5px solid var(--gray-200);border-radius:6px;cursor:pointer;font-size:12px;background:#fff;white-space:nowrap;';
-    currLabel.innerHTML = '📎 Currículo';
-    var currInp = document.createElement('input');
-    currInp.type = 'file'; currInp.accept = '.pdf,.doc,.docx,.jpg,.png';
-    currInp.style.display = 'none';
-    (function(idx2){ currInp.onchange = function(){ handleCurriculoUpload(this, idx2); }; })(i);
-    currLabel.appendChild(currInp);
-    // Status do currículo
-    var currStatus = document.createElement('span');
-    currStatus.id = 'curr-status-'+i;
-    currStatus.style.cssText = 'font-size:12px;';
-    if (c.curriculo) {
-      if (c.curriculo.url) {
-        currStatus.innerHTML = '<a href="'+c.curriculo.url+'" target="_blank" style="color:var(--green);">📄 '+c.curriculo.name+'</a>';
-      } else {
-        currStatus.textContent = '📄 '+c.curriculo.name;
-        currStatus.style.color = 'var(--green-dark)';
-      }
-    } else {
-      currStatus.textContent = 'Nenhum arquivo';
-      currStatus.style.color = 'var(--gray-400)';
-    }
-    currDiv.appendChild(currLabel);
-    currDiv.appendChild(currStatus);
-    // Teste DISC — link para o resultado do teste comportamental do candidato
-    var discDiv = document.createElement('div');
-    discDiv.style.cssText = 'display:flex;align-items:center;gap:6px;';
-    var discInp = document.createElement('input');
-    discInp.type = 'text';
-    discInp.placeholder = '🧭 Link do Teste DISC';
-    discInp.value = c.disc || '';
-    discInp.style.cssText = 'padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:12.5px;min-width:170px;';
-    (function(idx2){ discInp.oninput = function(){ vagaCandidatos[idx2].disc = this.value; }; })(i);
-    discDiv.appendChild(discInp);
-    if (c.disc) {
-      var discLink = document.createElement('a');
-      discLink.href = c.disc; discLink.target = '_blank';
-      discLink.textContent = '🔗 Ver';
-      discLink.style.cssText = 'font-size:12px;color:var(--green);white-space:nowrap;';
-      discDiv.appendChild(discLink);
-    }
-    l2.appendChild(obsInp);
-    l2.appendChild(currDiv);
-    l2.appendChild(discDiv);
-    row.appendChild(l1);
-    row.appendChild(l2);
-    el.appendChild(row);
+    // Opções de status: as novas + a atual do candidato, caso seja um status antigo não listado
+    var opts = statusOpts.slice();
+    if (c.st && opts.indexOf(c.st) === -1) opts.unshift(c.st);
+    var statusSelectHtml = '<select onchange="vagaCandidatos['+i+'].st=this.value;autoSaveCandStatus()" style="'+inpCss+'font-weight:700;color:'+(statusCores[c.st]||'#555')+';">' +
+      '<option value=""'+(!c.st?' selected':'')+'>Selecione</option>' +
+      opts.map(function(s){ return '<option'+(c.st===s?' selected':'')+'>'+s+'</option>'; }).join('') +
+      '</select>';
+
+    var unidadeSelectHtml = unidadesVaga.length
+      ? '<select onchange="vagaCandidatos['+i+'].unidade=this.value" style="'+inpCss+'">' +
+          '<option value="">Selecione</option>' +
+          unidadesVaga.map(function(u){ return '<option'+(c.unidade===u.unidade?' selected':'')+'>'+u.unidade+'</option>'; }).join('') +
+        '</select>'
+      : '<input type="text" placeholder="Unidade" value="'+(c.unidade||'')+'" oninput="vagaCandidatos['+i+'].unidade=this.value" style="'+inpCss+'">';
+
+    var arquivos = c.arquivos || [];
+    var arquivosChips = arquivos.map(function(a, ai){
+      return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:14px;padding:3px 6px 3px 10px;font-size:11.5px;">' +
+        (a.url ? '<a href="'+a.url+'" target="_blank" style="color:var(--green-dark);text-decoration:none;">📎 '+a.name+'</a>' : '<span style="color:var(--gray-600);">📎 '+a.name+'</span>') +
+        '<button type="button" onclick="removerArquivoCand('+i+','+ai+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0 2px;">×</button>' +
+      '</span>';
+    }).join('');
+    // Currículo antigo (de antes deste layout), preservado e exibido junto
+    var curriculoAntigo = (c.curriculo && !arquivos.some(function(a){return a.name===c.curriculo.name;}))
+      ? '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:14px;padding:3px 10px;font-size:11.5px;">' +
+          (c.curriculo.url ? '<a href="'+c.curriculo.url+'" target="_blank" style="color:var(--green-dark);text-decoration:none;">📄 '+c.curriculo.name+'</a>' : '📄 '+c.curriculo.name) +
+        '</span>'
+      : '';
+    // Link do Teste DISC (campo anterior, preservado)
+    var discChip = c.disc
+      ? '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:14px;padding:3px 10px;font-size:11.5px;">' +
+          '<a href="'+c.disc+'" target="_blank" style="color:var(--green-dark);text-decoration:none;">🧭 Teste DISC</a>' +
+        '</span>'
+      : '';
+
+    var card = document.createElement('div');
+    card.style.cssText = 'border:1.5px solid var(--gray-200);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:#fff;';
+    card.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+        '<input type="text" placeholder="Nome do candidato *" value="'+(c.nome||'')+'" oninput="vagaCandidatos['+i+'].nome=this.value" style="flex:1;font-weight:700;font-size:14px;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;">' +
+        '<button type="button" class="btn-icon danger" title="Remover candidato" onclick="vagaCandidatos.splice('+i+',1);renderCandidatos()">🗑️</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:10px;">' +
+        campoLbl('Telefone', '<input type="text" placeholder="Telefone" value="'+(c.tel||'')+'" oninput="vagaCandidatos['+i+'].tel=this.value" style="'+inpCss+'">') +
+        campoLbl('E-mail', '<input type="email" placeholder="E-mail" value="'+(c.email||'')+'" oninput="vagaCandidatos['+i+'].email=this.value" style="'+inpCss+'">') +
+        campoLbl('Unidade', unidadeSelectHtml) +
+        campoLbl('Status', statusSelectHtml) +
+      '</div>' +
+      campoLbl('Observações', '<input type="text" placeholder="Observações" value="'+(c.obs||'')+'" oninput="vagaCandidatos['+i+'].obs=this.value" style="'+inpCss+'">') +
+      '<div style="margin-top:10px;">' +
+        '<label style="display:block;font-size:10px;color:var(--gray-500);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-bottom:5px;">Arquivos (currículo, teste DISC, etc.)</label>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' +
+          arquivosChips + curriculoAntigo + discChip +
+          '<label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1.5px dashed var(--gray-300);border-radius:14px;cursor:pointer;font-size:11.5px;background:var(--gray-50);color:var(--gray-600);">' +
+            '+ Adicionar arquivo(s)' +
+            '<input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleArquivosCandUpload(this,'+i+')">' +
+          '</label>' +
+        '</div>' +
+        '<div id="arq-status-'+i+'" style="font-size:11px;color:var(--gray-400);margin-top:4px;"></div>' +
+      '</div>';
+    el.appendChild(card);
   });
 }
 
@@ -12213,7 +12196,7 @@ function renderAprovados() {
   if (msgCfgEl && document.activeElement !== msgCfgEl) msgCfgEl.value = cfgAdm.msg || '';
 
   // Section 1: Candidatos com "Aprovado na etapa"
-  var aprovCands = vagaCandidatos.filter(function(c){ return c.st === 'Aprovado na etapa'; });
+  var aprovCands = vagaCandidatos.filter(candAprovado);
   if (aprovCands.length) {
     var titulo = document.createElement('div');
     titulo.style.cssText = 'font-weight:700;font-size:13px;color:var(--green-dark);margin-bottom:10px;padding:8px 12px;background:var(--green-pale);border-radius:var(--radius-sm);';
@@ -12235,7 +12218,7 @@ function renderAprovados() {
           (c.curriculo ? '<span style="font-size:12px;color:var(--gray-600);">📄 ' + c.curriculo.name + '</span>' : '')) +
         (c.disc ? '<a href="' + c.disc + '" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px;">🧭 Teste DISC</a>' : '') +
         '<button class="btn btn-whatsapp btn-sm btn-convite-adm" style="font-size:12px;">📲 Convite Admissão</button>' +
-        '<span class="badge badge-green">Aprovado na etapa</span>';
+        '<span class="badge badge-green">' + c.st + '</span>';
       el.appendChild(row);
       row.querySelector('.btn-convite-adm').onclick = (function(nome, tel){
         return function(){ enviarConviteAdmissao(nome, tel); };
@@ -12255,7 +12238,7 @@ function renderAprovados() {
   if (!vagaAprovados.length && !aprovCands.length) {
     var empty = document.createElement('div');
     empty.style.cssText = 'text-align:center;padding:20px;color:var(--gray-400);';
-    empty.textContent = 'Nenhum aprovado ainda. Mude o status do candidato para "Aprovado na etapa" ou clique em "+ Adicionar Aprovado".';
+    empty.textContent = 'Nenhum aprovado ainda. Mude o status do candidato para "Aprovado" ou clique em "+ Adicionar Aprovado".';
     el.appendChild(empty);
     return;
   }
@@ -12319,19 +12302,37 @@ async function savVaga() {
   var qtdFinal = unidadesValidas.length
     ? unidadesValidas.reduce(function(s,u){ return s + (parseInt(u.qtd)||0); }, 0) || 1
     : (parseInt(v('vg-qtd'))||1);
+
+  // Deriva os campos gerais da vaga a partir do detalhamento por unidade,
+  // para que telas e filtros que já usam vaga.unidade/ch/sal/escala/tipo/status
+  // continuem funcionando normalmente.
+  function agregarCampo(campo) {
+    var vals = unidadesValidas.map(function(u){ return (u[campo]||'').trim(); }).filter(Boolean);
+    var unicos = vals.filter(function(val,i){ return vals.indexOf(val)===i; });
+    return unicos.join(', ');
+  }
+  function statusAgregado() {
+    var stats = unidadesValidas.map(function(u){ return u.status||'Aberta'; });
+    if (!stats.length) return 'Aberta';
+    if (stats.indexOf('Aberta') > -1) return 'Aberta';
+    if (stats.indexOf('Em Seleção') > -1) return 'Em Seleção';
+    if (stats.indexOf('Cancelada') > -1) return 'Cancelada';
+    return stats[0];
+  }
+
   var rec = {
     id:          editingVagaId || uid(),
     titulo:      titulo.trim(),
     emp:         v('vg-emp'),
     dep:         v('vg-dep'),
-    unidade:     v('vg-unidade'),
-    ch:          v('vg-ch'),
-    sal:         v('vg-sal'),
-    escala:      v('vg-escala'),
-    tipo:        v('vg-tipo'),
+    unidade:     agregarCampo('unidade'),
+    ch:          agregarCampo('horario'),
+    sal:         agregarCampo('sal'),
+    escala:      agregarCampo('escala'),
+    tipo:        agregarCampo('tipo') || 'CLT',
     qtd:         qtdFinal,
     unidades:    unidadesValidas,
-    status:      v('vg-status'),
+    status:      statusAgregado(),
     aber:        v('vg-aber'),
     prazo:       v('vg-prazo'),
     beneficios:  benef,
@@ -12366,6 +12367,11 @@ function editVaga(id) {
   vagaCandidatos = JSON.parse(JSON.stringify(vaga.candidatos||[]));
   vagaAprovados  = JSON.parse(JSON.stringify(vaga.aprovados||[]));
   vagaUnidades   = JSON.parse(JSON.stringify(vaga.unidades||[]));
+  // Vaga antiga (cadastrada antes do detalhamento por unidade): migra os
+  // campos únicos que ela já tinha para uma unidade, sem perder nada.
+  if (!vagaUnidades.length && (vaga.unidade || vaga.ch || vaga.sal || vaga.escala || vaga.tipo)) {
+    vagaUnidades = [{ id: uid(), unidade: vaga.unidade||'', qtd: vaga.qtd||1, horario: vaga.ch||'', escala: vaga.escala||'', tipo: vaga.tipo||'CLT', sal: vaga.sal||'', status: vaga.status||'Aberta', obs: '' }];
+  }
 
   openModal('modal-vaga');
   document.getElementById('vaga-modal-title').textContent = '✏️ Editar Vaga — ' + vaga.titulo;
