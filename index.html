@@ -562,6 +562,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav(&#39;aniversariantes&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Aniversariantes
   </span></div>
+  <div class="nav-item" onclick="nav(&#39;aniversario-empresa&#39;,this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-3.5 2 1-4-3-2.5h3.7L12 7l1.8 3.5h3.7l-3 2.5 1 4z"></path><circle cx="12" cy="12" r="10"></circle></svg><span>Aniversário de Empresa
+  </span></div>
   <div class="nav-section">Organização</div>
   <div class="nav-item" onclick="nav(&#39;treinamentos&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg><span>Treinamentos
@@ -1719,6 +1722,40 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
       </div>
     </div>
     <div id="bday-list"></div>
+  </div>
+</div>
+
+<!-- ANIVERSÁRIO DE EMPRESA (TEMPO DE CASA) -->
+<div class="section-page" id="sec-aniversario-empresa">
+  <div id="aniv-emp-kpi-bar" class="stats-grid"></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">🏆 Aniversário de Empresa</span>
+      <div style="display:flex;gap:8px;">
+        <select id="aniv-emp-filter" onchange="rdAnivEmpresa()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="mes">Este mês</option>
+          <option value="semana">Esta semana</option>
+          <option value="todos">Todos os meses</option>
+          <option disabled>──────────────</option>
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+        <select id="aniv-emp-marco" onchange="rdAnivEmpresa()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="">Todos os tempos de casa</option>
+          <option value="marcos">Só marcos (1, 3, 5, 10, 15, 20, 25 anos)</option>
+        </select>
+      </div>
+    </div>
+    <div id="aniv-emp-list"></div>
   </div>
 </div>
 
@@ -5283,7 +5320,7 @@ async function syncFromDrive() {
   const active = document.querySelector('.section-page.active');
   if (active) {
     const id = active.id.replace('sec-','');
-    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:function(){ rdRel(); rdDevRelatorio(); }, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc, advertencias:rdAdvertencias };
+    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:function(){ rdRel(); rdDevRelatorio(); }, aniversariantes:rdBday, 'aniversario-empresa':rdAnivEmpresa, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc, advertencias:rdAdvertencias };
     if (rd[id]) rd[id]();
   }
   toast('✅ ' + synced + ' registros carregados do Drive ☁️');
@@ -5479,9 +5516,9 @@ function nav(id, el) {
   secEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', advertencias:'Advertências & Suspensões', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', advertencias:'Advertências & Suspensões', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', 'aniversario-empresa':'Aniversário de Empresa', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
-  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
+  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, 'aniversario-empresa':rdAnivEmpresa, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
   if (rd[id]) rd[id]();
 }
 
@@ -9065,6 +9102,115 @@ function rdBday() {
     el.appendChild(card);
   });
 }
+
+// ════════════════════════════════════════════════════════════
+// ANIVERSÁRIO DE EMPRESA (TEMPO DE CASA)
+// ════════════════════════════════════════════════════════════
+var ANIV_EMP_MARCOS = [1, 3, 5, 10, 15, 20, 25];
+
+function rdAnivEmpresa() {
+  var filter = (document.getElementById('aniv-emp-filter') || {value:'mes'}).value;
+  var soMarcos = (document.getElementById('aniv-emp-marco') || {value:''}).value === 'marcos';
+  var hoje = new Date(); var hm = hoje.getMonth()+1; var hd = hoje.getDate(); var hy = hoje.getFullYear();
+  var deps = DB.g('departamentos');
+
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.adm && f.st !== 'Desligado'; });
+  var lista = funcs.map(function(f){
+    var parts = f.adm.split('-').map(Number);
+    var anos = hy - parts[0];
+    // Se a data de admissão deste ano ainda não chegou, o aniversário "deste ano" é o do próximo ciclo
+    return Object.assign({}, f, {am: parts[1], ad: parts[2], anos: anos, ehMarco: ANIV_EMP_MARCOS.indexOf(anos) > -1});
+  }).filter(function(f){ return f.anos > 0; });
+
+  if (filter === 'mes') lista = lista.filter(function(f){ return f.am === hm; });
+  else if (!isNaN(parseInt(filter))) {
+    var mesSel = parseInt(filter);
+    lista = lista.filter(function(f){ return f.am === mesSel; });
+  }
+  else if (filter === 'semana') {
+    var ini = new Date(hoje); ini.setDate(hd - hoje.getDay());
+    var fim = new Date(ini); fim.setDate(ini.getDate()+6);
+    lista = lista.filter(function(f){
+      var dt = new Date(hoje.getFullYear(), f.am-1, f.ad);
+      return dt >= ini && dt <= fim;
+    });
+  }
+  if (soMarcos) lista = lista.filter(function(f){ return f.ehMarco; });
+
+  lista.sort(function(a,b){ return a.am !== b.am ? a.am-b.am : a.ad-b.ad; });
+
+  // KPIs: quantos marcos (1,3,5,10,15,20,25 anos) fazem aniversário este mês, sobre a base completa
+  var kpiBar = document.getElementById('aniv-emp-kpi-bar');
+  if (kpiBar) {
+    var marcosEsteMes = funcs.map(function(f){
+      var parts = f.adm.split('-').map(Number);
+      var anos = hy - parts[0];
+      return { am: parts[1], anos: anos };
+    }).filter(function(f){ return f.am === hm && ANIV_EMP_MARCOS.indexOf(f.anos) > -1; });
+    var porMarco = {};
+    ANIV_EMP_MARCOS.forEach(function(m){ porMarco[m] = marcosEsteMes.filter(function(f){ return f.anos === m; }).length; });
+    kpiBar.innerHTML = ANIV_EMP_MARCOS.map(function(m){
+      return '<div class="stat-card' + (porMarco[m]>0?' yellow':'') + '"><div class="stat-icon">🏆</div><div><div class="stat-value">' + porMarco[m] + '</div><div class="stat-label">' + m + ' ano' + (m>1?'s':'') + ' este mês</div></div></div>';
+    }).join('');
+  }
+
+  var el = document.getElementById('aniv-emp-list');
+  if (!lista.length) {
+    el.innerHTML = '<div class="alert alert-info">🏆 Nenhum aniversário de empresa neste período.</div>';
+    return;
+  }
+
+  var MESES_ABR = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  el.innerHTML = '';
+
+  lista.forEach(function(f) {
+    var isHoje = f.am === hm && f.ad === hd;
+    var mes    = MESES_ABR[f.am-1];
+    var dep    = deps.find(function(d){ return d.id === f.dep; });
+
+    var card = document.createElement('div');
+    card.className = 'bday-card';
+    if (f.ehMarco) card.style.cssText = 'background:linear-gradient(135deg,#fff8e1,#e8f5ee);border:2px solid var(--accent);';
+    else if (isHoje) card.style.cssText = 'background:linear-gradient(135deg,#e8f5ee,#fff8e1);border:2px solid var(--green);';
+
+    var avatarEl = document.createElement('div');
+    avatarEl.className = 'bday-avatar' + (isHoje ? ' today' : '');
+    var fSrc = fotoStoreGet(f.id);
+    if (fSrc) {
+      var img = document.createElement('img');
+      img.src = fSrc;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+      img.onerror = function(){ this.remove(); avatarEl.textContent = f.n[0].toUpperCase(); };
+      avatarEl.appendChild(img);
+    } else {
+      avatarEl.textContent = f.n[0].toUpperCase();
+    }
+
+    var infoEl = document.createElement('div');
+    infoEl.style.cssText = 'flex:1;';
+    infoEl.innerHTML =
+      '<div style="font-weight:700;font-size:14px;">' + f.n + (f.ehMarco ? ' <span class="badge badge-yellow">🏆 ' + f.anos + ' anos!</span>' : '') + '</div>' +
+      '<div style="font-size:12px;color:var(--gray-600);">' + (dep?dep.nome:'') + ' &nbsp;•&nbsp; ' + f.ad + ' de ' + mes + ' &nbsp;•&nbsp; ' + f.anos + ' ano' + (f.anos>1?'s':'') + ' de empresa</div>';
+
+    card.appendChild(avatarEl);
+    card.appendChild(infoEl);
+
+    if (f.tel) {
+      var whaBtn = document.createElement('button');
+      whaBtn.className = 'btn btn-whatsapp btn-sm';
+      whaBtn.innerHTML = '💬';
+      whaBtn.dataset.tel = f.tel;
+      var msgTxt = f.ehMarco
+        ? ('Parabéns pelos seus ' + f.anos + ' anos de Equilibryum! 🏆 É uma alegria ter você com a gente nessa jornada. Muito obrigado pela sua dedicação!')
+        : ('Parabéns pelo seu aniversário de empresa! 🎉 Toda a equipe Equilibryum agradece por mais um ano de parceria!');
+      (function(msg){ whaBtn.onclick = function(){ wha(this.dataset.tel, msg); }; })(msgTxt);
+      card.appendChild(whaBtn);
+    }
+
+    el.appendChild(card);
+  });
+}
+
 
 function gerarTemplateAniversariantes(mes) {
   var ano       = new Date().getFullYear();
