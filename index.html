@@ -1730,7 +1730,10 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
   <div id="aniv-emp-kpi-bar" class="stats-grid"></div>
   <div class="card">
     <div class="card-header"><span class="card-title">🏆 Aniversário de Empresa</span>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="aniv-emp-busca" placeholder="🔍 Buscar por funcionário..." oninput="rdAnivEmpresa()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;min-width:180px;">
+        <select id="aniv-emp-ano" onchange="rdAnivEmpresa()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        </select>
         <select id="aniv-emp-filter" onchange="rdAnivEmpresa()" style="padding:7px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
           <option value="mes">Este mês</option>
           <option value="semana">Esta semana</option>
@@ -9111,14 +9114,32 @@ var ANIV_EMP_MARCOS = [1, 3, 5, 10, 15, 20, 25];
 function rdAnivEmpresa() {
   var filter = (document.getElementById('aniv-emp-filter') || {value:'mes'}).value;
   var soMarcos = (document.getElementById('aniv-emp-marco') || {value:''}).value === 'marcos';
-  var hoje = new Date(); var hm = hoje.getMonth()+1; var hd = hoje.getDate(); var hy = hoje.getFullYear();
+  var busca = ((document.getElementById('aniv-emp-busca')||{}).value || '').toLowerCase().trim();
+  var hoje = new Date(); var hm = hoje.getMonth()+1; var hd = hoje.getDate(); var hyReal = hoje.getFullYear();
   var deps = DB.g('departamentos');
 
   var funcs = DB.g('funcionarios').filter(function(f){ return f.adm && f.st !== 'Desligado'; });
+
+  // Popular o seletor de ano (do ano da admissão mais antiga até +5 anos à frente), sem perder a seleção atual
+  var anoSel = document.getElementById('aniv-emp-ano');
+  var anoEscolhido = hyReal;
+  if (anoSel) {
+    if (anoSel.dataset.count != funcs.length) {
+      var anoAtualSel = anoSel.value || String(hyReal);
+      var anoMin = funcs.reduce(function(min,f){ var y=parseInt(f.adm.split('-')[0]); return (y && y<min)?y:min; }, hyReal);
+      var anos = [];
+      for (var y = anoMin; y <= hyReal+5; y++) anos.push(y);
+      anoSel.innerHTML = anos.map(function(y){ return '<option value="'+y+'">'+y+'</option>'; }).join('');
+      anoSel.value = anoAtualSel;
+      anoSel.dataset.count = funcs.length;
+    }
+    anoEscolhido = parseInt(anoSel.value) || hyReal;
+  }
+  var hy = anoEscolhido;
+
   var lista = funcs.map(function(f){
     var parts = f.adm.split('-').map(Number);
     var anos = hy - parts[0];
-    // Se a data de admissão deste ano ainda não chegou, o aniversário "deste ano" é o do próximo ciclo
     return Object.assign({}, f, {am: parts[1], ad: parts[2], anos: anos, ehMarco: ANIV_EMP_MARCOS.indexOf(anos) > -1});
   }).filter(function(f){ return f.anos > 0; });
 
@@ -9136,10 +9157,11 @@ function rdAnivEmpresa() {
     });
   }
   if (soMarcos) lista = lista.filter(function(f){ return f.ehMarco; });
+  if (busca) lista = lista.filter(function(f){ return f.n.toLowerCase().indexOf(busca) > -1; });
 
   lista.sort(function(a,b){ return a.am !== b.am ? a.am-b.am : a.ad-b.ad; });
 
-  // KPIs: quantos marcos (1,3,5,10,15,20,25 anos) fazem aniversário este mês, sobre a base completa
+  // KPIs: quantos marcos (1,3,5,10,15,20,25 anos) fazem aniversário este mês, no ano selecionado
   var kpiBar = document.getElementById('aniv-emp-kpi-bar');
   if (kpiBar) {
     var marcosEsteMes = funcs.map(function(f){
@@ -9150,7 +9172,7 @@ function rdAnivEmpresa() {
     var porMarco = {};
     ANIV_EMP_MARCOS.forEach(function(m){ porMarco[m] = marcosEsteMes.filter(function(f){ return f.anos === m; }).length; });
     kpiBar.innerHTML = ANIV_EMP_MARCOS.map(function(m){
-      return '<div class="stat-card' + (porMarco[m]>0?' yellow':'') + '"><div class="stat-icon">🏆</div><div><div class="stat-value">' + porMarco[m] + '</div><div class="stat-label">' + m + ' ano' + (m>1?'s':'') + ' este mês</div></div></div>';
+      return '<div class="stat-card' + (porMarco[m]>0?' yellow':'') + '"><div class="stat-icon">🏆</div><div><div class="stat-value">' + porMarco[m] + '</div><div class="stat-label">' + m + ' ano' + (m>1?'s':'') + ' este mês (' + hy + ')</div></div></div>';
     }).join('');
   }
 
