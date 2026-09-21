@@ -1524,6 +1524,12 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Ficha para o convênio médico/odontológico, com os dados do funcionário já preenchidos.</p>
         <button class="btn btn-primary btn-sm" style="background:#00838f;" onclick="gerarFichaConvenio()">🏥 Gerar</button>
       </div>
+      <!-- Advertência Disciplinar -->
+      <div class="trein-card" style="border-left:4px solid #c62828;">
+        <div class="tc-header"><div><div class="tc-title">⚠️ Advertência Disciplinar</div><div class="tc-meta">Atraso, Falta, Uniforme, Abandono de Posto, Celular, Ferramentas</div></div></div>
+        <p style="font-size:13px;color:var(--gray-600);margin:8px 0;">Advertência por escrito, com o motivo selecionável e os dados do funcionário já preenchidos.</p>
+        <button class="btn btn-primary btn-sm" style="background:#c62828;" onclick="abrirModalAdvertenciaDisc()">⚠️ Gerar</button>
+      </div>
       <!-- Ciência de Período de Experiência (Promoção) -->
       <div class="trein-card" style="border-left:4px solid #6d4c41;">
         <div class="tc-header"><div><div class="tc-title">📈 Ciência de Período de Experiência – Promoção</div><div class="tc-meta">FOR07 – Promoção de cargo e salário</div></div></div>
@@ -2258,6 +2264,49 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-descricao-cargo')">Cancelar</button>
       <button class="btn btn-primary" style="background:#5e35b1;" onclick="gerarDescricaoCargo()">🗂️ Gerar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADVERTÊNCIA DISCIPLINAR -->
+<div class="modal-bg" id="modal-advertencia-disc">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ Advertência Disciplinar</span>
+      <button class="modal-close" onclick="closeModal('modal-advertencia-disc')">&#215;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Motivo <span style="color:#c0392b">*</span></label>
+        <select id="advdisc-tipo" onchange="atualizarChecksAdvDisc()" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option value="atraso">Atraso</option>
+          <option value="falta">Falta sem Justificativa</option>
+          <option value="uniforme">Uso Inadequado do Uniforme</option>
+          <option value="abandono">Abandono de Posto de Trabalho sem Autorização</option>
+          <option value="celular">Uso de Celular Particular em Horário de Expediente</option>
+          <option value="ferramentas">Uso Indevido de Ferramentas de Comunicação da Empresa</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Data da Ocorrência</label>
+        <input type="date" id="advdisc-data" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group form-full">
+        <label>Circunstâncias observadas</label>
+        <div id="advdisc-checks" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-sm);border:1.5px solid var(--gray-200);font-size:13px;"></div>
+      </div>
+      <div class="form-group form-full">
+        <label>Outro (se marcado acima)</label>
+        <input type="text" id="advdisc-outro" placeholder="Descreva, se aplicável" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group form-full">
+        <label>Detalhamento adicional</label>
+        <textarea id="advdisc-detalhe" rows="3" placeholder="Opcional" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-advertencia-disc')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#c62828;" onclick="gerarAdvertenciaDisc()">⚠️ Gerar</button>
     </div>
   </div>
 </div>
@@ -16809,6 +16858,160 @@ function gerarFichaConvenio() {
     '</body></html>';
 
   abrirEImprimirDoc(doc, 'Ficha_Convenio_' + f.n.replace(/\s+/g,'_'), f);
+}
+
+// ── ADVERTÊNCIA DISCIPLINAR ──────────────────────────────────
+var ADV_DISC_TIPOS = {
+  atraso: {
+    label: 'Atraso',
+    descricao: 'O(a) funcionário(a) acima identificado(a) chegou ao local de trabalho após o horário estabelecido em sua jornada, sem apresentar justificativa aceitável ou comunicação prévia ao gestor imediato, caracterizando descumprimento das normas internas de pontualidade e assiduidade.',
+    checks: ['Atraso não comunicado previamente','Atraso recorrente (reincidência)','Ausência de justificativa apresentada'],
+    fundamentacao: 'A presente medida disciplinar fundamenta-se no descumprimento do horário de trabalho estabelecido em contrato e no Regulamento Interno da empresa, bem como no art. 482 da Consolidação das Leis do Trabalho (CLT), que prevê a possibilidade de aplicação de penalidades em casos de desídia no cumprimento das obrigações contratuais.'
+  },
+  falta: {
+    label: 'Falta sem Justificativa',
+    descricao: 'O(a) funcionário(a) acima identificado(a) não compareceu ao trabalho na data mencionada, deixando de comunicar previamente seu gestor e não apresentando, até o momento, qualquer documento ou justificativa que comprove a ausência.',
+    checks: ['Falta integral ao expediente','Ausência não comunicada','Falta reincidente no período'],
+    fundamentacao: 'A presente medida disciplinar fundamenta-se no descumprimento do dever de assiduidade previsto no contrato de trabalho e no Regulamento Interno da empresa, bem como no art. 482 da Consolidação das Leis do Trabalho (CLT), que autoriza a aplicação de penalidades em razão de faltas injustificadas ao serviço.'
+  },
+  uniforme: {
+    label: 'Uso Inadequado do Uniforme',
+    descricao: 'O(a) funcionário(a) acima identificado(a) foi encontrado(a) no exercício de suas funções sem utilizar o uniforme e/ou os itens de identificação/EPIs exigidos pela empresa, ou utilizando-os de forma incompleta, inadequada ou em desacordo com os padrões estabelecidos.',
+    checks: ['Ausência total do uniforme','Uniforme incompleto','Uniforme em condições inadequadas de higiene/conservação','Ausência de crachá de identificação'],
+    fundamentacao: 'A presente medida disciplinar fundamenta-se no descumprimento das normas internas relativas à apresentação pessoal e uso obrigatório de uniforme, essenciais para a identificação, padronização e segurança no ambiente de trabalho, conforme Regulamento Interno da empresa e art. 482 da CLT.'
+  },
+  abandono: {
+    label: 'Abandono de Posto de Trabalho sem Autorização',
+    descricao: 'O(a) funcionário(a) acima identificado(a) se ausentou de seu posto de trabalho durante o horário de expediente, sem prévia autorização do gestor ou líder responsável, deixando suas atividades e/ou o atendimento sob sua responsabilidade sem a devida cobertura.',
+    checks: ['Ausência do posto por período prolongado','Ausência sem comunicação ao gestor/líder','Prejuízo ao atendimento/atividade em decorrência da ausência'],
+    fundamentacao: 'A presente medida disciplinar fundamenta-se no descumprimento das normas de conduta e organização do trabalho estabelecidas no Regulamento Interno da empresa, bem como no art. 482 da CLT, que prevê penalidades em casos de indisciplina, insubordinação ou desídia no desempenho das funções.'
+  },
+  celular: {
+    label: 'Uso de Celular Particular em Horário de Expediente',
+    descricao: 'O(a) funcionário(a) acima identificado(a) foi flagrado(a) utilizando aparelho de telefone celular particular durante o horário de expediente, para fins alheios às atividades profissionais, prejudicando sua produtividade e/ou o atendimento e desrespeitando as normas internas quanto ao uso de dispositivos pessoais.',
+    checks: ['Uso de celular durante atendimento ao público/paciente','Uso de celular em área de produção/setor restrito','Uso recorrente e reiterado do celular particular'],
+    fundamentacao: 'A presente medida disciplinar fundamenta-se no descumprimento da Política Interna sobre o uso de dispositivos móveis pessoais durante o horário de trabalho, bem como no art. 482 da CLT, que prevê a aplicação de penalidades em razão de desídia no desempenho das funções.'
+  },
+  ferramentas: {
+    label: 'Uso Indevido de Ferramentas de Comunicação da Empresa',
+    descricao: 'O(a) funcionário(a) acima identificado(a) utilizou ferramentas de comunicação corporativas (e-mail institucional, aplicativos de mensagens, sistemas internos, grupos de trabalho, entre outros) para tratar de assuntos particulares, em desacordo com a política de uso aceitável da empresa.',
+    checks: ['Uso de e-mail corporativo para fins pessoais','Uso de grupos/canais internos para assuntos particulares','Compartilhamento de conteúdo impróprio ou não relacionado ao trabalho'],
+    fundamentacao: 'A presente medida disciplinar fundamenta-se no descumprimento da Política de Uso de Recursos e Ferramentas de Comunicação da empresa e do Regulamento Interno, bem como no art. 482 da CLT, que autoriza a aplicação de penalidades em casos de mau procedimento ou desídia no cumprimento das obrigações funcionais.'
+  }
+};
+
+function abrirModalAdvertenciaDisc() {
+  var f = getDocFunc(); if (!f) return;
+  document.getElementById('advdisc-tipo').value = 'atraso';
+  document.getElementById('advdisc-data').value = '';
+  document.getElementById('advdisc-outro').value = '';
+  document.getElementById('advdisc-detalhe').value = '';
+  atualizarChecksAdvDisc();
+  openModal('modal-advertencia-disc');
+}
+
+function atualizarChecksAdvDisc() {
+  var tipoKey = (document.getElementById('advdisc-tipo')||{}).value || 'atraso';
+  var cfg = ADV_DISC_TIPOS[tipoKey];
+  var el = document.getElementById('advdisc-checks');
+  if (!el || !cfg) return;
+  el.innerHTML = cfg.checks.map(function(c, i){
+    return '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;"><input type="checkbox" id="advdisc-chk-'+i+'"> '+c+'</label>';
+  }).join('') +
+  '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;"><input type="checkbox" id="advdisc-chk-outro"> Outro (descrever abaixo)</label>';
+}
+
+function gerarAdvertenciaDisc() {
+  var f = getDocFunc(); if (!f) return;
+  var tipoKey = (document.getElementById('advdisc-tipo')||{}).value || 'atraso';
+  var cfg = ADV_DISC_TIPOS[tipoKey];
+  var dataOcorr = (document.getElementById('advdisc-data')||{}).value || '';
+  var outroTxt  = (document.getElementById('advdisc-outro')||{}).value || '';
+  var detalhe   = (document.getElementById('advdisc-detalhe')||{}).value || '';
+
+  var emps = DB.g('empresas');
+  var emp  = emps.find(function(e){ return e.id === f.emp; }) || {};
+  var deps = DB.g('departamentos');
+  var dep  = deps.find(function(d){ return d.id === f.dep; });
+
+  function fmtData(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p.length === 3 ? (p[2]+'/'+p[1]+'/'+p[0]) : d;
+  }
+  function campo(label, valor, largura) {
+    return '<div class="campo" style="flex:'+(largura||1)+';">' +
+      '<div class="campo-label">' + label + '</div>' +
+      '<div class="campo-val">' + (valor || '&nbsp;') + '</div>' +
+    '</div>';
+  }
+
+  var checksHtml = cfg.checks.map(function(c, i){
+    var marcado = document.getElementById('advdisc-chk-'+i).checked;
+    return '<div>' + (marcado ? '☑' : '☐') + ' ' + c + '</div>';
+  }).join('') +
+  '<div>' + (document.getElementById('advdisc-chk-outro').checked ? '☑' : '☐') + ' Outro: ' + (outroTxt || '_____________________________') + '</div>';
+
+  var doc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<title>Advertência Disciplinar – ' + f.n + '</title>' +
+    '<style>' +
+      '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;}' +
+      'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:1.6cm 2cm;}' +
+      'h1{font-size:13pt;font-weight:700;text-align:center;text-transform:uppercase;margin-bottom:4px;color:#c62828;}' +
+      '.motivo{font-size:11pt;font-weight:700;text-align:center;margin-bottom:16px;border-bottom:2px solid #c62828;padding-bottom:10px;}' +
+      'h2{font-size:10.5pt;font-weight:700;margin:14px 0 8px;color:#333;border-bottom:1px solid #ccc;padding-bottom:3px;}' +
+      '.campo-row{display:flex;gap:8px;margin-bottom:6px;}' +
+      '.campo{border:1px solid #999;border-radius:3px;padding:5px 7px;}' +
+      '.campo-label{font-size:7.5pt;color:#555;text-transform:uppercase;letter-spacing:.2px;margin-bottom:2px;}' +
+      '.campo-val{font-size:10.5pt;font-weight:600;min-height:14px;}' +
+      'p{margin-bottom:10px;text-align:justify;line-height:1.6;}' +
+      '.checks{margin:8px 0;font-size:10pt;line-height:1.8;}' +
+      '.ass-area{margin-top:36px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;}' +
+      '.ass-bloco{flex:1;min-width:220px;}' +
+      '.ass-linha{border-top:1px solid #000;margin-top:44px;padding-top:4px;font-size:9.5pt;}' +
+      '.rodape-data{margin-top:28px;font-style:italic;font-size:10pt;text-align:center;}' +
+      '@media print{@page{size:A4;margin:0;}body{padding:1.4cm 1.8cm;}}' +
+    '</style></head><body>' +
+    '<h1>Advertência Disciplinar por Escrito</h1>' +
+    '<div class="motivo">Motivo: ' + cfg.label + '</div>' +
+
+    '<h2>Dados do Funcionário</h2>' +
+    '<div class="campo-row">' + campo('Nome do Funcionário', f.n, 3) + '</div>' +
+    '<div class="campo-row">' +
+      campo('Departamento/Setor', dep ? dep.nome : '', 1) +
+      campo('Cargo/Função', f.car, 1) +
+    '</div>' +
+    '<div class="campo-row">' +
+      campo('Unidade', emp.razao || emp.nome || '', 1) +
+      campo('Matrícula', '', 1) +
+    '</div>' +
+    '<div class="campo-row">' + campo('Data da Ocorrência', fmtData(dataOcorr), 1) + '</div>' +
+
+    '<h2>Descrição da Ocorrência</h2>' +
+    '<p>' + cfg.descricao + '</p>' +
+    '<div class="checks">' + checksHtml + '</div>' +
+    (detalhe ? '<p><strong>Detalhamento adicional:</strong> ' + detalhe + '</p>' : '') +
+
+    '<h2>Fundamentação</h2>' +
+    '<p>' + cfg.fundamentacao + '</p>' +
+
+    '<h2>Declaração de Ciência</h2>' +
+    '<p>Declaro estar ciente do teor desta advertência, do motivo que a originou e das consequências de eventual reincidência, que poderá resultar em nova advertência, suspensão ou rescisão do contrato de trabalho por justa causa, nos termos da legislação trabalhista vigente (CLT).</p>' +
+
+    '<div class="ass-area">' +
+      '<div class="ass-bloco"><div class="ass-linha">Assinatura do Funcionário</div></div>' +
+      '<div class="ass-bloco"><div class="ass-linha">Assinatura do Gestor/Líder Responsável<br>Nome: _____________________ CPF: _____________________</div></div>' +
+    '</div>' +
+    '<div class="ass-area">' +
+      '<div class="ass-bloco"><div class="ass-linha">Assinatura da Testemunha 1<br>CPF: _____________________</div></div>' +
+      '<div class="ass-bloco"><div class="ass-linha">Assinatura da Testemunha 2<br>CPF: _____________________</div></div>' +
+    '</div>' +
+
+    '<div class="rodape-data">São Paulo, ____ de ________________ de 20____.</div>' +
+    '</body></html>';
+
+  closeModal('modal-advertencia-disc');
+  abrirEImprimirDoc(doc, 'Advertencia_' + cfg.label.replace(/\s+/g,'_') + '_' + f.n.replace(/\s+/g,'_'), f);
 }
 
 // ── CIÊNCIA DE PERÍODO DE EXPERIÊNCIA (PROMOÇÃO) ────────────
