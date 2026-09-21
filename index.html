@@ -8972,7 +8972,7 @@ function rdPol(){
   }).join('');
 }
 function editPol(id){var p=DB.g('politicas').find(function(x){return x.id===id;});if(!p)return;editingPolId=id;document.getElementById('po-titulo').value=p.titulo||'';document.getElementById('po-cat').value=p.cat||'Política Interna';document.getElementById('po-ver').value=p.ver||'v1.0';document.getElementById('po-data').value=p.data||'';document.getElementById('po-desc').value=p.desc||'';document.getElementById('pol-modal-title').textContent='✏️ Editar Política';document.getElementById('modal-pol').classList.add('open');}
-async function delPol(id){if(!confirm('Excluir?'))return;DB.s('politicas',DB.g('politicas').filter(function(p){return p.id!==id;}));if(driveReady) await driveSync('politicas');rdPol();}
+async function delPol(id){if(!confirm('Excluir?'))return;DB.s('politicas',DB.g('politicas').filter(function(p){return p.id!==id;}));if(driveReady) await driveSync('politicas', [id]);rdPol();}
 
 // Testa se o token ainda é válido
 async function testAndConnect() {
