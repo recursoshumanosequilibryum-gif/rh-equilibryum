@@ -1215,6 +1215,8 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <span style="color:var(--gray-400);font-size:13px;">até</span>
           <input type="date" id="relcons-ate" onchange="rdRelCons()" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;">
           <button class="btn btn-primary btn-sm" onclick="exportRelCons()">📥 Exportar Excel</button>
+          <button class="btn btn-primary btn-sm" style="background:#6d4c41;" onclick="exportFolhaPagamento()">📤 Exportar p/ Folha de Pagamento</button>
+          <button class="btn btn-outline btn-sm" onclick="abrirConfigFolhaPagamento()">⚙️ Configurar rubricas</button>
         </div>
       </div>
       <!-- KPI cards -->
@@ -3309,6 +3311,22 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal(&#39;modal-benef-comp&#39;)">Cancelar</button>
       <button class="btn btn-primary" onclick="savBenefComp()">💾 Salvar Compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Configuração de Exportação para Folha de Pagamento -->
+<div class="modal-bg" id="modal-config-folha">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ Configurar Rubricas por Empresa</span>
+      <button class="modal-close" onclick="closeModal(&#39;modal-config-folha&#39;)">×</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--gray-600);margin-bottom:12px;">Cada empresa/unidade tem seu próprio Código de Empresa e códigos de rubrica (VT/VR/VA/AM/AO) no sistema de folha de pagamento. Configure aqui uma vez — o sistema usa essas informações sempre que você exportar.</p>
+    <div id="config-folha-lista"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal(&#39;modal-config-folha&#39;)">Fechar</button>
+      <button class="btn btn-primary" onclick="salvarConfigFolhaPagamento()">💾 Salvar Configuração</button>
     </div>
   </div>
 </div>
@@ -17617,6 +17635,123 @@ function exportarDevolucoesXLSX() {
 // ============================================================
 // RELATÓRIO CONSOLIDADO DE BENEFÍCIOS
 // ============================================================
+// ── Exportação para Folha de Pagamento (formato do sistema de folha) ──
+// Códigos padrão já identificados a partir dos modelos enviados; o
+// usuário pode ajustar/completar pela tela de configuração.
+var FOLHA_PAGAMENTO_DEFAULTS = {
+  '54188772000128': { codigoEmpresa: '207', rubVT:'216', rubVR:'217', rubVA:'221', rubAM:'219', rubAO:'220' }, // Longhi
+  '5441897000536':  { codigoEmpresa: '206', rubVT:'232', rubVR:'',    rubVA:'243', rubAM:'235', rubAO:'236' }, // Equilibryum F005
+  '5441897000102':  { codigoEmpresa: '204', rubVT:'234', rubVR:'235', rubVA:'239', rubAM:'237', rubAO:'238' }, // Equilibryum Matriz
+  '5441897000374':  { codigoEmpresa: '205', rubVT:'235', rubVR:'236', rubVA:'238', rubAM:'239', rubAO:'240' }  // Equilibryum F003
+};
+
+function getConfigFolhaPagamento() {
+  return DB.go('cfg_folha_pagamento'); // { [empresaId]: {codigoEmpresa, rubVT, rubVR, rubVA, rubAM, rubAO} }
+}
+
+function abrirConfigFolhaPagamento() {
+  var cfg = getConfigFolhaPagamento();
+  var emps = DB.g('empresas');
+  var el = document.getElementById('config-folha-lista');
+  el.innerHTML = emps.map(function(e){
+    var cnpjNums = (e.cnpj||'').replace(/\D/g,'');
+    var saved = cfg[e.id] || {};
+    var defaults = FOLHA_PAGAMENTO_DEFAULTS[cnpjNums] || {};
+    var v = function(campo){ return saved[campo] !== undefined ? saved[campo] : (defaults[campo]||''); };
+    return '<div style="border:1.5px solid var(--gray-200);border-radius:8px;padding:10px 12px;margin-bottom:10px;">' +
+      '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">'+(e.razao||e.nome)+' <span style="color:var(--gray-400);font-weight:400;">'+(e.cnpj||'sem CNPJ cadastrado')+'</span></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">' +
+        '<div><label style="font-size:10px;color:var(--gray-500);">Código Empresa</label><input type="text" data-emp="'+e.id+'" data-campo="codigoEmpresa" value="'+v('codigoEmpresa')+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;"></div>' +
+        '<div><label style="font-size:10px;color:var(--gray-500);">Rubrica VT</label><input type="text" data-emp="'+e.id+'" data-campo="rubVT" value="'+v('rubVT')+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;"></div>' +
+        '<div><label style="font-size:10px;color:var(--gray-500);">Rubrica VR</label><input type="text" data-emp="'+e.id+'" data-campo="rubVR" value="'+v('rubVR')+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;"></div>' +
+        '<div><label style="font-size:10px;color:var(--gray-500);">Rubrica VA</label><input type="text" data-emp="'+e.id+'" data-campo="rubVA" value="'+v('rubVA')+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;"></div>' +
+        '<div><label style="font-size:10px;color:var(--gray-500);">Rubrica AM</label><input type="text" data-emp="'+e.id+'" data-campo="rubAM" value="'+v('rubAM')+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;"></div>' +
+        '<div><label style="font-size:10px;color:var(--gray-500);">Rubrica AO</label><input type="text" data-emp="'+e.id+'" data-campo="rubAO" value="'+v('rubAO')+'" style="width:100%;padding:6px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:12.5px;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('') || '<div style="text-align:center;color:var(--gray-400);padding:16px;">Nenhuma empresa cadastrada.</div>';
+  openModal('modal-config-folha');
+}
+
+function salvarConfigFolhaPagamento() {
+  var cfg = getConfigFolhaPagamento();
+  document.querySelectorAll('#config-folha-lista input[data-emp]').forEach(function(inp){
+    var empId = inp.dataset.emp, campo = inp.dataset.campo;
+    if (!cfg[empId]) cfg[empId] = {};
+    cfg[empId][campo] = inp.value.trim();
+  });
+  DB.so('cfg_folha_pagamento', cfg);
+  toast('✅ Configuração de rubricas salva!');
+  closeModal('modal-config-folha');
+}
+
+function exportFolhaPagamento() {
+  if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
+  var empId = (document.getElementById('relcons-emp')||{}).value || '';
+  if (!empId) { alert('Selecione uma empresa.'); return; }
+  var de = (document.getElementById('relcons-de')||{}).value || '';
+  if (!de) { alert('Selecione o período.'); return; }
+
+  var emp = DB.g('empresas').find(function(e){ return e.id === empId; });
+  if (!emp) { alert('Empresa não encontrada.'); return; }
+
+  var cfg = getConfigFolhaPagamento();
+  var cnpjNums = (emp.cnpj||'').replace(/\D/g,'');
+  var defaults = FOLHA_PAGAMENTO_DEFAULTS[cnpjNums] || {};
+  var rub = cfg[empId] || defaults;
+  if (!rub.codigoEmpresa) {
+    if (!confirm('Essa empresa ainda não tem o Código Empresa / rubricas configurados. Deseja continuar mesmo assim (campos ficarão em branco)? Recomendo usar "⚙️ Configurar rubricas" antes.')) return;
+    rub = rub || {};
+  }
+
+  var competencia = de.slice(0,7); // 'YYYY-MM'
+  var compras = DB.g('benef-compras').filter(function(c){ return c.comp === competencia; });
+  var funcs = DB.g('funcionarios').filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; });
+
+  function valorPara(fid, colBase) {
+    var soma = compras.filter(function(c){
+      var base = c.tipoBase || c.tipo;
+      return c.fid === fid && base === colBase;
+    }).reduce(function(s,c){ return s + (parseFloat(c.vtotal)||0); }, 0);
+    return soma > 0 ? soma : '';
+  }
+
+  // Monta as colunas presentes (mesmo padrão dos modelos: só entram colunas com rubrica configurada)
+  var colunas = [
+    { label: 'Valor de Compra de VT', rub: rub.rubVT, base: 'VT – Vale Transporte' },
+    { label: 'Compra de VR ',         rub: rub.rubVR, base: 'VR – Vale Refeição' },
+    { label: 'Compra de VA',          rub: rub.rubVA, base: 'VA – Vale Alimentação' },
+    { label: 'Compra de AM ',         rub: rub.rubAM, base: 'Assistência Médica' },
+    { label: 'Compra de AO',          rub: rub.rubAO, base: 'Assistência Odontológica' }
+  ].filter(function(c){ return c.rub; }); // omite colunas sem rubrica configurada, igual aos modelos originais (ex.: F005 sem VR)
+
+  var wsData = [];
+  wsData.push(['RELAÇÃO DE VALORES PARA FOLHA DE PAGAMENTO']);
+  wsData.push([]);
+  wsData.push(['Codigo Empresa:', '', rub.codigoEmpresa || '']);
+  wsData.push(['Razão Social:', '', emp.razao || emp.nome || '']);
+  wsData.push(['Inscrição Cnpj:', '', cnpjNums || emp.cnpj || '']);
+  wsData.push(['Competencia:', '', new Date(competencia+'-01T12:00:00')]);
+  wsData.push([]);
+  wsData.push([]);
+  wsData.push(['Tipo de', 'Código', 'Nome dos'].concat(colunas.map(function(c){ return c.label; })));
+  wsData.push(['Calculo', 'Folha', 'Colaboradores'].concat(colunas.map(function(c){ return c.rub; })));
+  funcs.sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); }).forEach(function(f){
+    wsData.push([11, '', f.n].concat(colunas.map(function(c){ return valorPara(f.id, c.base); })));
+  });
+
+  var ws = XLSX.utils.aoa_to_sheet(wsData);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'PLANILHA');
+  XLSX.writeFile(wb, competencia + '_' + (emp.razao||emp.nome||'Empresa').replace(/\s+/g,'_') + '.xlsx');
+
+  if (!rub.codigoEmpresa) {
+    toast('⚠️ Exportado sem código/rubricas configurados — preencha em "⚙️ Configurar rubricas" para os próximos.', 'warn');
+  } else {
+    toast('✅ Planilha exportada para a folha de pagamento!');
+  }
+}
+
 function rdRelCons() {
   // Fill empresa select
   var empSel = document.getElementById('relcons-emp');
