@@ -17742,8 +17742,9 @@ function exportFolhaPagamento() {
   if (typeof XLSX === 'undefined') { alert('XLSX não disponível. Recarregue a página.'); return; }
   var empId = (document.getElementById('relcons-emp')||{}).value || '';
   if (!empId) { alert('Selecione uma empresa.'); return; }
-  var de = (document.getElementById('relcons-de')||{}).value || '';
-  if (!de) { alert('Selecione o período.'); return; }
+  var de  = (document.getElementById('relcons-de')||{}).value || '';
+  var ate = (document.getElementById('relcons-ate')||{}).value || '';
+  if (!de || !ate) { alert('Selecione o período (de/até).'); return; }
 
   var emp = DB.g('empresas').find(function(e){ return e.id === empId; });
   if (!emp) { alert('Empresa não encontrada.'); return; }
@@ -17757,27 +17758,66 @@ function exportFolhaPagamento() {
     rub = rub || {};
   }
 
-  var competencia = de.slice(0,7); // 'YYYY-MM'
-  var compras = DB.g('benef-compras').filter(function(c){ return (c.comp||'').trim() === competencia; });
-  var funcs = DB.g('funcionarios').filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; });
+  // ── Mesmo cálculo já usado na tela e no "Exportar Excel" do Relatório
+  // Consolidado: valores a partir dos benefícios ATIVOS de cada funcionário
+  // (não das compras avulsas), multiplicados pelos dias do período informado.
+  var dias = calcDiasUteisGlobal(de, ate);
+  function calcDiasComSabFolha(de, ate) {
+    if (!de || !ate) return 26;
+    var d1 = new Date(de+'T12:00:00'), d2 = new Date(ate+'T12:00:00');
+    if (d1 > d2) return 26;
+    var feriados = new Set();
+    for (var y = d1.getFullYear(); y <= d2.getFullYear(); y++) getFeriadosSPGlobal(y).forEach(function(f){ feriados.add(f); });
+    var count = 0, cur = new Date(d1);
+    while (cur <= d2) {
+      var dow = cur.getDay();
+      var ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      if (dow !== 0 && !feriados.has(ds)) count++;
+      cur.setDate(cur.getDate()+1);
+    }
+    return count || 26;
+  }
+  var diasComSab = calcDiasComSabFolha(de, ate);
+  var _sabsFolha = (function(){ var d1=new Date(de+'T12:00:00'),d2=new Date(ate+'T12:00:00'),n=0,cur=new Date(d1); while(cur<=d2){ if(cur.getDay()===6) n++; cur.setDate(cur.getDate()+1); } return n; })();
 
-  function valorPara(fid, colBase) {
-    var soma = compras.filter(function(c){
-      var base = (c.tipoBase || c.tipo || '').trim();
-      return base === colBase && Array.isArray(c.funcs) && c.funcs.indexOf(fid) > -1;
-    }).reduce(function(s,c){ return s + (parseFloat(c.vtotal)||0); }, 0);
-    return soma > 0 ? soma : '';
+  var atribs = DB.g('benef-atrib').filter(function(a){ return a.st === 'Ativo'; });
+  var funcs  = DB.g('funcionarios').filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; });
+
+  function valoresDoFuncionario(f) {
+    var fBenefs = atribs.filter(function(a){ return a.fid === f.id; });
+    var vtB = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VT – Vale Transporte'||t.toUpperCase().startsWith('VT'); });
+    var vrB = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VR – Vale Refeição'||t.toUpperCase().startsWith('VR'); });
+    var vaB = fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||''); return t==='VA – Vale Alimentação'||t.toUpperCase().startsWith('VA –')||t.toUpperCase().includes('ALIMENTA'); });
+    function findB(kws) { return fBenefs.find(function(a){ var t=(a.tipoBase||a.tipo||'').toUpperCase(); return kws.some(function(k){ return t.includes(k); }); }); }
+    var odontoB = findB(['ODONTO']);
+    var medB    = findB(['MÉD','MED','ASSIST.MED','ASSIST MED']);
+
+    var escala = f.escala || '55';
+    var dFunc  = (escala === '56') ? diasComSab : (escala === 'sabalt') ? (dias + Math.ceil(diasComSab - dias) / 2) : (escala === 'somsab') ? _sabsFolha : dias;
+    dFunc = Math.round(dFunc);
+
+    var vtDia = parseFloat((vtB && vtB.valor) || 0);
+    var vrDia = parseFloat((vrB && vrB.valor) || 0);
+
+    return {
+      VT: vtDia * dFunc,
+      VR: vrDia * dFunc,
+      VA: parseFloat((vaB && vaB.valor) || 0),
+      AM: parseFloat((medB && medB.valor) || 0),
+      AO: parseFloat((odontoB && odontoB.valor) || 0)
+    };
   }
 
   // Monta as colunas presentes (mesmo padrão dos modelos: só entram colunas com rubrica configurada)
   var colunas = [
-    { label: 'Valor de Compra de VT', rub: rub.rubVT, base: 'VT – Vale Transporte' },
-    { label: 'Compra de VR ',         rub: rub.rubVR, base: 'VR – Vale Refeição' },
-    { label: 'Compra de VA',          rub: rub.rubVA, base: 'VA – Vale Alimentação' },
-    { label: 'Compra de AM ',         rub: rub.rubAM, base: 'Assistência Médica' },
-    { label: 'Compra de AO',          rub: rub.rubAO, base: 'Assistência Odontológica' }
+    { label: 'Valor de Compra de VT', rub: rub.rubVT, key: 'VT' },
+    { label: 'Compra de VR ',         rub: rub.rubVR, key: 'VR' },
+    { label: 'Compra de VA',          rub: rub.rubVA, key: 'VA' },
+    { label: 'Compra de AM ',         rub: rub.rubAM, key: 'AM' },
+    { label: 'Compra de AO',          rub: rub.rubAO, key: 'AO' }
   ].filter(function(c){ return c.rub; }); // omite colunas sem rubrica configurada, igual aos modelos originais (ex.: F005 sem VR)
 
+  var competencia = de.slice(0,7); // 'YYYY-MM'
   var wsData = [];
   wsData.push(['RELAÇÃO DE VALORES PARA FOLHA DE PAGAMENTO']);
   wsData.push([]);
@@ -17790,10 +17830,23 @@ function exportFolhaPagamento() {
   wsData.push(['Tipo de', 'Código', 'Nome dos'].concat(colunas.map(function(c){ return c.label; })));
   wsData.push(['Calculo', 'Folha', 'Colaboradores'].concat(colunas.map(function(c){ return c.rub; })));
   funcs.sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); }).forEach(function(f){
-    wsData.push([11, f.codfolha || '', f.n].concat(colunas.map(function(c){ return valorPara(f.id, c.base); })));
+    var vals = valoresDoFuncionario(f);
+    wsData.push([11, f.codfolha || '', f.n].concat(colunas.map(function(c){ return vals[c.key] > 0 ? vals[c.key] : ''; })));
   });
 
   var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Reproduz o layout dos modelos originais: os 4 rótulos (Codigo Empresa,
+  // Razão Social, Inscrição Cnpj, Competencia) mesclados nas colunas A:B,
+  // e as larguras de coluna aproximadas do arquivo enviado.
+  ws['!merges'] = [
+    { s:{r:2,c:0}, e:{r:2,c:1} },
+    { s:{r:3,c:0}, e:{r:3,c:1} },
+    { s:{r:4,c:0}, e:{r:4,c:1} },
+    { s:{r:5,c:0}, e:{r:5,c:1} }
+  ];
+  ws['!cols'] = [ {wch:10}, {wch:9}, {wch:42} ].concat(colunas.map(function(){ return {wch:16}; }));
+
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'PLANILHA');
   XLSX.writeFile(wb, competencia + '_' + (emp.razao||emp.nome||'Empresa').replace(/\s+/g,'_') + '.xlsx');
