@@ -1217,6 +1217,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
           <button class="btn btn-primary btn-sm" onclick="exportRelCons()">📥 Exportar Excel</button>
           <button class="btn btn-primary btn-sm" style="background:#6d4c41;" onclick="exportFolhaPagamento()">📤 Exportar p/ Folha de Pagamento</button>
           <button class="btn btn-outline btn-sm" onclick="abrirConfigFolhaPagamento()">⚙️ Configurar rubricas</button>
+          <button class="btn btn-outline btn-sm" onclick="preencherCodigosFolha()">🔄 Preencher Código Folha</button>
         </div>
       </div>
       <!-- KPI cards -->
@@ -4901,6 +4902,23 @@ var _CARGOS_DATA_B64 =
   'IDggYW5vcyIsICJDT01QRVTDik5DSUFTIENPTVBPUlRBTUVOVEFJUyIsICLigKIgQ29tdW5pY2HDp8Ojb1xu4oCiIEVzcMOtcml0byBkZSBlcXVpcGVcbuKAoiBBZ2lsaWRhZGUgZGUgcmFjaW9jw61uaW9cbuKAoiBBdGVuZGltZW50byBhbyBjbGllbnRlXG7igKIgQ29udHJvbGUgZW1vY2lvbmFsXG7igKIgRGlsaWfDqm5jaWFcbuKAoiBFbXBhdGlhXG7igKIgUGxhbmVqYW1lbnRvIGUgY29udHJvbGUiLCAiQ2nDqm5jaWEgZG8gY29sYWJvcmFkb3IoYSk6IF9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f' +
   'ICAgRGF0YTogX19fXy9fX19fL19fX19fXyJdfQ==';
 var _CARGOS_DATA = JSON.parse(decodeURIComponent(escape(atob(_CARGOS_DATA_B64))));
+
+// Códigos de folha de pagamento extraídos das planilhas 09-2026 (Longhi, F005, Matriz, F003)
+var _CODFOLHA_MAP_B64 =
+  'eyJDQVJMQSBST0RSSUdVRVMiOiAiNCIsICJGQUJJTyBIRUxCSUcgTE9OR0hJIjogIjUiLCAiUk9CRVJUQSBHT05DQUxWRVMgSlVMSUVUVEkgVkFMRE8gQUxFTFVJQSI6ICIxMiIsICJBTkRSRSBUT01BWkVMTEkiOiAiMjciLCAiQU5HRUxJVEEgTUFSSUEgREEgU0lMVkEiOiAiMzAiLCAiTEVJTEFORSBGUkFOQ0EgRkVSUkVJUkEiOiAiMzIiLCAiQlJVTkEgR09NRVMgVEFWQVJFUyI6ICI0MSIsICJGTEFWSUEgTUFSVElOUyBNSVJBTkRBIjogIjU4IiwgIkdVU1RBVk8gQ09MTElOIExBTkEiOiAiNjAiLCAiQVBBUkVDSURPIEhFTlJJ' +
+  'UVVFIERFIE1BQ0VETyI6ICI2NCIsICJHSVNMQU0gTFVUVEkgU0lMVkEgQkFUSVNUQSI6ICI2NiIsICJJU01BRUwgTUFJUVVFIENIQUdBUyBTSUxWQSI6ICI2OCIsICJBUklFVEUgRE9TIFNBTlRPUyBUT01BWiI6ICI3NiIsICJNQVJJQSBSRUdJTkEgUk9EUklHVUVTIjogIjc3IiwgIkJSVU5PIE5BVEhBTiBEQSBTSUxWQSI6ICI4OSIsICJMRVRJQ0lBIEFLQU1JTkUgTUFSQ0hFWk9OSSI6ICI5NCIsICJBTEVYIFpBUEFST0xMSSBERSBBR1VTVElOSSI6ICI5NSIsICJHRUlDRSBLRUxMWSBEQSBTSUxWQSBSQU1PUyBNQVJUSU5TIjog' +
+  'Ijk2IiwgIkpIQVkgRkVMSVBFIERFIEFMQlVRVUVSUVVFIjogIjEwNCIsICJNSVJJQU4gU0FOVEFOQSBNRURFSVJPUyI6ICIxMTMiLCAiTU9OSUNBIERPUyBTQU5UT1MgU0lMVkEiOiAiMTE3IiwgIkdJRUxJIENPU1RBIERPUyBTQU5UT1MiOiAiMTI1IiwgIkFJTFRPTiBTT0FSRVMgQkFUSVNUQSI6ICIxMjkiLCAiSkFOQUlOQSBET1MgUkVJUyBEQSBTSUxWQSI6ICIxMzMiLCAiU0lNT05FIFNBTlRPUyBDQUlSRVMiOiAiMTM2IiwgIkxVQ0lEQUxWQSBOVU5FUyBDRVJRVUVJUkEgREEgU0lMVkEiOiAiMTM4IiwgIk1FTElTU0EgUklC' +
+  'RUlSTyBEQU5UQVMiOiAiMTQwIiwgIkhBREFTU0EgQU1BUk8gVklBTkEiOiAiMTQ0IiwgIk1BVEhFVVMgQUxWRVMgREUgTUFUT1MiOiAiMTQ1IiwgIkZBQklBTkkgTUlBTU9UTyBOSVlBTUEiOiAiMTQ5IiwgIk1FSVJJQU5FIENSSVNUSU5BIEZSQVpBTyBTSUxWQSI6ICIxNTQiLCAiS0VURUxZTiBST0RSSUdVRVMgRkVSUkVJUkEgREEgU0lMVkEiOiAiMTU2IiwgIlRIQVlMQSBBTkdFTCBEQSBTSUxWQSBDQVZBTENBTlRFIjogIjE1NyIsICJCUlVOQSBTVEVGQU5ZIEFSQVVKTyBQRVJFSVJBIFNBQklOTyI6ICIxNTgiLCAiR0VPVkFO' +
+  'QSBTSUxWQSBTT1VTQSI6ICIxNTkiLCAiU0FCUklORSBERSBTT1VTQSBMSU1BIjogIjE2MCIsICJHVVNUQVZPIEhJUk9TSEkgS0FOTk8iOiAiMTYxIiwgIlJBRkFFTCBDVUtJRVJNQU4iOiAiMTYyIiwgIkVMVE9OIERBIFNJTFZBIE1BVE9TIjogIjE2NCIsICJQUklTQ0lMQSBHT01FUyBERSBNQUNFRE8iOiAiMTY1IiwgIkxFVElDSUEgR0FSQ0lBIFJBTU9TIjogIjE2NyIsICJFRE5BIERBIFNJTFZBIFBFUkVJUkEiOiAiMTcwIiwgIkpVTElBTkEgTUFSSU5JIERPIENBUk1PIjogIjE3MiIsICJDUklTVElBTkUgQkVaRVJSQSBERSBN' +
+  'SVJBTkRBIjogIjE3MyIsICJNQVJJQSBETyBQRVJQw4lUVU8gU09DT1JSTyBURUlYRUlSQSBERSBPTElWRUlSQSI6ICIxNzUiLCAiTEFSSVNTQSBTVEVQSEFOWSBET1MgU0FOVE9TIEJBUkJPU0EiOiAiMTc2IiwgIkdBQlJJRUxMQSBERSBNQVRPUyBET1MgU0FOVE9TIjogIjE3NyIsICJCUlVOQSBWSVRPUklBIE5FVE8iOiAiMTc4IiwgIkJFTkVESVRBIEFQQVJFQ0lEQSBQQVVMTyI6ICIxNzkiLCAiUEFVTEEgQU5EUkVBIFJPRFJJR1VFUyBNQVJRVUVTIjogIjExOCIsICJEQU5JRUxMRSBCT1RFTEhPIFJBRFUiOiAiMTAxNjIiLCAi' +
+  'REVCT1JBIERFIFNPVVpBIExBQklBUEFSSSI6ICIxMDE3NCIsICJMRU9OQVJETyBUT0xFTlRJTk8gREUgU09VWkEiOiAiMTAxNzYiLCAiR0FCUklFTEEgQ0FNUEFDQ0kgREVSRU5aTyI6ICIxMDE3OSIsICJSQUZBRUwgUEVSRUlSQSBET1MgU0FOVE9TIjogIjEwMTgxIiwgIkpIT05BVEEgUk9EUklHVUVTIEdVSU1BUkFFUyBET1MgU0FOVE9TIjogIjEwMTgyIiwgIktBUk9MSU5FIFNURVBIQU5JIEZSQU5DSVNDQSBERVRJIFRPUlJFUyI6ICIxMDE4NCIsICJJU0FCRUxBIENSVVogREEgU0lMVkEiOiAiMTAxODUiLCAiR0lPVkFOTkEg' +
+  'Q09SUkVBIE1BU0NBUkVOSEFTIjogIjEwMTg3IiwgIkFHQVRIQSBDUklTVElOQSBGRVJSRUlSQSI6ICIxMDI0MSIsICJBR0FUSEEgQ1JJU1RJTkUgREUgT0xJVkVJUkEiOiAiMTAyMzkiLCAiQUxJTkUgUk9EUklHVUVTIERPUyBTQU5UT1MiOiAiMTAyMzUiLCAiQU5ORSBTT1BISUUgTU9ERVNUTyBQSU5UTyI6ICIxMDI0OCIsICJCUkVOTk8gRElFR08gRkVSUkVJUkEgREEgU0lMVkEiOiAiMTAyMjMiLCAiQlJFTk8gVkFMRU5USU0gRE9TIFNBTlRPUyI6ICIxMDIzMiIsICJCUlVOQSBURU5VVEEgQkFSQk9TQSI6ICIxMDIzMCIsICJD' +
+  'QU1JTEEgUEVSRUlSQSBEQSBTSUxWQSI6ICIxMDIyNyIsICJDUklTVElOQSBTQU5UT1MgREUgQVJBVUpPIjogIjEwMjUzIiwgIkRBUEhORSBMT1VJU0UgREEgU0lMVkEiOiAiMTAyNTAiLCAiRU1BTlVFTExFIFZJQ1RPUklBIEJBUkJPU0EgTUFSUVVFUyI6ICIxMDI0NyIsICJHRU9WQU5OQSBST0NIQSBQRVJFSVJBIjogIjEwMjE5IiwgIkdJTFZBTkRSTyBCRU5WSU5ETyBQRVJFSVJBIERFIENBUlZBTEhPIjogIjEwMTc0IiwgIklTQUJFTExZIEZFUk5BTkRFUyBERSBBTE1FSURBIjogIjEwMjI4IiwgIkpIRU5JRkVSIERBTElMQSBT' +
+  'T1VaQSBNQVJUSU5TIjogIjEwMjUyIiwgIkpPU0UgU0VCQVNUSUFPIERFIFNBTlRBTkEgRklMSE8iOiAiMTAyNDYiLCAiS0FST0xJTlkgVklUT1JJQSBWQUxJTSBERSBBUkFVSk8iOiAiMTAyNTQiLCAiTFVJUyBST0JTT04gUklCRUlSTyBERSBTT1VaQSI6ICIxMDI1NSIsICJNQVJJQSBGRVJOQU5EQSBNQUdEQUxFTkEiOiAiMTAyMzMiLCAiTklDT0xJIFJPQ0hBIERFIEFMTUVJREEiOiAiMTAyMzgiLCAiUEhFTElQWSBGSVJNSU5PIEFVR1VTVE8iOiAiMTAyMjIiLCAiUllBTiBHQUJSSUVMIERPUyBTQU5UT1MgUElOSEVJUk8gREEg' +
+  'U0lMVkEiOiAiMTAyNTEiLCAiVEFMSVRBIERFIENBU1NJQSBDQVJWQUxITyI6ICIxMDExNyIsICJDQU1JTEEgREUgRklHVUVJUkVETyBCQVJBQk9TQSI6ICIyODEiLCAiQ0FNSUxBIEVWQU5HRUxJU1RBIFRSSU5EQURFIjogIjEwMTg2IiwgIkNSSVNUSUFORSBBTFZFUyBERSBMSVJBIjogIjExMiIsICJFTlpPIFZBTEVOVElNIEZSQU5ESU5JIExJTUEiOiAiMTAxODkiLCAiRkFCSUEgQk9SR0VTIERBIFNJTFZBIjogIjI2MiIsICJGQUJSSUNJTyBSQVBIQUVMIEJPUkdFUyBSSUJFSVJPIjogIjEwMTgyIiwgIklWQU5FVEUgU0FOVE9T' +
+  'IFJFQk9VQ0FTIEZFUk5BTkRFUyI6ICIxMDkiLCAiSkFRVUVMSU5FIEtFTExZIENPU1RBIFNJTFZBIjogIjEwMTc0IiwgIktBVUFORSBTSUxWQSBST0RSSUdVRVMiOiAiMTAxNTgiLCAiS0lNQkVSTExZIExBVVJFTiBHRU5FUk9TTyBMSU1BIjogIjEwMTkyIiwgIkxBUklTU0EgRkVSTkFOREEgT0xJVkVJUkEgU0FOVE9TIjogIjEwMTkxIiwgIk1BUkNFTEEgUklCRUlSTyBNQVJUSU5TIjogIjEwMTgxIiwgIk1BUkNFTE8gRlJBTkNJU0NPIERFIFNPVVpBIjogIjEwNyIsICJNQVJJQSBDTEFSQSBDQURFVEUgRE9TIFNBTlRPUyI6ICIx' +
+  'MDE4NSIsICJOSUNPTEUgU09VWkEgU0lMVkEgQkFUSVNUQSI6ICIxMDE2MSIsICJQQVRSSUNJQSBTT1VTQSBETyBDQVJNTyI6ICIyMTYiLCAiUkFRVUVMIE1FTFFVSUFERVMgREEgU0lMVkEiOiAiMTAxODgiLCAiU0FORFJBIERPIE5BU0NJTUVOVE8iOiAiMTAxNzciLCAiU0lETkVJIEJBVElTVEEgUEVSRUlSQSI6ICIxMjYiLCAiV0lMTElBTiBERSBBTE1FSURBIFJPQ0hBIjogIjIzOCJ9';
+var _CODFOLHA_MAP = JSON.parse(decodeURIComponent(escape(atob(_CODFOLHA_MAP_B64))));
 
 let CLIENT_ID = '';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
@@ -17649,6 +17667,37 @@ var FOLHA_PAGAMENTO_DEFAULTS = {
   '5441897000374':  { codigoEmpresa: '205', rubVT:'235', rubVR:'236', rubVA:'238', rubAM:'239', rubAO:'240' }  // Equilibryum F003
 };
 
+function _normalizarNomeFolha(s) {
+  return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
+async function preencherCodigosFolha() {
+  if (typeof _CODFOLHA_MAP === 'undefined' || !_CODFOLHA_MAP) { alert('Lista de códigos não encontrada.'); return; }
+  var mapaNorm = {};
+  Object.keys(_CODFOLHA_MAP).forEach(function(nome){ mapaNorm[_normalizarNomeFolha(nome)] = _CODFOLHA_MAP[nome]; });
+
+  var funcs = DB.g('funcionarios');
+  var preenchidos = [], jaTinham = [], semCorrespondencia = 0;
+
+  funcs.forEach(function(f){
+    if (f.codfolha) { jaTinham.push(f.n); return; } // nunca sobrescreve o que já está preenchido
+    var cod = mapaNorm[_normalizarNomeFolha(f.n)];
+    if (cod) { f.codfolha = cod; preenchidos.push(f.n + ' → ' + cod); }
+    else { semCorrespondencia++; }
+  });
+
+  if (!preenchidos.length) {
+    alert('Nenhum código novo para preencher.\n\n' + jaTinham.length + ' funcionário(s) já tinham Código Folha preenchido.\n' + semCorrespondencia + ' funcionário(s) sem nome correspondente nas planilhas enviadas.');
+    return;
+  }
+
+  if (!confirm('Foram encontrados códigos para ' + preenchidos.length + ' funcionário(s):\n\n' + preenchidos.slice(0,15).join('\n') + (preenchidos.length>15?'\n...':'') + '\n\nConfirma o preenchimento? (nenhum dado já cadastrado será alterado, só o Código Folha de quem estava em branco)')) return;
+
+  DB.s('funcionarios', funcs);
+  if (driveReady) await driveSync('funcionarios');
+  toast('✅ Código Folha preenchido para ' + preenchidos.length + ' funcionário(s)!');
+}
+
 function getConfigFolhaPagamento() {
   return DB.go('cfg_folha_pagamento'); // { [empresaId]: {codigoEmpresa, rubVT, rubVR, rubVA, rubAM, rubAO} }
 }
@@ -17709,12 +17758,12 @@ function exportFolhaPagamento() {
   }
 
   var competencia = de.slice(0,7); // 'YYYY-MM'
-  var compras = DB.g('benef-compras').filter(function(c){ return c.comp === competencia; });
+  var compras = DB.g('benef-compras').filter(function(c){ return (c.comp||'').trim() === competencia; });
   var funcs = DB.g('funcionarios').filter(function(f){ return f.emp === empId && f.st !== 'Desligado'; });
 
   function valorPara(fid, colBase) {
     var soma = compras.filter(function(c){
-      var base = c.tipoBase || c.tipo;
+      var base = (c.tipoBase || c.tipo || '').trim();
       return base === colBase && Array.isArray(c.funcs) && c.funcs.indexOf(fid) > -1;
     }).reduce(function(s,c){ return s + (parseFloat(c.vtotal)||0); }, 0);
     return soma > 0 ? soma : '';
