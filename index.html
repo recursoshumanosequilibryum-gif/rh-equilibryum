@@ -2611,6 +2611,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
       <div class="form-grid">
         <div class="form-group form-full"><label>Nome Completo *</label><input id="fn" type="text" placeholder="Nome completo"></div>
         <div class="form-group"><label>CPF *</label><input id="fcpf" type="text" placeholder="000.000.000-00" oninput="mCPF(this)"></div>
+        <div class="form-group"><label>Código Folha</label><input id="fcodfolha" type="text" placeholder="Código no sistema de folha de pagamento"></div>
         <div class="form-group"><label>RG</label><input id="frg" type="text" placeholder="RG"></div>
         <div class="form-group"><label>Nascimento</label><input id="fnas" type="date"></div>
         <div class="form-group"><label>Sexo</label><select id="fsex"><option value="">Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></div>
@@ -5692,6 +5693,7 @@ function editFunc(id) {
   // Dados pessoais
   document.getElementById('fn').value    = f.n    || '';
   document.getElementById('fcpf').value  = f.cpf  || '';
+  document.getElementById('fcodfolha').value = f.codfolha || '';
   document.getElementById('frg').value   = f.rg   || '';
   document.getElementById('fnas').value  = f.nas  || '';
   document.getElementById('fsex').value  = f.sex  || '';
@@ -5822,6 +5824,7 @@ async function savFunc() {
     const updated = {
       ...existing,
       n: nome, cpf,
+      codfolha: v('fcodfolha'),
       rg: v('frg'), nas: v('fnas'), sex: v('fsex'), ec: v('fec'),
       tel: v('ftel'), email: v('femail'), end: v('fend'), cep: v('fcep'),
       pis: v('fpis'), ctps: v('fctps'),
@@ -5904,6 +5907,7 @@ async function savFunc() {
     // ── MODO NOVO CADASTRO ──
     const f = {
       id: uid(), n: nome, cpf,
+      codfolha: v('fcodfolha'),
       rg: v('frg'), nas: v('fnas'), sex: v('fsex'), ec: v('fec'),
       tel: v('ftel'), email: v('femail'), end: v('fend'), cep: v('fcep'),
       pis: v('fpis'), ctps: v('fctps'),
@@ -17711,7 +17715,7 @@ function exportFolhaPagamento() {
   function valorPara(fid, colBase) {
     var soma = compras.filter(function(c){
       var base = c.tipoBase || c.tipo;
-      return c.fid === fid && base === colBase;
+      return base === colBase && Array.isArray(c.funcs) && c.funcs.indexOf(fid) > -1;
     }).reduce(function(s,c){ return s + (parseFloat(c.vtotal)||0); }, 0);
     return soma > 0 ? soma : '';
   }
@@ -17737,7 +17741,7 @@ function exportFolhaPagamento() {
   wsData.push(['Tipo de', 'Código', 'Nome dos'].concat(colunas.map(function(c){ return c.label; })));
   wsData.push(['Calculo', 'Folha', 'Colaboradores'].concat(colunas.map(function(c){ return c.rub; })));
   funcs.sort(function(a,b){ return a.n.localeCompare(b.n,'pt-BR'); }).forEach(function(f){
-    wsData.push([11, '', f.n].concat(colunas.map(function(c){ return valorPara(f.id, c.base); })));
+    wsData.push([11, f.codfolha || '', f.n].concat(colunas.map(function(c){ return valorPara(f.id, c.base); })));
   });
 
   var ws = XLSX.utils.aoa_to_sheet(wsData);
