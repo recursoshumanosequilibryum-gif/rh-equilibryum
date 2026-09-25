@@ -548,6 +548,9 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
   <div class="nav-item" onclick="nav(&#39;advertencias&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span>Advertências &amp; Suspensões
   </span></div>
+  <div class="nav-item" onclick="nav(&#39;demissao&#39;,this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span>Demissão
+  </span></div>
   <div class="nav-item" onclick="nav(&#39;documentos&#39;,this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span>Gerar Documentos
   </span></div>
@@ -1983,6 +1986,86 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
       <div style="font-size:40px;margin-bottom:10px;">✅</div>
       <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhuma advertência ou suspensão cadastrada</div>
       <div style="font-size:12px;">Clique em "+ Novo Lançamento" para adicionar</div>
+    </div>
+  </div>
+</div>
+
+<!-- DEMISSÃO -->
+<div class="section-page" id="sec-demissao">
+  <div id="dem-kpi-bar" class="stats-grid"></div>
+  <div class="card">
+    <div style="background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;">
+      <div style="font-weight:700;font-size:13px;color:var(--gray-700);margin-bottom:2px;">🔗 Link do Portal de Assinatura</div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px;">Cole aqui o link do portal já publicado (veja as instruções que te enviei). O sistema usa esse link para gerar, automaticamente, o link de assinatura de cada demissão.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="cfg-dem-link" placeholder="https://.../assinatura-demissao/" style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <button class="btn btn-outline btn-sm" onclick="salvarLinkDemissaoPortal()">💾 Salvar</button>
+      </div>
+    </div>
+    <div class="card-header">
+      <span class="card-title">🚪 Demissões</span>
+      <button class="btn btn-primary" onclick="abrirModalDemissao()">+ Nova Demissão</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+      <input type="text" id="dem-busca" placeholder="🔍 Buscar por funcionário..." oninput="rdDemissoes()" style="flex:1;min-width:200px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      <select id="dem-filtro-status" onchange="rdDemissoes()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+        <option value="">Todos os status</option>
+        <option value="Pendente">🟨 Pendente de assinatura</option>
+        <option value="Assinado">🟩 Assinado</option>
+      </select>
+    </div>
+    <div id="dem-lista"></div>
+    <div id="dem-vazio" style="text-align:center;padding:48px;color:var(--gray-400);">
+      <div style="font-size:40px;margin-bottom:10px;">🚪</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Nenhuma demissão cadastrada</div>
+      <div style="font-size:12px;">Clique em "+ Nova Demissão" para adicionar</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEMISSÃO -->
+<div class="modal-bg" id="modal-demissao">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-title">🚪 Nova Demissão</span>
+      <button class="modal-close" onclick="closeModal(&#39;modal-demissao&#39;)">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Funcionário *</label>
+        <select id="dem-func" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;"><option value="">Selecione o funcionário</option></select>
+      </div>
+      <div class="form-group">
+        <label>Data do Desligamento *</label>
+        <input type="date" id="dem-data" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+      </div>
+      <div class="form-group">
+        <label>Motivo</label>
+        <select id="dem-motivo" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
+          <option>Dispensa sem justa causa</option>
+          <option>Pedido de demissão</option>
+          <option>Dispensa por justa causa</option>
+          <option>Término de contrato</option>
+          <option>Acordo mútuo (Art. 484-A)</option>
+          <option>Aposentadoria</option>
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label>Anexar RCT/TRCT (PDF) *</label>
+        <div class="upload-area" id="dem-upload-area">
+          <div id="dem-upload-texto">📎 Clique ou arraste o PDF aqui</div>
+          <input type="file" id="dem-arquivo" accept=".pdf" onchange="demArquivoSelecionado()">
+        </div>
+        <div id="dem-arquivo-nome" style="font-size:12px;color:var(--gray-600);margin-top:4px;"></div>
+      </div>
+      <div class="form-group form-full">
+        <label>Observações</label>
+        <textarea id="dem-obs" rows="2" placeholder="Opcional" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal(&#39;modal-demissao&#39;)">Cancelar</button>
+      <button class="btn btn-primary" onclick="savDemissao()">💾 Salvar e Gerar Link</button>
     </div>
   </div>
 </div>
@@ -4940,7 +5023,7 @@ const DB = {
 // ── Auto-sync: debounce 2s, then save changed keys to Drive ──
 var _autoSyncTimer = null;
 var _pendingSyncKeys = new Set();
-const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','cronograma-trein'];
+const DRIVE_KEYS = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','demissoes','cronograma-trein'];
 function scheduleAutoSync(k) {
   if (!driveReady) return;
   var _k = k === 'devoluções' ? 'devolucoes' : k;
@@ -5385,7 +5468,7 @@ async function syncFromDrive() {
   // sem isso, a leitura falha silenciosamente e nada é atualizado.
   if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
   if (!rhFolderId) { toast('⚠️ Não foi possível acessar a pasta do Drive.', 'warn'); return; }
-  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','cronograma-trein'];
+  const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','demissoes','cronograma-trein'];
   let synced = 0;
   for (const k of keys) {
     try {
@@ -5409,7 +5492,7 @@ async function syncFromDrive() {
   const active = document.querySelector('.section-page.active');
   if (active) {
     const id = active.id.replace('sec-','');
-    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:function(){ rdRel(); rdDevRelatorio(); }, aniversariantes:rdBday, 'aniversario-empresa':rdAnivEmpresa, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc, advertencias:rdAdvertencias };
+    const rd = { funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, relatorios:function(){ rdRel(); rdDevRelatorio(); }, aniversariantes:rdBday, 'aniversario-empresa':rdAnivEmpresa, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, beneficios:rdBenefFunc, advertencias:rdAdvertencias, demissao:rdDemissoes };
     if (rd[id]) rd[id]();
   }
   toast('✅ ' + synced + ' registros carregados do Drive ☁️');
@@ -5550,6 +5633,7 @@ function openModal(id) {
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
   if (id === 'modal-advertencia') { fillFuncSel('adv-func'); if (!editingAdvId) { document.getElementById('adv-data').value = td(); } }
+  if (id === 'modal-demissao') { fillFuncSel('dem-func'); if (!editingDemId) { document.getElementById('dem-data').value = td(); } }
   if (id === 'modal-benef-comp') { fillFuncSel('bcomp-funcs', true); fillBenefRelMeses(); }
 }
 function closeModal(id) {
@@ -5605,9 +5689,9 @@ function nav(id, el) {
   secEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
-  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', advertencias:'Advertências & Suspensões', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', 'aniversario-empresa':'Aniversário de Empresa', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
+  const T = { dashboard:'Dashboard', funcionarios:'Funcionários', departamentos:'Departamentos', empresas:'Empresas', usuarios:'Usuários', vagas:'Vagas', pagamentos:'Pagamentos RH', pendencias:'Pendências', advertencias:'Advertências & Suspensões', demissao:'Demissão', experiencia:'Período de Experiência', ferias:'Férias', exames:'Exames Médicos', epi:'Controle de EPI', uniforme:'Estoque de Uniformes', beneficios:'Benefícios por Funcionário', documentos:'Gerar Documentos', relatorios:'Relatório de Funcionários', aniversariantes:'Aniversariantes', 'aniversario-empresa':'Aniversário de Empresa', treinamentos:'Treinamentos', campanhas:'Campanhas', politicas:'Políticas & Normas' };
   document.getElementById('topbar-title').textContent = T[id] || id;
-  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, 'aniversario-empresa':rdAnivEmpresa, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol };
+  const rd = { dashboard:updDash, funcionarios:rdFunc, departamentos:rdDep, empresas:rdEmp, usuarios:rdUsr, vagas:rdVagas, pagamentos:rdPagamentos, experiencia:rdExp, ferias:rdFer, exames:rdExm, epi:rdEPI, uniforme:rdUni, beneficios:rdBenef, documentos:rdDocs, relatorios:rdRel, aniversariantes:rdBday, 'aniversario-empresa':rdAnivEmpresa, treinamentos:rdTrein, campanhas:rdCamp, politicas:rdPol, demissao:rdDemissoes };
   if (rd[id]) rd[id]();
 }
 
@@ -15634,6 +15718,246 @@ function rdAdvertencias() {
       '</div>' +
     '</div>';
   }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// DEMISSÃO — GERAÇÃO DE LINK PARA ASSINATURA DIGITAL DO RCT
+// ════════════════════════════════════════════════════════════
+var editingDemId = null;
+var _demArquivoSelecionado = null;
+
+function getConfigDemissaoLink() {
+  return DB.go('cfg_demissao_portal'); // { link: '' }
+}
+function salvarLinkDemissaoPortal() {
+  var link = (document.getElementById('cfg-dem-link')||{}).value.trim();
+  DB.so('cfg_demissao_portal', { link: link });
+  toast('Link do portal de assinatura salvo!');
+}
+
+function abrirModalDemissao() {
+  editingDemId = null;
+  _demArquivoSelecionado = null;
+  document.getElementById('dem-motivo').value = 'Dispensa sem justa causa';
+  document.getElementById('dem-obs').value = '';
+  document.getElementById('dem-arquivo').value = '';
+  document.getElementById('dem-arquivo-nome').textContent = '';
+  document.getElementById('dem-upload-texto').textContent = '📎 Clique ou arraste o PDF aqui';
+  openModal('modal-demissao');
+}
+
+function demArquivoSelecionado() {
+  var inp = document.getElementById('dem-arquivo');
+  var file = inp.files && inp.files[0];
+  _demArquivoSelecionado = file || null;
+  document.getElementById('dem-arquivo-nome').textContent = file ? ('Selecionado: ' + file.name) : '';
+}
+
+// Faz upload do RCT e o deixa acessível por link (qualquer pessoa com o
+// link pode visualizar) — necessário para o funcionário conseguir abrir o
+// documento no portal de assinatura, mesmo sem estar logado no Drive da empresa.
+async function uploadRCTParaAssinatura(file, funcNome) {
+  var resultado = await uploadFileToDrive(file, funcNome);
+  try {
+    await fetch('https://www.googleapis.com/drive/v3/files/' + resultado.id + '/permissions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + driveToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+  } catch(e) { console.warn('Não foi possível tornar o RCT público:', e); }
+  return resultado;
+}
+
+var _demSalvando = false;
+async function savDemissao() {
+  if (_demSalvando) return;
+  var fid    = (document.getElementById('dem-func')||{}).value;
+  var data   = (document.getElementById('dem-data')||{}).value;
+  var motivo = (document.getElementById('dem-motivo')||{}).value;
+  var obs    = (document.getElementById('dem-obs')||{}).value.trim();
+
+  if (!fid)  { alert('Selecione o funcionário.'); return; }
+  if (!data) { alert('Informe a data do desligamento.'); return; }
+  if (!editingDemId && !_demArquivoSelecionado) { alert('Anexe o PDF do RCT/TRCT.'); return; }
+
+  var f = DB.g('funcionarios').find(function(x){ return x.id === fid; });
+
+  _demSalvando = true;
+  var btnSalvar = document.querySelector('#modal-demissao .modal-footer .btn-primary');
+  var textoOriginalBtn = btnSalvar ? btnSalvar.textContent : '';
+  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = 'Salvando...'; }
+
+  try {
+    var list = DB.g('demissoes');
+    var registro;
+    if (editingDemId) {
+      registro = list.find(function(x){ return x.id === editingDemId; });
+      if (!registro) { editingDemId = null; return; }
+    } else {
+      registro = { id: uid(), status: 'Pendente' };
+      list.push(registro);
+    }
+    registro.fid    = fid;
+    registro.data   = data;
+    registro.motivo = motivo;
+    registro.obs    = obs;
+
+    if (_demArquivoSelecionado && driveReady && f) {
+      try {
+        var resultado = await uploadRCTParaAssinatura(_demArquivoSelecionado, f.n);
+        registro.rctNome = resultado.name;
+        registro.rctUrl  = resultado.webViewLink || '';
+      } catch(e) {
+        console.warn('Upload do RCT falhou:', e);
+        toast('⚠️ Registro salvo, mas o anexo não pôde ser enviado.', 'warn');
+      }
+    }
+
+    DB.s('demissoes', list);
+    if (driveReady) await driveSync('demissoes');
+  } finally {
+    _demSalvando = false;
+    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = textoOriginalBtn; }
+  }
+
+  editingDemId = null;
+  _demArquivoSelecionado = null;
+  closeModal('modal-demissao');
+  rdDemissoes();
+  toast('✅ Demissão salva! Já pode copiar o link de assinatura.');
+}
+
+function editDemissao(id) {
+  var reg = DB.g('demissoes').find(function(x){ return x.id === id; });
+  if (!reg) return;
+  editingDemId = id;
+  _demArquivoSelecionado = null;
+  openModal('modal-demissao');
+  document.getElementById('dem-func').value   = reg.fid || '';
+  document.getElementById('dem-data').value   = reg.data || '';
+  document.getElementById('dem-motivo').value = reg.motivo || 'Dispensa sem justa causa';
+  document.getElementById('dem-obs').value    = reg.obs || '';
+  document.getElementById('dem-arquivo').value = '';
+  document.getElementById('dem-arquivo-nome').textContent = reg.rctNome ? ('Anexo atual: ' + reg.rctNome) : '';
+}
+
+function delDemissao(id) {
+  if (!confirm('Excluir este registro de demissão? O arquivo salvo no Drive não será apagado.')) return;
+  DB.s('demissoes', DB.g('demissoes').filter(function(x){ return x.id !== id; }));
+  if (driveReady) driveSync('demissoes', [id]);
+  rdDemissoes();
+}
+
+function _linkAssinaturaDemissao(reg, f) {
+  var cfg = getConfigDemissaoLink();
+  if (!cfg.link) return null;
+  if (!reg.rctUrl) return null;
+  var sep = cfg.link.indexOf('?') > -1 ? '&' : '?';
+  return cfg.link + sep + 'id=' + encodeURIComponent(reg.id) + '&nome=' + encodeURIComponent(f ? f.n : '') + '&rct=' + encodeURIComponent(reg.rctUrl);
+}
+
+function copiarLinkDemissao(id) {
+  var reg = DB.g('demissoes').find(function(x){ return x.id === id; });
+  var f = reg ? DB.g('funcionarios').find(function(x){ return x.id === reg.fid; }) : null;
+  if (!reg) return;
+  var link = _linkAssinaturaDemissao(reg, f);
+  if (!link) { toast('⚠️ Configure o link do portal e confirme que o RCT foi anexado.', 'warn'); return; }
+  navigator.clipboard.writeText(link).then(function(){ toast('🔗 Link copiado!'); });
+}
+
+function enviarWhatsappDemissao(id) {
+  var reg = DB.g('demissoes').find(function(x){ return x.id === id; });
+  var f = reg ? DB.g('funcionarios').find(function(x){ return x.id === reg.fid; }) : null;
+  if (!reg || !f) return;
+  var link = _linkAssinaturaDemissao(reg, f);
+  if (!link) { toast('⚠️ Configure o link do portal e confirme que o RCT foi anexado.', 'warn'); return; }
+  var msg = 'Olá ' + f.n + '! Segue o link para você conferir e assinar digitalmente o seu Termo de Rescisão (RCT): ' + link;
+  wha(f.tel || '', msg);
+}
+
+function enviarEmailDemissao(id) {
+  var reg = DB.g('demissoes').find(function(x){ return x.id === id; });
+  var f = reg ? DB.g('funcionarios').find(function(x){ return x.id === reg.fid; }) : null;
+  if (!reg || !f) return;
+  var link = _linkAssinaturaDemissao(reg, f);
+  if (!link) { toast('⚠️ Configure o link do portal e confirme que o RCT foi anexado.', 'warn'); return; }
+  var assunto = encodeURIComponent('Assinatura digital do seu Termo de Rescisão (RCT)');
+  var corpo = encodeURIComponent('Olá ' + f.n + ',\n\nSegue o link para você conferir e assinar digitalmente o seu Termo de Rescisão (RCT):\n' + link + '\n\nAtenciosamente,\nRH Equilibryum');
+  window.open('mailto:' + (f.email||'') + '?subject=' + assunto + '&body=' + corpo, '_blank');
+}
+
+function abrirPainelAssinaturasDemissao() {
+  var cfg = getConfigDemissaoLink();
+  if (!cfg.link) { toast('Cadastre o link do portal antes de abrir o painel.', 'warn'); return; }
+  var sep = cfg.link.indexOf('?') > -1 ? '&' : '?';
+  window.open(cfg.link + sep + 'painel=equilibryum-rh2026', '_blank');
+}
+
+function rdDemissoes() {
+  var list  = DB.g('demissoes');
+  var funcs = DB.g('funcionarios');
+  var busca = ((document.getElementById('dem-busca')||{}).value || '').toLowerCase().trim();
+  var fSt   = (document.getElementById('dem-filtro-status')||{}).value || '';
+
+  // Preenche o campo do link do portal sem atrapalhar quem está digitando
+  var linkEl = document.getElementById('cfg-dem-link');
+  if (linkEl && document.activeElement !== linkEl) linkEl.value = getConfigDemissaoLink().link || '';
+
+  function nomeFunc(fid) {
+    var f = funcs.find(function(x){ return x.id === fid; });
+    return f ? f.n : '(funcionário removido)';
+  }
+
+  var filtrada = list.filter(function(d) {
+    if (fSt && (d.status||'Pendente') !== fSt) return false;
+    if (busca && nomeFunc(d.fid).toLowerCase().indexOf(busca) === -1) return false;
+    return true;
+  }).sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+
+  var pendentes = list.filter(function(d){ return (d.status||'Pendente') === 'Pendente'; }).length;
+  var assinados = list.filter(function(d){ return d.status === 'Assinado'; }).length;
+  var kpiBar = document.getElementById('dem-kpi-bar');
+  if (kpiBar) {
+    kpiBar.innerHTML =
+      '<div class="stat-card yellow"><div class="stat-icon">🟨</div><div><div class="stat-value">'+pendentes+'</div><div class="stat-label">Pendente de assinatura</div></div></div>' +
+      '<div class="stat-card green"><div class="stat-icon">🟩</div><div><div class="stat-value">'+assinados+'</div><div class="stat-label">Assinados</div></div></div>' +
+      '<div class="stat-card"><div class="stat-icon">🚪</div><div><div class="stat-value">'+list.length+'</div><div class="stat-label">Total de demissões</div></div></div>';
+  }
+
+  var listaEl = document.getElementById('dem-lista');
+  var vazioEl = document.getElementById('dem-vazio');
+  if (!filtrada.length) {
+    listaEl.innerHTML = '';
+    vazioEl.style.display = 'block';
+    return;
+  }
+  vazioEl.style.display = 'none';
+
+  listaEl.innerHTML = filtrada.map(function(d) {
+    var f = funcs.find(function(x){ return x.id === d.fid; });
+    var statusBadge = d.status === 'Assinado'
+      ? '<span class="badge badge-green">🟩 Assinado</span>'
+      : '<span class="badge badge-yellow">🟨 Pendente</span>';
+    return '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--gray-100);border-radius:var(--radius-sm);margin-bottom:10px;flex-wrap:wrap;">' +
+      '<div style="flex:1;min-width:200px;">' +
+        '<div style="font-weight:700;font-size:14px;color:var(--gray-800);">' + nomeFunc(d.fid) + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">' +
+          statusBadge +
+          '<span style="font-size:12px;color:var(--gray-500);">📅 ' + fd(d.data) + '</span>' +
+          '<span style="font-size:12px;color:var(--gray-500);">' + (d.motivo||'') + '</span>' +
+        '</div>' +
+        (d.rctUrl ? '<a href="'+d.rctUrl+'" target="_blank" style="font-size:12px;color:var(--blue);display:inline-block;margin-top:6px;">📎 Ver RCT anexado</a>' : '<span style="font-size:12px;color:var(--red);display:inline-block;margin-top:6px;">⚠️ Sem RCT anexado</span>') +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button class="btn btn-outline btn-sm" data-id="'+d.id+'" onclick="copiarLinkDemissao(this.dataset.id)">📋 Copiar Link</button>' +
+        '<button class="btn btn-whatsapp btn-sm" data-id="'+d.id+'" onclick="enviarWhatsappDemissao(this.dataset.id)">💬 WhatsApp</button>' +
+        '<button class="btn btn-outline btn-sm" data-id="'+d.id+'" onclick="enviarEmailDemissao(this.dataset.id)">📧 E-mail</button>' +
+        '<button class="btn-icon" data-id="'+d.id+'" onclick="editDemissao(this.dataset.id)" title="Editar">✏️</button>' +
+        '<button class="btn-icon danger" data-id="'+d.id+'" onclick="delDemissao(this.dataset.id)" title="Excluir">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') +
+  '<div style="text-align:center;margin-top:12px;"><button class="btn btn-outline btn-sm" onclick="abrirPainelAssinaturasDemissao()">📊 Ver Painel de Assinaturas</button></div>';
 }
 
 function toggleSidebar() {
