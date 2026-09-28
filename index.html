@@ -2001,6 +2001,11 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
         <input type="text" id="cfg-dem-link" placeholder="https://.../assinatura-demissao/" style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;">
         <button class="btn btn-outline btn-sm" onclick="salvarLinkDemissaoPortal()">💾 Salvar</button>
       </div>
+      <div style="margin-top:12px;">
+        <div style="font-weight:700;font-size:13px;color:var(--gray-700);margin-bottom:2px;">💬 Mensagem padrão (WhatsApp / E-mail)</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">Use {nome} e {link} para inserir automaticamente o nome do ex-funcionário e o link de assinatura. Essa mensagem fica salva e será usada sempre que você clicar em WhatsApp ou E-mail.</div>
+        <textarea id="cfg-dem-msg" rows="6" placeholder="Digite a mensagem padrão..." style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+      </div>
     </div>
     <div class="card-header">
       <span class="card-title">🚪 Demissões</span>
@@ -15727,12 +15732,26 @@ var editingDemId = null;
 var _demArquivoSelecionado = null;
 
 function getConfigDemissaoLink() {
-  return DB.go('cfg_demissao_portal'); // { link: '' }
+  var cfg = DB.go('cfg_demissao_portal'); // { link: '', msg: '' }
+  if (!cfg.msg) {
+    cfg.msg = 'Olá {nome}, tudo bem?\n\n' +
+      'Estamos formalizando o encerramento do seu contrato e, para isso, precisamos que você realize a assinatura digital do seu Termo de Rescisão (RCT/TRCT).\n\n' +
+      'A homologação hoje é feita de forma 100% digital, através da plataforma oficial do governo (assinador gov.br), o que garante validade jurídica ao documento.\n\n' +
+      'Para assinar:\n' +
+      '1️⃣ Acesse o link abaixo;\n' +
+      '2️⃣ Confira os dados do documento;\n' +
+      '3️⃣ Faça login com sua conta gov.br (nível prata ou ouro) e siga as instruções para assinar digitalmente.\n\n' +
+      '🔗 {link}\n\n' +
+      'Qualquer dúvida durante o processo, o RH está à disposição para te ajudar. É só chamar por aqui mesmo.\n\n' +
+      'Atenciosamente,\nRH Equilibryum';
+  }
+  return cfg;
 }
 function salvarLinkDemissaoPortal() {
   var link = (document.getElementById('cfg-dem-link')||{}).value.trim();
-  DB.so('cfg_demissao_portal', { link: link });
-  toast('Link do portal de assinatura salvo!');
+  var msg  = (document.getElementById('cfg-dem-msg')||{}).value || '';
+  DB.so('cfg_demissao_portal', { link: link, msg: msg });
+  toast('Link e mensagem do portal de assinatura salvos!');
 }
 
 function abrirModalDemissao() {
@@ -15871,7 +15890,8 @@ function enviarWhatsappDemissao(id) {
   if (!reg || !f) return;
   var link = _linkAssinaturaDemissao(reg, f);
   if (!link) { toast('⚠️ Configure o link do portal e confirme que o RCT foi anexado.', 'warn'); return; }
-  var msg = 'Olá ' + f.n + '! Segue o link para você conferir e assinar digitalmente o seu Termo de Rescisão (RCT): ' + link;
+  var cfg = getConfigDemissaoLink();
+  var msg = (cfg.msg || '').replace(/\{nome\}/g, f.n || '').replace(/\{link\}/g, link);
   wha(f.tel || '', msg);
 }
 
@@ -15881,8 +15901,10 @@ function enviarEmailDemissao(id) {
   if (!reg || !f) return;
   var link = _linkAssinaturaDemissao(reg, f);
   if (!link) { toast('⚠️ Configure o link do portal e confirme que o RCT foi anexado.', 'warn'); return; }
+  var cfg = getConfigDemissaoLink();
+  var msgTexto = (cfg.msg || '').replace(/\{nome\}/g, f.n || '').replace(/\{link\}/g, link);
   var assunto = encodeURIComponent('Assinatura digital do seu Termo de Rescisão (RCT)');
-  var corpo = encodeURIComponent('Olá ' + f.n + ',\n\nSegue o link para você conferir e assinar digitalmente o seu Termo de Rescisão (RCT):\n' + link + '\n\nAtenciosamente,\nRH Equilibryum');
+  var corpo = encodeURIComponent(msgTexto);
   window.open('mailto:' + (f.email||'') + '?subject=' + assunto + '&body=' + corpo, '_blank');
 }
 
@@ -15901,7 +15923,10 @@ function rdDemissoes() {
 
   // Preenche o campo do link do portal sem atrapalhar quem está digitando
   var linkEl = document.getElementById('cfg-dem-link');
-  if (linkEl && document.activeElement !== linkEl) linkEl.value = getConfigDemissaoLink().link || '';
+  var msgEl  = document.getElementById('cfg-dem-msg');
+  var cfgDemAtual = getConfigDemissaoLink();
+  if (linkEl && document.activeElement !== linkEl) linkEl.value = cfgDemAtual.link || '';
+  if (msgEl && document.activeElement !== msgEl) msgEl.value = cfgDemAtual.msg || '';
 
   function nomeFunc(fid) {
     var f = funcs.find(function(x){ return x.id === fid; });
