@@ -5638,7 +5638,7 @@ function openModal(id) {
   if (id === 'modal-form-exp') { fillFuncSel('fexp-func'); document.getElementById('fexp-data').value = td(); }
   if (id === 'modal-benef-atr') { fillFuncSel('batr-func'); }
   if (id === 'modal-advertencia') { fillFuncSel('adv-func'); if (!editingAdvId) { document.getElementById('adv-data').value = td(); } }
-  if (id === 'modal-demissao') { fillFuncSel('dem-func'); if (!editingDemId) { document.getElementById('dem-data').value = td(); } }
+  if (id === 'modal-demissao') { fillFuncSelDemissao('dem-func'); if (!editingDemId) { document.getElementById('dem-data').value = td(); } }
   if (id === 'modal-benef-comp') { fillFuncSel('bcomp-funcs', true); fillBenefRelMeses(); }
 }
 function closeModal(id) {
@@ -5661,6 +5661,19 @@ function fillFuncSel(selId, multi) {
   if (!multi) s.innerHTML = "<option value=''>Selecione</option>";
   else s.innerHTML = '';
   DB.g('funcionarios').filter(f => f.st !== 'Desligado').sort((a,b)=>a.n.localeCompare(b.n)).forEach(f => { const o = document.createElement('option'); o.value = f.id; o.textContent = f.n; s.appendChild(o); });
+}
+// Igual ao fillFuncSel, mas inclui também os funcionários Desligados — necessário
+// para o menu Demissão, já que os registros de demissão são justamente sobre
+// pessoas que já foram (ou estão sendo) desligadas.
+function fillFuncSelDemissao(selId) {
+  const s = document.getElementById(selId); if (!s) return;
+  s.innerHTML = "<option value=''>Selecione</option>";
+  DB.g('funcionarios').sort((a,b)=>a.n.localeCompare(b.n)).forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id;
+    o.textContent = f.n + (f.st === 'Desligado' ? ' (Desligado)' : '');
+    s.appendChild(o);
+  });
 }
 function fTab(id, btn) {
   ['ft1','ft2','ft3'].forEach(t => { const e = document.getElementById(t); if (e) e.style.display = 'none'; });
@@ -5994,6 +6007,7 @@ async function savFunc() {
     // ── Hook: se status mudou para Desligado, abrir modal de devolução ──
     if (updated.st === 'Desligado' && _prevStatus !== 'Desligado') {
       setTimeout(function(){ abrirModalDevolucao(updated.id); }, 600);
+      criarDemissaoPendenteAuto(updated.id);
     }
 
     // Salvar foto separadamente
@@ -15752,6 +15766,20 @@ function salvarLinkDemissaoPortal() {
   var msg  = (document.getElementById('cfg-dem-msg')||{}).value || '';
   DB.so('cfg_demissao_portal', { link: link, msg: msg });
   toast('Link e mensagem do portal de assinatura salvos!');
+}
+
+// Cria automaticamente um registro "Pendente" no menu Demissão quando o
+// funcionário é marcado como Desligado no cadastro, para que o RH tenha
+// visibilidade de que ainda falta encaminhar a homologação/assinatura.
+// Não cria duplicado se já existir um registro de demissão para esse funcionário.
+function criarDemissaoPendenteAuto(fid) {
+  var list = DB.g('demissoes');
+  var jaExiste = list.some(function(d){ return d.fid === fid; });
+  if (jaExiste) return;
+  list.push({ id: uid(), fid: fid, data: td(), motivo: '', status: 'Pendente' });
+  DB.s('demissoes', list);
+  if (driveReady) driveSync('demissoes');
+  rdDemissoes();
 }
 
 function abrirModalDemissao() {
