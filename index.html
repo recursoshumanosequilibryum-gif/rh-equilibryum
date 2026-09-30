@@ -592,7 +592,7 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
         <span id="drive-badge-dot" style="width:7px;height:7px;border-radius:50%;background:#ccc;display:inline-block;"></span>
         <span id="drive-badge-txt">Drive</span>
       </span>
-      <button class="btn btn-outline btn-sm" id="btn-clear-sig" onclick="clearSavedSignature()" title="Apagar assinatura salva de Mônica Santos" style="font-size:12px;display:none;">✍️ Limpar Assinatura</button>
+      <button class="btn btn-outline btn-sm" id="btn-clear-sig" onclick="clearSavedSignature()" title="Apagar assinatura salva do Coordenador de RH" style="font-size:12px;display:none;">✍️ Limpar Assinatura</button>
       <button class="btn btn-outline btn-sm" id="btn-sync" onclick="syncManual()" title="Buscar dados mais recentes do Drive" style="font-size:12px;">🔄 Sincronizar / Iniciar</button>
       <button class="btn btn-whatsapp btn-sm" onclick="openModal(&#39;modal-wha&#39;)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"></path></svg>
@@ -4051,7 +4051,7 @@ Carregador, Maxmidia, Tipo C, —"></textarea>
     <!-- Bloco Mônica -->
     <div style="margin-bottom:14px;padding:12px;background:var(--green-pale);border-radius:var(--radius-sm);border:1.5px solid var(--green);">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-        <div style="font-size:13px;font-weight:700;color:var(--green-dark);">✍️ Mônica Santos — Coordenadora de RH</div>
+        <div style="font-size:13px;font-weight:700;color:var(--green-dark);">✍️ Coordenador(a) de RH</div>
         <div style="display:flex;gap:6px;">
           <span id="sig-monica-status" style="font-size:11px;color:var(--green-dark);padding:2px 10px;background:#c8ecd4;border-radius:10px;display:none;">✅ Assinatura salva</span>
           <button class="btn btn-outline btn-sm" style="font-size:11px;" onclick="sigLimparMonica()">🗑️ Limpar assinatura</button>
@@ -7813,7 +7813,7 @@ function openAvd(fid, dias) {
         (f.ges||'Gestor Responsável') + '<br><small style="color:#666;">Gestor / Supervisor</small>' +
       '</div>' +
       '<div style="flex:1;border-top:1.5px solid #333;text-align:center;padding-top:6px;font-size:11pt;">' +
-        'MÔNICA SANTOS<br><small style="color:#666;">Coordenadora RH – Equilibryum</small>' +
+        'COORDENADOR(A) DE RH<br><small style="color:#666;">Equilibryum</small>' +
       '</div>' +
     '</div>' +
     '<p style="text-align:center;margin-top:14px;font-size:10px;color:#aaa;">Gerado em ' +
@@ -9571,8 +9571,8 @@ function gerarGuiaExame(empresa) {
 
   var nomeEmp = isEq ? 'Equilibryum Reabilitação e Consultoria em Saúde' : 'LONGHI SERVICOS DE TERCEIRIZACAO A EMPRESAS LTDA';
   var cnpjEmp = isEq ? '05.441.897/0001-02' : '54.188.772/0001-28';
-  var assinante = isEq ? 'MÔNICA DOS SANTOS' : 'MONICA SANTOS';
-  var cargo_assinante = isEq ? '' : 'Coord. De Recursos Humanos';
+  var assinante = 'COORDENADOR(A) DE RH';
+  var cargo_assinante = '';
 
   var docHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Guia de Exame – '+f.n+'</title>' +
     '<style>body{font-family:Arial,sans-serif;margin:2cm;font-size:11pt;color:#000;}' +
@@ -9657,7 +9657,7 @@ function gerarContaSalario(empresa) {
     '<p><em><strong>Salário:</strong> R$ '+salario+'</em></p>' +
     '<p><em>Favor providenciar para o mesmo a abertura da conta salário, desde que ele esteja de posse de todos os documentos necessários descritos abaixo. Na ausência de um dos documentos favor solicitar ao funcionário que providencie e retorne posteriormente para abertura, não fornecendo neste momento o número da conta salário.</em></p>' +
     '<p><em><strong>Obs.:</strong> O fornecimento do número da conta ao funcionário poderá ocorrer se a conta estiver liberada para recebimento dos créditos relativos ao salário ou demais pertinentes à função exercida na empresa.</em></p>' +
-    '<p style="margin-top:30px;" class="assinatura">MÔNICA SANTOS<br>'+nomeEmp+'<br>CNPJ N.° '+cnpjEmp+'</p>' +
+    '<p style="margin-top:30px;" class="assinatura">COORDENADOR(A) DE RH<br>'+nomeEmp+'<br>CNPJ N.° '+cnpjEmp+'</p>' +
     '<hr style="margin:24px 0;">' +
     '<p><strong>Observações para o funcionário:</strong></p>' +
     '<p><em>Para efetuar a abertura da conta salário, o funcionário deverá <strong>comparecer pessoalmente</strong> na agência e apresentar juntamente com esta carta o seu CPF, um documento de identificação e comprovante de endereço.</em></p>' +
@@ -9810,7 +9810,7 @@ function sigLimparMonica() {
   localStorage.removeItem('eq_monica_assinatura');
   _savedSignature = null;
   var st = document.getElementById('sig-monica-status'); if (st) st.style.display = 'none';
-  toast('Assinatura da Mônica apagada.');
+  toast('Assinatura do Coordenador de RH apagada.');
 }
 
 function sigLimparBruno() {
@@ -9974,7 +9974,7 @@ function gerarReciboEPI() {
     '@media print{@page{margin:1.5cm;}}</style></head><body>' +
     '<h1>Recibo de EPIs – Equipamento de Proteção Individual</h1>' +
     '<div class="header-meta">Código: <strong>11 FORM</strong> &nbsp;|&nbsp; Revisão: 02/03/2026 &nbsp;|&nbsp; Status: <strong>Vigente</strong> &nbsp;|&nbsp; Versão: 02<br>' +
-    'Setor: <strong>Departamento Pessoal</strong> &nbsp;|&nbsp; Revisor: <strong>MÔNICA SANTOS</strong></div>' +
+    'Setor: <strong>Departamento Pessoal</strong> &nbsp;|&nbsp; Revisor: <strong>COORDENADOR(A) DE RH</strong></div>' +
     '<p>Recebi da <strong>Equilibryum Reabilitação e Consultoria em Saúde S/S Ltda</strong> os Equipamentos de Proteção Individual (E.P.I.), abaixo discriminados, destinados à minha proteção pessoal e estou ciente da necessidade do uso para minha segurança e que a lei determina o uso obrigatório nos locais de riscos de acidentes.</p>' +
     '<p><strong>Comprometo-me</strong> a fazer uso constante e adequado conforme orientação da Segurança do Trabalho e Encarregados, responsabilizando-me pela guarda e conservação, inclusive pelos extravios dos equipamentos de segurança mim confiados.</p>' +
     '<p><strong>OBRIGAÇÃO LEGAL DO EMPREGADO – NR 6</strong><br>' +
@@ -10098,7 +10098,7 @@ function gerarReciboEquipamentos() {
     '@media print{@page{margin:1.5cm;}}</style></head><body>' +
     '<h1>RECIBO DE EQUIPAMENTO E FERRAMENTAS</h1>' +
     '<div class="header-meta">Código: <strong>04 FORM</strong> &nbsp;|&nbsp; Criação: 04/03/2026 &nbsp;|&nbsp; Status: <strong>APROVADO</strong><br>' +
-    'Setor: <strong>RH</strong> &nbsp;|&nbsp; Autor: MÔNICA SANTOS &nbsp;|&nbsp; Versão: 00</div>' +
+    'Setor: <strong>RH</strong> &nbsp;|&nbsp; Autor: COORDENADOR(A) DE RH &nbsp;|&nbsp; Versão: 00</div>' +
     '<p>Eu, <strong>'+f.n+'</strong>, inscrito no CPF n° <strong>'+f.cpf+'</strong>, função <strong>'+(f.car||'')+'</strong>, '+
     'telefone de contato <strong>'+(f.tel||'')+'</strong>, venho para os devidos fins DECLARAR que a empresa '+
     '<strong>EQUILIBRYUM REABILITAÇÃO E CONSULTORIA EM SAUDE</strong>, inscrita no CNPJ n° 05.441.897/0001-02 '+
@@ -10160,7 +10160,7 @@ function gerarTermoResponsabilidade() {
     '@media print{@page{margin:1.5cm;}}</style></head><body>' +
     '<h1>TERMO DE RESPONSABILIDADE PELA GUARDA E USO DE EQUIPAMENTO DE TRABALHO, SENHA E INFORMAÇÕES CONFIDENCIAIS</h1>' +
     '<div class="header-meta">Código: <strong>adm 05 FORM</strong> &nbsp;|&nbsp; Criação: 21/06/2017 &nbsp;|&nbsp; Revisão: 03/03/2026 &nbsp;|&nbsp; Status: <strong>APROVADO</strong> &nbsp;|&nbsp; Versão: 03<br>' +
-    'Setor: <strong>INSTITUIÇÃO</strong> &nbsp;|&nbsp; Autor: ELAINE MARUCCI &nbsp;|&nbsp; Revisor: <strong>MÔNICA SANTOS</strong></div>' +
+    'Setor: <strong>INSTITUIÇÃO</strong> &nbsp;|&nbsp; Autor: ELAINE MARUCCI &nbsp;|&nbsp; Revisor: <strong>COORDENADOR(A) DE RH</strong></div>' +
     '<p>Eu, <strong>'+f.n+'</strong>, CPF: <strong>'+f.cpf+'</strong>, declaro que recebi da <strong>EQUILIBRYUM REABILITAÇÃO E CONSULTORIA EM SAÚDE</strong>, CNPJ nº. 05.441.897/0001-02, a título de empréstimo, para meu uso exclusivo durante as atividades laborais, o(s) equipamento(s) e/ou senhas, ou informações confidenciais especificadas neste termo de responsabilidade, comprometendo-me a manter os equipamentos em perfeito estado de conservação, e/ou manter sigilo sobre senhas recebidas ficando ciente de que:</p>' +
     '<p><strong>Em sendo equipamentos:</strong></p>' +
     '<ul>' +
@@ -10211,7 +10211,7 @@ function gerarReciboRegulamento() {
     '@media print{@page{margin:2cm;}}</style></head><body>' +
     '<h1>REGULAMENTO INTERNO – Recibo de Entrega</h1>' +
     '<div class="header-meta">Código: <strong>RH 81</strong> &nbsp;|&nbsp; Status: <strong>APROVADO</strong> &nbsp;|&nbsp; Criação: 20/07/2017 &nbsp;|&nbsp; Revisão: 03/03/2026<br>' +
-    'Setor: <strong>RH</strong> &nbsp;|&nbsp; Autor: IVANILDA JESUS &nbsp;|&nbsp; Revisor: <strong>MÔNICA SANTOS</strong> &nbsp;|&nbsp; Versão: 05</div>' +
+    'Setor: <strong>RH</strong> &nbsp;|&nbsp; Autor: IVANILDA JESUS &nbsp;|&nbsp; Revisor: <strong>COORDENADOR(A) DE RH</strong> &nbsp;|&nbsp; Versão: 05</div>' +
     '<p>Eu, <strong>'+f.n+'</strong>,</p>' +
     '<p>inscrito no CPF: <strong>'+f.cpf+'</strong>, declaro que recebi o Regulamento Interno da</p>' +
     '<p>Clínica Equilibryum na data <strong>'+fd(hoje)+'</strong>.</p>' +
@@ -12979,12 +12979,11 @@ function gerarAssinaturaEmpresa(empresa, sigMonicaParam, sigBrunoParam) {
       '</div>' +
       '<div style="display:flex;justify-content:flex-end;gap:28px;flex-wrap:wrap;">' +
 
-        // Mônica
+        // Coordenador(a) de RH
         '<div style="text-align:center;min-width:170px;">' +
           sigMonHtml +
           '<div style="border-top:1.5px solid #222;padding-top:4px;">' +
-            '<strong style="font-size:9pt;color:#1a5c3a;">MÔNICA SANTOS</strong><br>' +
-            '<span style="font-size:8pt;color:#555;">Coordenadora de Recursos Humanos</span>' +
+            '<strong style="font-size:9pt;color:#1a5c3a;">COORDENADOR(A) DE RH</strong>' +
           '</div>' +
         '</div>' +
 
@@ -13775,7 +13774,7 @@ function gerarRequisicaoUniforme() {
       '<div class="sigCol">' +
         sigHtml +
         '<div class="sigLine">' +
-          '<div class="sigLabel">Mônica Santos</div>' +
+          '<div class="sigLabel">Coordenador(a) de RH</div>' +
         '</div>' +
         '<div style="font-size:8.5pt;margin-top:2px;">RESPONSÁVEL/COMPRADOR</div>' +
         '<div class="contatoRow">CONTATO: +55 11 96333-2165</div>' +
@@ -14121,7 +14120,7 @@ function gerarFormExpXLSX() {
   var assinaturas = [
     { nome: f.ges||'Gestor Responsável',  cargo: 'Gestor / Supervisor' },
     { nome: f.n,                           cargo: 'Funcionário(a)  CPF: '+(f.cpf||'') },
-    { nome: 'MÔNICA SANTOS',               cargo: 'Coordenadora de RH' },
+    { nome: 'COORDENADOR(A) DE RH',         cargo: '' },
     { nome: 'BRUNO NATHAN DA SILVA',       cargo: 'Analista de RH' }
   ];
 
@@ -14321,8 +14320,7 @@ function gerarFormExp() {
       '<div class="sig">' +
         sigHtml +
         '<div class="sig-line">' +
-          '<strong>MÔNICA SANTOS</strong><br>' +
-          '<small style="color:#666;">Coordenadora de RH</small>' +
+          '<strong>COORDENADOR(A) DE RH</strong>' +
         '</div>' +
       '</div>' +
       '<div class="sig">' +
@@ -14792,7 +14790,7 @@ function _gerarListaPresencaObj(t) {
       '<tbody>' + linhas + '</tbody>' +
     '</table>' +
     '<div class="footer">' +
-      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">MONICA SANTOS</div><div style="font-size:9.5pt;color:#555;">Coordenadora de RH</div></div>' +
+      '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">COORDENADOR(A) DE RH</div></div>' +
       '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">BRUNO NATHAN DA SILVA</div><div style="font-size:9.5pt;color:#555;">Analista de RH</div></div>' +
       '<div class="sig-box"><div style="height:42px;"></div><div class="sig-name">' + (t.inst||'INSTRUTOR') + '</div><div style="font-size:9.5pt;color:#555;">Instrutor / Responsavel</div></div>' +
     '</div>' +
@@ -15260,7 +15258,7 @@ function gerarListaPresencaAtual() {
 function docSetAssinante(valor) {
   window._docAssinante = valor;
   var label = document.getElementById('doc-sig-label');
-  if (label) label.textContent = valor === 'bruno' ? 'Bruno Nathan da Silva' : 'Mônica Santos';
+  if (label) label.textContent = valor === 'bruno' ? 'Bruno Nathan da Silva' : 'Coordenador(a) de RH';
   // Clear saved signature when switching signatories
   // (user should re-sign for the new signatory)
 }
