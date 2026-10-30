@@ -657,7 +657,7 @@ body.sidebar-collapsed #drive-bar{padding-left:72px;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span>Pendências
   </span></div>
   <div class="nav-section">Ajuda</div>
-  <div class="nav-item" onclick="window.open('https://claude.ai/artifact/U8vcCKHEPi3tYStbpyM8Fg','_blank')" title="Abre o manual em uma nova aba">
+  <div class="nav-item" onclick="nav('manual',this);document.getElementById('topbar-title').textContent='Manual do Sistema';window.scrollTo(0,0);" title="Abre o manual do sistema">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path></svg><span>Manual do Sistema</span>
   </div>
   <div class="sidebar-footer">v2.0 · Equilibryum RH · Drive ☁️</div>
@@ -682,6 +682,557 @@ body.sidebar-collapsed #drive-bar{padding-left:72px;}
   </div>
 
   <div id="content">
+<div class="section-page" id="sec-manual">
+<style>
+#sec-manual .man-wrap{max-width:920px;margin:0 auto;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 32px;line-height:1.6;color:var(--gray-800);}
+#sec-manual .man-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+#sec-manual .man-head h1{font-size:22px;color:var(--green-dark);}
+#sec-manual .man-head small{display:block;color:var(--gray-600);font-size:12px;font-weight:500;}
+#sec-manual .man-tools{display:flex;gap:8px;align-items:center;}
+#sec-manual #man-q{padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;width:220px;}
+#sec-manual #man-q:focus{border-color:var(--green);outline:none;}
+#sec-manual h2{font-size:18px;color:var(--green-dark);margin:28px 0 10px;padding-top:14px;border-top:1px solid var(--gray-100);scroll-margin-top:80px;}
+#sec-manual h3{font-size:15px;color:var(--gray-800);margin:18px 0 6px;}
+#sec-manual p{margin:8px 0;font-size:14px;}
+#sec-manual ul,#sec-manual ol{margin:8px 0 8px 22px;font-size:14px;}
+#sec-manual li{margin:3px 0;}
+#sec-manual table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;}
+#sec-manual th{background:var(--green-pale);color:var(--green-dark);text-align:left;padding:8px 10px;font-weight:700;}
+#sec-manual td{padding:8px 10px;border-bottom:1px solid var(--gray-100);vertical-align:top;}
+#sec-manual code{background:var(--gray-100);padding:1px 5px;border-radius:4px;font-size:12.5px;word-break:break-all;}
+#sec-manual pre{background:#1e3329;color:#e8f5ee;padding:12px 14px;border-radius:8px;overflow-x:auto;margin:10px 0;}
+#sec-manual pre code{background:none;color:inherit;}
+#sec-manual a{color:var(--green);font-weight:600;}
+#sec-manual .man-ch.man-hide{display:none;}
+#sec-manual .man-empty{display:none;padding:20px;text-align:center;color:var(--gray-600);}
+#sec-manual mark{background:#fff3b0;padding:0 2px;border-radius:3px;}
+@media(max-width:700px){#sec-manual .man-wrap{padding:18px 14px;}#sec-manual #man-q{width:100%;}#sec-manual .man-tools{width:100%;}#sec-manual table{display:block;overflow-x:auto;}}
+@media print{#sidebar,#topbar,#drive-bar,#eq-nav-backdrop,#sec-manual .man-tools{display:none !important;}#main{margin:0 !important;}#sec-manual .man-wrap{box-shadow:none;max-width:none;}}
+</style>
+<div class="man-wrap">
+  <div class="man-head">
+    <h1>📘 Manual do Sistema RH Equilibryum<small>Versão de outubro de 2026</small></h1>
+    <div class="man-tools">
+      <input type="search" id="man-q" placeholder="Buscar no manual..." oninput="eqManBusca(this.value)">
+      <button class="btn btn-outline btn-sm" onclick="window.print()" title="Imprimir ou salvar em PDF">🖶 Imprimir</button>
+    </div>
+  </div>
+<div class="man-intro"><p><strong>Sumário</strong></p>
+<table>
+<thead>
+<tr>
+<th>Capítulo</th>
+<th>Assunto</th>
+<th>Telas do sistema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#man-1">1. Introdução</a></td>
+<td>O que é o sistema e o que mudou</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="#man-2">2. Acesso e conexão ao Google Drive</a></td>
+<td>Primeira configuração, token, renovação automática</td>
+<td>Tela de login</td>
+</tr>
+<tr>
+<td><a href="#man-3">3. Navegação</a></td>
+<td>Menu lateral, busca Ctrl+K, celular, status do Drive</td>
+<td>Menu e barra superior</td>
+</tr>
+<tr>
+<td><a href="#man-4">4. Cadastros</a></td>
+<td>Funcionários, PJ, departamentos, empresas, usuários</td>
+<td>Cadastros</td>
+</tr>
+<tr>
+<td><a href="#man-5">5. Recrutamento e Seleção</a></td>
+<td>Vagas, candidatos, aprovados, teste DISC</td>
+<td>Vagas</td>
+</tr>
+<tr>
+<td><a href="#man-6">6. Gestão</a></td>
+<td>Experiência, férias, exames, EPI, uniformes, benefícios, advertências, demissão, documentos</td>
+<td>Gestão</td>
+</tr>
+<tr>
+<td><a href="#man-7">7. Financeiro e Relatórios</a></td>
+<td>Pagamentos RH, relatórios, aniversariantes</td>
+<td>Financeiro e Relatórios</td>
+</tr>
+<tr>
+<td><a href="#man-8">8. Organização</a></td>
+<td>Treinamentos, campanhas, políticas, pendências</td>
+<td>Organização</td>
+</tr>
+<tr>
+<td><a href="#man-9">9. Solução de problemas</a></td>
+<td>Erros de login e como resolver</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="#man-10">10. Administração técnica</a></td>
+<td>Google Cloud, GitHub, onde ficam os dados</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Dica: use a busca acima para encontrar um assunto, ou clique em um capítulo do sumário.</p>
+</div><section class="man-ch"><h2 id="man-1">1. Introdução</h2>
+<p>O Sistema RH Equilibryum reúne em uma só tela o cadastro de funcionários, a gestão de férias, exames, EPI, uniformes, benefícios, documentos e relatórios do RH das empresas Equilibryum e Longhi. Os dados ficam salvos no Google Drive da conta <strong>recursoshumanosequilibryum@gmail.com</strong>, na pasta <strong>RH Equilibryum</strong>.</p>
+<p><strong>Endereço do sistema:</strong> <a href="https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/">https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/</a></p>
+<p><strong>Quem usa:</strong></p>
+<ul>
+<li><strong>Administrador do RH:</strong> entra com a conta Google da Equilibryum e gera o token de acesso para os demais.</li>
+<li><strong>Demais usuários:</strong> entram com o token de acesso enviado pelo administrador.</li>
+</ul>
+<h3>O que mudou nesta versão (outubro de 2026)</h3>
+<table>
+<thead>
+<tr>
+<th>Mudança</th>
+<th>O que significa para você</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Novo Client ID do Google</td>
+<td>O acesso ao Drive voltou a funcionar após o erro "deleted_client". Tokens antigos não servem mais.</td>
+</tr>
+<tr>
+<td>Renovação automática do login</td>
+<td>O sistema renova o acesso ao Drive sozinho a cada 45 minutos, sem pedir login.</td>
+</tr>
+<tr>
+<td>Busca no menu (Ctrl+K)</td>
+<td>Digite o nome da tela e aperte Enter para abrir.</td>
+</tr>
+<tr>
+<td>Seções do menu recolhíveis</td>
+<td>Feche as seções que você não usa; o sistema lembra a escolha.</td>
+</tr>
+<tr>
+<td>Menu no celular</td>
+<td>Botão ☰ no topo abre e fecha o menu.</td>
+</tr>
+<tr>
+<td>Faixa do Drive no topo</td>
+<td>O status do Drive virou uma faixa fina no topo, e as telas usam a largura toda.</td>
+</tr>
+<tr>
+<td>Manual dentro do sistema</td>
+<td>Menu <strong>Ajuda → Manual do Sistema</strong> abre este manual.</td>
+</tr>
+</tbody>
+</table>
+</section><section class="man-ch"><h2 id="man-2">2. Acesso e conexão ao Google Drive</h2>
+<p>O administrador conecta o sistema ao Drive uma vez por computador; depois disso o acesso se renova sozinho enquanto o sistema estiver aberto.</p>
+<h3>2.1 Primeira configuração (administrador)</h3>
+<ol>
+<li>Abra o endereço do sistema no Google Chrome.</li>
+<li>Na tela <strong>Primeira configuração</strong>, cole o <strong>Client ID do Google Cloud</strong> do cliente <strong>Equilibryum RH</strong> (começa com <code>243097018412-taur...</code> e termina em <code>.apps.googleusercontent.com</code>).</li>
+<li>Clique em <strong>☁️ Conectar ao Google Drive</strong>.</li>
+<li>Na janela do Google, entre com <strong>recursoshumanosequilibryum@gmail.com</strong>.</li>
+<li>Se aparecer "O Google não verificou este app", clique em <strong>Avançado</strong> e depois em <strong>Acessar Equilibryum (não seguro)</strong>. Isso é normal em sistemas internos.</li>
+<li>Marque todas as permissões do Drive e clique em <strong>Continuar</strong>.</li>
+<li>O sistema mostra <strong>✅ Conectado!</strong> e o token de acesso. Clique em <strong>Entrar no Sistema →</strong>.</li>
+</ol>
+<p>O Chrome precisa permitir pop-ups do site. Se nada abrir ao clicar em Conectar, clique no ícone de janela com X vermelho na barra de endereço e escolha <strong>Sempre permitir pop-ups</strong>.</p>
+<h3>2.2 Acesso dos demais usuários (token)</h3>
+<ol>
+<li>Depois de conectar, o administrador clica em <strong>📋 Copiar Token</strong> ou <strong>📲 WhatsApp</strong> e envia o token.</li>
+<li>O usuário abre o sistema, cola o token na tela <strong>Acesso ao Sistema</strong> e clica em <strong>✅ Entrar com Token</strong>.</li>
+<li>O token é um acesso temporário do Google e vale cerca de 1 hora. Quando vencer, o administrador envia um novo.</li>
+</ol>
+<p>Tokens gerados antes da troca do Client ID (outubro de 2026) não funcionam e trazem o erro de volta. Use sempre um token novo.</p>
+<h3>2.3 Renovação automática</h3>
+<p>O login do Google no navegador vale cerca de 1 hora. No computador que entrou com a conta Google, o sistema:</p>
+<ul>
+<li>renova o acesso sozinho aos 45 minutos, sem pedir nada;</li>
+<li>confere o acesso quando você volta para a aba do sistema;</li>
+<li>se o Chrome bloquear a renovação, renova no seu próximo clique;</li>
+<li>ao reconectar, usa direto a conta da Equilibryum, sem pedir para escolher a conta.</li>
+</ul>
+<p>Se a faixa do topo ficar marrom com <strong>Reconectar</strong>, clique nela uma vez.</p>
+<h3>2.4 Usar sem o Drive</h3>
+<p>O botão <strong>Continuar sem Drive</strong> abre o sistema com os dados salvos apenas neste navegador. Use só em emergências: esses dados não aparecem para os outros usuários até você conectar e clicar em <strong>🔄 Sincronizar / Iniciar</strong>.</p>
+</section><section class="man-ch"><h2 id="man-3">3. Navegação</h2>
+<p>Todas as telas abrem pelo menu lateral, organizado em 8 seções: Principal, Cadastros, Recrutamento e Seleção, Gestão, Financeiro, Relatórios, Organização e Ajuda. Em <strong>Ajuda → Manual do Sistema</strong> você abre este manual.</p>
+<h3>3.1 Menu lateral</h3>
+<ul>
+<li><strong>Abrir uma tela:</strong> clique no nome dela. A tela atual fica destacada com uma barra verde à esquerda.</li>
+<li><strong>Buscar no menu:</strong> clique em <strong>Buscar no menu</strong> (ou aperte <strong>Ctrl+K</strong>), digite parte do nome, por exemplo "fér", e aperte <strong>Enter</strong> para abrir o primeiro resultado. <strong>Esc</strong> limpa a busca. A busca ignora acentos.</li>
+<li><strong>Recolher uma seção:</strong> clique no título da seção (ex.: CADASTROS). Fechada, ela mostra quantas telas tem. O sistema lembra quais seções você fechou; a seção da tela atual sempre fica aberta.</li>
+<li><strong>Modo só ícones:</strong> o botão ☰ no canto do menu deixa só os ícones, para ganhar espaço. Passe o mouse sobre um ícone para ver o nome. Clique de novo para expandir.</li>
+</ul>
+<h3>3.2 No celular</h3>
+<p>Toque no botão <strong>☰</strong> ao lado do título da tela para abrir o menu. Ao escolher uma opção, o menu fecha sozinho. Toque fora do menu para fechá-lo sem escolher.</p>
+<h3>3.3 Barra superior e status do Drive</h3>
+<table>
+<thead>
+<tr>
+<th>Elemento</th>
+<th>Onde fica</th>
+<th>O que indica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Faixa verde</td>
+<td>Topo da tela</td>
+<td>Drive conectado e conta usada; dados salvos automaticamente</td>
+</tr>
+<tr>
+<td>Faixa marrom + <strong>Reconectar</strong></td>
+<td>Topo da tela</td>
+<td>Drive desconectado; dados salvos só neste navegador</td>
+</tr>
+<tr>
+<td>Selo <strong>☁️ Drive</strong> / <strong>💾 Local</strong></td>
+<td>Barra do título</td>
+<td>Mesmo status, em resumo</td>
+</tr>
+<tr>
+<td><strong>🔄 Sincronizar / Iniciar</strong></td>
+<td>Barra do título</td>
+<td>Busca os dados mais recentes do Drive</td>
+</tr>
+<tr>
+<td><strong>WhatsApp</strong></td>
+<td>Barra do título</td>
+<td>Envia mensagem pelo WhatsApp a um funcionário ou número</td>
+</tr>
+</tbody>
+</table>
+<p>O sistema também confere mudanças no Drive a cada 20 segundos, então o que outro usuário salva aparece sem precisar recarregar.</p>
+</section><section class="man-ch"><h2 id="man-4">4. Cadastros</h2>
+<p>Cadastre primeiro as <strong>Empresas</strong> e os <strong>Departamentos</strong>: os demais cadastros e documentos usam essas informações.</p>
+<h3>4.1 Funcionários</h3>
+<ol>
+<li>Clique em <strong>+ Novo Funcionário</strong>.</li>
+<li>Preencha as abas:<ul>
+<li><strong>Dados Pessoais:</strong> nome, CPF, código folha, RG, nascimento, contato, endereço, PIS, CTPS e foto.</li>
+<li><strong>Contrato:</strong> empresa, departamento, cargo, salário, admissão, tipo de contrato, gestor e WhatsApp do gestor, status e escala.</li>
+<li><strong>Documentos:</strong> RG/CPF/CNH, comprovante de residência, contrato, ASO, certificados ou uma pasta inteira. Os arquivos vão para o Drive em <strong>RH Equilibryum / [Nome do Funcionário]</strong>.</li>
+<li><strong>Uniformes:</strong> tamanhos de camiseta, jaleco, calça e calçado, e o registro de entregas.</li>
+</ul>
+</li>
+<li>Clique em <strong>💾 Salvar Funcionário</strong>.</li>
+</ol>
+<p>Campos obrigatórios: nome, CPF, empresa, cargo e admissão. Na lista, filtre por status (Ativos, Afastados, Férias, Desligados) e por empresa, e ordene por nome, admissão, cargo ou status. O botão <strong>📥 Importar Admissão</strong> traz os dados de um candidato direto do formulário de admissão.</p>
+<h3>4.2 PJ / Prestadores</h3>
+<p>Serve para gerar o template de aniversariantes do mês dos prestadores PJ.</p>
+<ol>
+<li>Clique em <strong>📄 Importar Planilha</strong> e escolha a planilha do mês.</li>
+<li>Colunas esperadas: Prestador, Data de nascimento, Área, Email, Telefone.</li>
+<li>Clique em <strong>🎁 Gerar Template Aniversariantes</strong>.</li>
+</ol>
+<p>Os dados ficam só na sessão e não vão para o Drive. Importe de novo a cada mês.</p>
+<h3>4.3 Departamentos, Empresas e Usuários</h3>
+<table>
+<thead>
+<tr>
+<th>Cadastro</th>
+<th>Campos principais</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Departamentos</td>
+<td>Nome, responsável, empresa, descrição</td>
+<td>A lista mostra quantos funcionários cada um tem</td>
+</tr>
+<tr>
+<td>Empresas</td>
+<td>Razão social, CNPJ, nome fantasia, contato, endereço</td>
+<td>Usadas nos documentos e no arquivo Flash</td>
+</tr>
+<tr>
+<td>Usuários</td>
+<td>Nome, e-mail, senha, perfil, status</td>
+<td>Perfis: Administrador, RH, Gestor, Visualizador</td>
+</tr>
+</tbody>
+</table>
+</section><section class="man-ch"><h2 id="man-5">5. Recrutamento e Seleção</h2>
+<p>A tela <strong>Vagas</strong> acompanha cada processo seletivo da abertura até o aprovado virar funcionário.</p>
+<h3>5.1 Criar uma vaga</h3>
+<ol>
+<li>Clique em <strong>Nova Vaga</strong> (ou <strong>+ Criar primeira vaga</strong>).</li>
+<li>Na aba <strong>📋 Dados da Vaga</strong>, preencha título/cargo, empresa, departamento, data de abertura e prazo.</li>
+<li>Em <strong>📍 Detalhamento por Unidade</strong>, clique em <strong>+ Adicionar Unidade</strong> para cada unidade: quantidade de vagas, horário, escala, tipo de contrato, salário e status. O total de vagas é somado sozinho.</li>
+<li>Marque os benefícios oferecidos e escreva requisitos e observações internas.</li>
+<li>Clique em <strong>💾 Salvar Vaga</strong>.</li>
+</ol>
+<p>Filtre a lista por status (Abertas, Em Seleção, Encerradas, Canceladas) e por empresa.</p>
+<h3>5.2 Candidatos e aprovados</h3>
+<ul>
+<li><strong>👥 Candidatos:</strong> nome, contato, status, unidade e documentos de cada pessoa no processo.</li>
+<li><strong>✅ Aprovados:</strong> quem foi aprovado e a data prevista de início.</li>
+<li><strong>Link do Formulário de Admissão:</strong> salve o link uma vez e envie ao aprovado. Depois, em <strong>Funcionários → 📥 Importar Admissão</strong>, as respostas viram cadastro automaticamente. A planilha de respostas precisa estar compartilhada.</li>
+</ul>
+<h3>5.3 Teste DISC</h3>
+<p>Cole o link do teste DISC publicado e clique em <strong>💾 Salvar</strong>. Use <strong>📋 Copiar link p/ candidato</strong> para enviar e <strong>📊 Ver respostas</strong> para abrir o painel de resultados.</p>
+</section><section class="man-ch"><h2 id="man-6">6. Gestão</h2>
+<p>As telas de Gestão controlam prazos e entregas do dia a dia; os vencimentos aparecem também em <strong>Alertas</strong> no Dashboard.</p>
+<h3>6.1 Período de Experiência</h3>
+<p>As abas <strong>45 Dias</strong> e <strong>90 Dias</strong> listam cada funcionário com admissão, vencimento, prazo e status. Clique em <strong>📄 Gerar Formulário de Avaliação</strong>, escolha o funcionário e o período e gere em <strong>DOCX</strong> ou <strong>Excel</strong>. Use <strong>📱 Enviar ao Gestor</strong> para mandar a avaliação pelo WhatsApp do gestor.</p>
+<h3>6.2 Férias</h3>
+<ol>
+<li>Clique em <strong>+ Programar</strong>, escolha o funcionário e informe o período aquisitivo, o início e os dias. O retorno é calculado sozinho.</li>
+<li>Acompanhe pelo status: A programar, Agendada, Em andamento, Concluída.</li>
+<li>A coluna <strong>Data Limite (CLT)</strong> segue o Art. 134 da CLT: as férias devem sair até 12 meses após o fim do período aquisitivo. ⚠️ indica vencida e ⏰ indica vencimento em até 60 dias.</li>
+</ol>
+<h3>6.3 Exames Médicos</h3>
+<p>Clique em <strong>+ Novo Exame</strong> e informe funcionário, tipo (Admissional, Periódico, Demissional, Retorno), data, clínica, exames e resultado (Pendente, Apto, Apto com restrição, Inapto). ⏰ marca exames que vencem em até 7 dias.</p>
+<h3>6.4 EPI e Uniformes</h3>
+<ul>
+<li><strong>EPI:</strong> <strong>+ Registrar Entrega</strong> com EPI, número do CA, quantidade, data, próxima troca e <strong>assinatura do funcionário na tela</strong>.</li>
+<li><strong>Uniformes:</strong> cadastre os itens e tamanhos em <strong>⚙️ Cadastrar Item</strong>; registre <strong>+ Entrada</strong>, <strong>- Saída</strong> (para um funcionário) e <strong>⚖️ Ajuste</strong> de inventário. A aba <strong>📋 Movimentações</strong> exporta CSV.</li>
+</ul>
+<h3>6.5 Benefícios</h3>
+<table>
+<thead>
+<tr>
+<th>Aba</th>
+<th>Para que serve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>👥 Por Funcionário</td>
+<td>Atribuir VT, VR, VA, combustível, assiduidade, bônus, odonto, médica e triênio a cada pessoa; <strong>⚡ Ajuste em massa</strong> para vários de uma vez</td>
+</tr>
+<tr>
+<td>⚡ Gerar Arquivo Flash</td>
+<td>Montar o arquivo de importação da Flash Benefícios por empresa e período, editando os valores antes de gerar</td>
+</tr>
+<tr>
+<td>📊 Relatório Geral</td>
+<td>Total por benefício e funcionário, exportável para Excel</td>
+</tr>
+<tr>
+<td>📁 Histórico Flash</td>
+<td>Arquivos Flash gerados anteriormente</td>
+</tr>
+<tr>
+<td>📋 Relatório Consolidado</td>
+<td>Totais por empresa e período, exportação para a folha de pagamento com as rubricas configuradas em <strong>⚙️ Configurar rubricas</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>6.6 Advertências &amp; Suspensões</h3>
+<p>Clique em <strong>+ Novo Lançamento</strong>, escolha o funcionário, o tipo (verbal, escrita ou suspensão), a data, os dias de suspensão e o motivo, e anexe o documento assinado.</p>
+<h3>6.7 Demissão</h3>
+<ol>
+<li>Salve uma vez o <strong>Link do Portal de Assinatura</strong> e a mensagem padrão (use {nome} e {link}).</li>
+<li>Clique em <strong>+ Nova Demissão</strong>, informe funcionário, data, motivo e anexe o <strong>RCT/TRCT em PDF</strong> (obrigatório).</li>
+<li>Clique em <strong>💾 Salvar e Gerar Link</strong> e envie pelo WhatsApp ou e-mail. O status muda de <strong>Pendente de assinatura</strong> para <strong>Assinado</strong>.</li>
+<li>Registre a devolução de itens (uniforme, crachá, chaves, equipamentos) quando o sistema pedir.</li>
+</ol>
+<h3>6.8 Gerar Documentos</h3>
+<p>Escolha o funcionário e clique em <strong>Gerar</strong> no documento desejado. O sistema abre uma pré-visualização editável, pede as assinaturas da empresa (salvas para os próximos documentos) e abre o documento pronto para imprimir ou salvar como PDF. Com o Drive conectado, ele também é salvo na pasta do funcionário.</p>
+<p>Documentos disponíveis: guia de exame médico (Equilibryum e Longhi), carta conta salário Bradesco (Equilibryum e Longhi), recibo de EPI, recibo de uniformes, recibo de equipamentos, termo de responsabilidade, recibo de regulamento interno, requisição de uniforme, termo aditivo de horário, carta de referência, certificado de participação, descrição de cargo, ficha de movimentação do convênio, advertência disciplinar, ciência de experiência por promoção, carta de promoção, adiantamento salarial, auxílio combustível e carta de retenção ao INSS.</p>
+</section><section class="man-ch"><h2 id="man-7">7. Financeiro e Relatórios</h2>
+<h3>7.1 Pagamentos RH</h3>
+<p>Controla as contas recorrentes do RH (benefícios, folha, encargos, sindicato, convênios, sistemas, seguro).</p>
+<ol>
+<li>Clique em <strong>+ Nova Conta</strong> e informe fornecedor, referência, tipo, forma de pagamento, dia do vencimento (fixo ou dia útil), valor estimado e responsável.</li>
+<li>Em <strong>É Recorrente?</strong>, escolha todo mês, pagamento único ou meses específicos.</li>
+<li>Defina o <strong>alerta</strong> (1, 2, 3 ou 5 dias antes).</li>
+<li>Ao pagar, abra a conta e use <strong>✅ Registrar Pagamento</strong> com data, valor e status <strong>Pago</strong>.</li>
+</ol>
+<p>Visões: <strong>📋 Lista</strong> (filtra pendentes, pagos, vencidos e os que vencem em 2 dias), <strong>📅 Agenda do Mês</strong> e <strong>📊 Resumo Anual</strong>.</p>
+<h3>7.2 Relatórios</h3>
+<table>
+<thead>
+<tr>
+<th>Relatório</th>
+<th>O que mostra</th>
+<th>Exportação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Relatório de Funcionários</td>
+<td>Lista filtrada por empresa, departamento, status e período de admissão</td>
+<td>PDF e Excel</td>
+</tr>
+<tr>
+<td>Relatório de Devoluções</td>
+<td>Itens devolvidos nos desligamentos</td>
+<td>Excel</td>
+</tr>
+<tr>
+<td>Aniversariantes</td>
+<td>Aniversários do mês, da semana ou de um mês escolhido</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Aniversário de Empresa</td>
+<td>Tempo de casa; filtro <strong>Só marcos</strong> mostra 1, 3, 5, 10, 15, 20 e 25 anos</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+</section><section class="man-ch"><h2 id="man-8">8. Organização</h2>
+<h3>8.1 Treinamentos</h3>
+<ol>
+<li>Clique em <strong>+ Novo Treinamento</strong> e preencha título, data, horário, local, instrutor, carga horária, status e participantes.</li>
+<li>Clique em <strong>📝 Gerar Lista de Presença</strong> para imprimir a lista; depois anexe a lista assinada e as fotos do evento.</li>
+<li>A aba <strong>📄 Materiais</strong> guarda apostilas e vídeos com controle de revisão (Rev.0 a Rev.5).</li>
+<li>A aba <strong>📅 Cronograma</strong> agenda treinamentos futuros e gera a <strong>convocação pelo WhatsApp</strong>.</li>
+<li><strong>🖶 Relatório c/ Fotos</strong> e <strong>📊 Acompanhamento Anual</strong> mostram o histórico do ano.</li>
+</ol>
+<h3>8.2 Campanhas</h3>
+<p>Clique em <strong>+ Nova Campanha</strong>, escolha <strong>Pontual</strong> (evento único) ou <strong>Fixa</strong> (recorrente), defina datas, responsável e cor, e anexe material e fotos. Os mesmos relatórios com fotos e o acompanhamento anual estão disponíveis.</p>
+<h3>8.3 Políticas &amp; Normas</h3>
+<p>Clique em <strong>+ Nova Política</strong>, escolha a categoria (Política Interna, Norma Regulamentadora, Procedimento, Manual, Comunicado), versão, data de publicação e anexe os arquivos.</p>
+<h3>8.4 Pendências</h3>
+<p>Registra o que falta para cada funcionário. Clique em <strong>+ Nova Pendência</strong>, escolha o funcionário e adicione os itens; os atalhos incluem colher assinatura, crachá, cartão benefício, uniforme, exame admissional, documentação e treinamento. Defina prazo e status (Pendente, Em andamento, Concluído).</p>
+</section><section class="man-ch"><h2 id="man-9">9. Solução de problemas</h2>
+<table>
+<thead>
+<tr>
+<th>Sintoma</th>
+<th>Causa</th>
+<th>Como resolver</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Erro 401: deleted_client</strong></td>
+<td>O navegador usa um Client ID apagado no Google Cloud</td>
+<td>Limpe o ID salvo (passo a passo abaixo) e cole o ID do cliente <strong>Equilibryum RH</strong></td>
+</tr>
+<tr>
+<td><strong>Erro 400: origin_mismatch</strong></td>
+<td>O endereço do site não está autorizado no cliente</td>
+<td>No Google Cloud, adicione <code>https://recursoshumanosequilibryum-gif.github.io</code> em <strong>Origens JavaScript autorizadas</strong> e espere 5 minutos</td>
+</tr>
+<tr>
+<td><strong>Erro 403: access_denied</strong></td>
+<td>O e-mail não é usuário de teste</td>
+<td>Google Cloud → <strong>Público-alvo → Usuários de teste</strong> → adicione o e-mail</td>
+</tr>
+<tr>
+<td>Clico em Conectar e nada acontece</td>
+<td>Pop-up bloqueado ou escondido</td>
+<td>Permita pop-ups do site (ícone na barra de endereço) e confira a barra de tarefas</td>
+</tr>
+<tr>
+<td>Conectou, mas não entra</td>
+<td>Sincronização em andamento</td>
+<td>Aguarde 30 segundos ou aperte <strong>F5</strong>; o sistema entra sozinho</td>
+</tr>
+<tr>
+<td>Página <strong>404</strong> do GitHub</td>
+<td>Endereço sem <code>/rh-equilibryum/</code></td>
+<td>Use o endereço completo do sistema</td>
+</tr>
+<tr>
+<td>Faixa marrom com <strong>Reconectar</strong></td>
+<td>Acesso ao Drive venceu</td>
+<td>Clique em <strong>Reconectar</strong></td>
+</tr>
+<tr>
+<td>Token não funciona</td>
+<td>Token vencido ou gerado antes da troca do Client ID</td>
+<td>Peça um token novo ao administrador</td>
+</tr>
+<tr>
+<td>Dados não aparecem</td>
+<td>Drive desconectado ou sem sincronizar</td>
+<td>Conecte e clique em <strong>🔄 Sincronizar / Iniciar</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>Como limpar o Client ID salvo no navegador</h3>
+<ol>
+<li>Abra o sistema e aperte <strong>F12</strong>.</li>
+<li>Clique na aba <strong>Console</strong>.</li>
+<li>Se o Chrome avisar sobre colar código, digite <code>allow pasting</code> e aperte Enter.</li>
+<li>Cole o comando abaixo e aperte Enter:</li>
+</ol>
+<pre><code>localStorage.removeItem('eq_client_id'); location.reload();
+</code></pre>
+<ol start="5">
+<li>A tela <strong>Primeira configuração</strong> aparece; cole o Client ID correto e conecte.</li>
+</ol>
+</section><section class="man-ch"><h2 id="man-10">10. Administração técnica</h2>
+<p>Esta seção é para quem mantém o sistema; o uso diário não depende dela.</p>
+<h3>10.1 Onde fica cada coisa</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Onde</th>
+<th>Conta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Código do sistema (arquivo <code>index.html</code>)</td>
+<td>GitHub, repositório <strong>rh-equilibryum</strong></td>
+<td>recursoshumanosequilibryum-gif</td>
+</tr>
+<tr>
+<td>Dados e documentos</td>
+<td>Google Drive, pasta <strong>RH Equilibryum</strong></td>
+<td>recursoshumanosequilibryum@gmail.com</td>
+</tr>
+<tr>
+<td>Credencial de login (Client ID)</td>
+<td>Google Cloud, projeto <strong>Equilibryum RH</strong> → Google Auth Platform → Clientes → <strong>Equilibryum RH</strong></td>
+<td>recursoshumanosequilibryum@gmail.com</td>
+</tr>
+<tr>
+<td>Preferências e acesso de cada computador</td>
+<td>Navegador (armazenamento local do site)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3>10.2 Cuidados com o Google Cloud</h3>
+<ul>
+<li>O Google apaga clientes OAuth que ficam muito tempo sem uso; foi isso que causou o erro "deleted_client". Usar o sistema regularmente evita o problema.</li>
+<li>Se acontecer de novo, abra <strong>Clientes → Restaurar clientes OAuth excluídos</strong>: a restauração é possível por um período limitado.</li>
+<li>No cliente <strong>Equilibryum RH</strong>, mantenha em <strong>Origens JavaScript autorizadas</strong>: <code>https://recursoshumanosequilibryum-gif.github.io</code> (sem barra no final).</li>
+<li>Em <strong>Público-alvo → Usuários de teste</strong>, mantenha todos os e-mails que entram com conta Google.</li>
+<li>O aviso de "teste gratuito acabou" no Google Cloud não afeta o sistema: login e Drive são gratuitos.</li>
+</ul>
+<h3>10.3 Publicar uma nova versão</h3>
+<ol>
+<li>Entre em github.com com a conta <strong>recursoshumanosequilibryum-gif</strong> e abra o repositório <strong>rh-equilibryum</strong>.</li>
+<li>Clique em <strong>Add file → Upload files</strong> e arraste o novo <code>index.html</code>.</li>
+<li>Clique em <strong>Commit changes</strong>.</li>
+<li>Aguarde 1 a 2 minutos e abra o sistema com <strong>Ctrl+F5</strong>.</li>
+</ol>
+<p>A versão anterior fica no histórico do repositório e pode ser restaurada a qualquer momento.</p></section>
+  <div class="man-empty" id="man-empty">Nenhum capítulo encontrado para essa busca.</div>
+</div>
+<script>
+function eqManBusca(q){
+  var root=document.getElementById('sec-manual');
+  var t=(q||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  var any=false;
+  root.querySelectorAll('.man-ch').forEach(function(ch){
+    var s=ch.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    var ok=!t||s.indexOf(t)>=0; ch.classList.toggle('man-hide',!ok); if(ok) any=true;
+  });
+  var intro=root.querySelector('.man-intro'); if(intro) intro.style.display=t?'none':'';
+  document.getElementById('man-empty').style.display=(t&&!any)?'block':'none';
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest&&e.target.closest('#sec-manual a[href^="#man-"]');
+  if(!a) return; e.preventDefault();
+  var el=document.getElementById(a.getAttribute('href').slice(1)); if(el) window.scrollTo(0, el.getBoundingClientRect().top + window.pageYOffset - 110);
+});
+</script>
+</div>
 
 <!-- DASHBOARD -->
 <div class="section-page active" id="sec-dashboard">
