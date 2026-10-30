@@ -5667,11 +5667,29 @@ let rhFolderId = null;
 // ============================================================
 // DB LOCAL (fallback e cache)
 // ============================================================
+// Cópia em memória de tudo o que foi carregado/salvo nesta sessão. O navegador
+// guarda no máximo ~5 MB; se não couber, os dados continuam em memória e no Drive
+// (antes, o erro de espaço era ignorado e a lista de funcionários ficava vazia).
+var _dbMem = {};
+function eqSalvarLocal(chave, json) {
+  try { localStorage.setItem(chave, json); return true; }
+  catch (e) {
+    try {
+      // Sem espaço: libera a cópia local das fotos (elas seguem na memória e no Drive) e tenta de novo
+      if (chave !== 'eq_fotos_func') localStorage.removeItem('eq_fotos_func');
+      localStorage.setItem(chave, json); return true;
+    } catch (e2) {
+      try { localStorage.removeItem(chave); } catch (e3) {} // não deixa uma cópia antiga no lugar
+      console.warn('[Armazenamento] Sem espaço no navegador para ' + chave + ' (' + Math.round(json.length / 1024) + ' KB). Mantido em memória e no Drive.');
+      return false;
+    }
+  }
+}
 const DB = {
-  g: k => { try { return JSON.parse(localStorage.getItem('eq_' + k) || '[]') } catch(e) { return [] } },
-  s: (k, v) => { localStorage.setItem('eq_' + k, JSON.stringify(v)); scheduleAutoSync(k); },
-  go: k => { try { return JSON.parse(localStorage.getItem('eq_' + k) || '{}') } catch(e) { return {} } },
-  so: (k, v) => { localStorage.setItem('eq_' + k, JSON.stringify(v)); scheduleAutoSync(k); }
+  g: k => { try { var raw = (k in _dbMem) ? _dbMem[k] : localStorage.getItem('eq_' + k); return JSON.parse(raw || '[]') || [] } catch(e) { return [] } },
+  s: (k, v) => { var j = JSON.stringify(v); _dbMem[k] = j; eqSalvarLocal('eq_' + k, j); scheduleAutoSync(k); },
+  go: k => { try { var raw = (k in _dbMem) ? _dbMem[k] : localStorage.getItem('eq_' + k); return JSON.parse(raw || '{}') || {} } catch(e) { return {} } },
+  so: (k, v) => { var j = JSON.stringify(v); _dbMem[k] = j; eqSalvarLocal('eq_' + k, j); scheduleAutoSync(k); }
 };
 
 // ── Auto-sync: debounce 2s, then save changed keys to Drive ──
@@ -5779,7 +5797,7 @@ async function pollDriveChanges() {
 // ============================================================
 const uid = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
 const td = () => new Date().toISOString().split('T')[0];
-const fd = d => { if (!d) return '—'; const p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+const fd = d => { if (!d) return '—'; d = String(d); if (d.indexOf('-') < 0) return d; const p = d.substr(0,10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
 const dif = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
 const add = (d, n) => { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt.toISOString().split('T')[0]; };
 const v = id => (document.getElementById(id) || {}).value || '';
@@ -6259,7 +6277,11 @@ async function syncFromDrive() {
   let synced = 0;
   for (const k of keys) {
     try {
-      const data = await eqCarregarMesclado('eq_' + k + '.json');
+      let data = await eqCarregarMesclado('eq_' + k + '.json');
+      if (data !== null && k === 'funcionarios' && Array.isArray(data)) {
+        // Cadastros antigos com outros nomes de campo passam a ter os campos atuais
+        data = data.filter(function(f){ return f && typeof f === 'object'; }).map(eqNormalizarFunc);
+      }
       if (data !== null) { DB.s(k, data); synced++; }
     } catch(e) {}
   }
@@ -6905,15 +6927,15 @@ function getSortVal(obj, campo, deps, emps, funcs) {
     case '_dataLimite': return obj._dataLimite || '';
     case 'empresa': {
       var emp = emps ? emps.find(function(e){ return e.id === obj.emp; }) : null;
-      return emp ? emp.razao.toLowerCase() : '';
+      return emp ? String(emp.razao || emp.nome || '').toLowerCase() : '';
     }
     case 'dep': {
       var dep = deps ? deps.find(function(d){ return d.id === obj.dep; }) : null;
-      return dep ? dep.nome.toLowerCase() : '';
+      return dep ? String(dep.nome || '').toLowerCase() : '';
     }
     case 'funcNome': {
       var f = funcs ? funcs.find(function(x){ return x.id === obj.fid; }) : null;
-      return f ? f.n.toLowerCase() : '';
+      return f ? String(f.n || f.nome || '').toLowerCase() : '';
     }
     default: return '';
   }
@@ -6943,15 +6965,23 @@ function funcTab(status, btn) {
   rdFunc();
 }
 
+// Aceita cadastros antigos que usavam outros nomes de campo (ex.: "nome" em vez de "n")
+function eqNormalizarFunc(f) {
+  var a = { n:'nome', car:'cargo', st:'status', adm:'admissao', emp:'empresa', dep:'departamento', tel:'telefone', sal:'salario', nas:'nascimento' };
+  var c = Object.assign({}, f);
+  Object.keys(a).forEach(function(k){ if ((c[k] === undefined || c[k] === null || c[k] === '') && c[a[k]] !== undefined) c[k] = c[a[k]]; });
+  if (c.n !== undefined && c.n !== null) c.n = String(c.n);
+  return c;
+}
 function rdFunc() {
   fotoStoreLoad(); // Garantir foto store atualizado
   var campo  = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
   var dir    = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
   var search = ((document.getElementById('func-search')||{}).value || '').toLowerCase().trim();
   var empF   = (document.getElementById('func-emp-filter')||{}).value || '';
-  var rawList = DB.g('funcionarios');
-  var deps = DB.g('departamentos');
-  var emps = DB.g('empresas');
+  var rawList = DB.g('funcionarios').filter(function(f){ return f && typeof f === 'object'; }).map(eqNormalizarFunc);
+  var deps = DB.g('departamentos').filter(Boolean);
+  var emps = DB.g('empresas').filter(Boolean);
 
   // Popular o filtro de empresas (sem perder a seleção atual)
   var empFilterEl = document.getElementById('func-emp-filter');
@@ -7039,7 +7069,7 @@ function rdFunc() {
     var bc      = { Ativo:'badge-green', Afastado:'badge-yellow', 'Férias':'badge-blue', Desligado:'badge-red' }[f.st] || 'badge-gray';
     var rowCls  = f.st === 'Desligado' ? 'func-row-desligado' : f.st === 'Afastado' ? 'func-row-afastado' : f.st === 'Férias' ? 'func-row-ferias' : '';
     var hasDocs = f.docs && f.docs.length > 0;
-    var empNome = emp ? emp.razao.split(' ')[0] : '—';
+    var empNome = emp ? String(emp.razao || emp.nome || emp.fantasia || '—').split(' ')[0] : '—';
 
     var tr = document.createElement('tr');
     if (rowCls) tr.className = rowCls;
@@ -7058,7 +7088,7 @@ function rdFunc() {
       fotoImg.src = fSrc; fotoImg.style.cssText='width:100%;height:100%;object-fit:cover;';
       fotoEl.appendChild(fotoImg);
     } else {
-      fotoEl.textContent = f.n[0].toUpperCase();
+      fotoEl.textContent = (String(f.n || '?').trim()[0] || '?').toUpperCase();
     }
     var infoEl = document.createElement('div');
     var uniInfo = '';
@@ -7084,7 +7114,7 @@ function rdFunc() {
     td3.textContent = f.car || '—';
 
     var td4 = document.createElement('td');
-    td4.textContent = dep ? dep.nome : '—';
+    td4.textContent = dep ? (dep.nome || '—') : '—';
 
     var td5 = document.createElement('td');
     td5.style.fontSize = '12px';
@@ -14664,17 +14694,20 @@ function loadFuncFotoPreview(fotoURL) {
 var _fotoStore = {};
 
 function fotoStoreLoad() {
-  try { _fotoStore = JSON.parse(localStorage.getItem('eq_fotos_func') || '{}'); }
-  catch(e) { _fotoStore = {}; }
+  try {
+    var raw = localStorage.getItem('eq_fotos_func');
+    if (raw) _fotoStore = JSON.parse(raw);
+    else if (!_fotoStore || typeof _fotoStore !== 'object') _fotoStore = {}; // mantém as fotos já carregadas do Drive
+  } catch(e) { if (!_fotoStore || typeof _fotoStore !== 'object') _fotoStore = {}; }
 }
 
 function fotoStoreSave() {
   try { localStorage.setItem('eq_fotos_func', JSON.stringify(_fotoStore)); }
   catch(e) {
-    // Quota excedida — limpar fotos de funcs deletados
-    var ids = DB.g('funcionarios').map(function(f){ return f.id; });
-    Object.keys(_fotoStore).forEach(function(id){ if (ids.indexOf(id) < 0) delete _fotoStore[id]; });
-    try { localStorage.setItem('eq_fotos_func', JSON.stringify(_fotoStore)); } catch(e2) {}
+    // Sem espaço no navegador: as fotos ficam só em memória e no Drive.
+    // (Antes, aqui eram apagadas fotos de quem não estava na lista — e, com a
+    // lista de funcionários vazia por falta de espaço, isso apagava todas.)
+    try { localStorage.removeItem('eq_fotos_func'); } catch(e2) {}
   }
 }
 
