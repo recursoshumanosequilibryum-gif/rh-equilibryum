@@ -5685,8 +5685,21 @@ function eqSalvarLocal(chave, json) {
     }
   }
 }
+// Converte dados salvos em outro formato (ex.: {id: {...}} ou {lista: [...]}) para lista
+function eqComoLista(v) {
+  if (Array.isArray(v)) return v;
+  if (!v || typeof v !== 'object') return [];
+  var nomes = ['funcionarios', 'lista', 'items', 'itens', 'dados', 'data', 'registros', 'rows'];
+  for (var i = 0; i < nomes.length; i++) if (Array.isArray(v[nomes[i]])) return v[nomes[i]];
+  var vals = Object.keys(v).map(function (k) {
+    var item = v[k];
+    if (item && typeof item === 'object' && !Array.isArray(item) && !item.id) item = Object.assign({ id: k }, item);
+    return item;
+  });
+  return vals.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); });
+}
 const DB = {
-  g: k => { try { var raw = (k in _dbMem) ? _dbMem[k] : localStorage.getItem('eq_' + k); return JSON.parse(raw || '[]') || [] } catch(e) { return [] } },
+  g: k => { try { var raw = (k in _dbMem) ? _dbMem[k] : localStorage.getItem('eq_' + k); return eqComoLista(JSON.parse(raw || '[]')) } catch(e) { return [] } },
   s: (k, v) => { var j = JSON.stringify(v); _dbMem[k] = j; eqSalvarLocal('eq_' + k, j); scheduleAutoSync(k); },
   go: k => { try { var raw = (k in _dbMem) ? _dbMem[k] : localStorage.getItem('eq_' + k); return JSON.parse(raw || '{}') || {} } catch(e) { return {} } },
   so: (k, v) => { var j = JSON.stringify(v); _dbMem[k] = j; eqSalvarLocal('eq_' + k, j); scheduleAutoSync(k); }
@@ -6278,6 +6291,7 @@ async function syncFromDrive() {
   for (const k of keys) {
     try {
       let data = await eqCarregarMesclado('eq_' + k + '.json');
+      if (data !== null && !Array.isArray(data)) data = eqComoLista(data); // formato diferente → lista
       if (data !== null && k === 'funcionarios' && Array.isArray(data)) {
         // Cadastros antigos com outros nomes de campo passam a ter os campos atuais
         data = data.filter(function(f){ return f && typeof f === 'object'; }).map(eqNormalizarFunc);
@@ -6974,6 +6988,17 @@ function eqNormalizarFunc(f) {
   return c;
 }
 function rdFunc() {
+  try { return _rdFuncImpl(); }
+  catch (e) {
+    console.error('[Funcionários] Erro ao montar a lista:', e);
+    var tb = document.getElementById('tb-func');
+    if (tb) {
+      tb.innerHTML = '<tr><td colspan="9" style="padding:20px;color:#b71c1c;font-size:13px;">⚠️ Não foi possível montar a lista de funcionários.<br><small></small><br>Total de cadastros carregados: ' + DB.g('funcionarios').length + '. Envie um print desta mensagem ao suporte.</td></tr>';
+      tb.querySelector('small').textContent = 'Detalhe técnico: ' + (e && e.message) + ' ' + String((e && e.stack) || '').split('\n').slice(1, 3).join(' ');
+    }
+  }
+}
+function _rdFuncImpl() {
   fotoStoreLoad(); // Garantir foto store atualizado
   var campo  = (document.getElementById('func-sort-campo')||{value:'nome'}).value || 'nome';
   var dir    = (document.getElementById('func-sort-dir')  ||{value:'asc'}).value  || 'asc';
@@ -7063,7 +7088,8 @@ function rdFunc() {
   }
 
   tb.innerHTML = '';
-  list.forEach(function(f) {
+  var _errosLinha = [];
+  list.forEach(function(f) { try {
     var dep     = deps.find(function(d){ return d.id === f.dep; });
     var emp     = emps.find(function(e){ return e.id === f.emp; });
     var bc      = { Ativo:'badge-green', Afastado:'badge-yellow', 'Férias':'badge-blue', Desligado:'badge-red' }[f.st] || 'badge-gray';
@@ -7100,7 +7126,7 @@ function rdFunc() {
         (f.tamJaleco  ? ' 🥼 ' + f.tamJaleco : '') +
         '</small>';
     }
-    infoEl.innerHTML = '<strong>' + f.n + '</strong>' +
+    infoEl.innerHTML = '<strong>' + (f.n || '(sem nome)') + '</strong>' +
       (f.tel ? '<br><small style="color:var(--gray-400);font-size:11px;">📱 ' + f.tel + '</small>' : '') +
       uniInfo;
     td1.appendChild(fotoEl);
@@ -7180,7 +7206,14 @@ function rdFunc() {
 
     [td1,td2,td3,td4,td5,td5b,td6,td7,td8].forEach(function(td){ tr.appendChild(td); });
     tb.appendChild(tr);
-  });
+  } catch (eLinha) {
+    _errosLinha.push((f && (f.n || f.id)) + ': ' + eLinha.message);
+    var trE = document.createElement('tr');
+    trE.innerHTML = '<td colspan="9" style="color:#b71c1c;font-size:12px;">⚠️ Cadastro com problema: <strong></strong> — abra e salve novamente.</td>';
+    trE.querySelector('strong').textContent = (f && (f.n || f.cpf || f.id)) || '(sem nome)';
+    tb.appendChild(trE);
+  } });
+  if (_errosLinha.length) console.warn('[Funcionários] Linhas com problema:', _errosLinha);
 }
 
 
