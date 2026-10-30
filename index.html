@@ -414,6 +414,81 @@ input#client-id-inp:focus{border-color:var(--green);outline:none;}
 .bday-avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 
 </style>
+<style id="eq-nav-v2">
+/* ===== Menu lateral v2 (Equilibryum) ===== */
+#sidebar{background:linear-gradient(180deg,#1f5c44 0%,#1a4f3b 100%);box-shadow:2px 0 14px rgba(0,0,0,.12);scrollbar-width:thin;}
+#sidebar::-webkit-scrollbar{width:6px;}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:6px;}
+#sidebar-toggle{right:10px;top:12px;width:30px;height:30px;}
+.sidebar-logo{padding:16px 18px 12px;}
+.sidebar-logo img{border-radius:8px;}
+
+/* Busca no menu */
+.eq-nav-search{padding:10px 12px 6px;position:sticky;top:0;z-index:5;background:inherit;}
+.eq-nav-search input{width:100%;padding:8px 10px 8px 32px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='.6' stroke-width='2.4'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px center;color:#fff;font-family:inherit;font-size:13px;outline:none;transition:.18s;}
+.eq-nav-search input::placeholder{color:rgba(255,255,255,.5);}
+.eq-nav-search input:focus{border-color:rgba(255,255,255,.35);background-color:rgba(255,255,255,.13);}
+.eq-nav-empty{display:none;padding:10px 20px;color:rgba(255,255,255,.5);font-size:12.5px;}
+
+/* Cabeçalhos de seção (clicáveis) */
+#sidebar .nav-section{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin:6px 8px 0;padding:9px 10px 6px;border-radius:6px;color:rgba(255,255,255,.5);transition:.15s;}
+#sidebar .nav-section:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+#sidebar .nav-section .eq-chev{width:12px;height:12px;transition:transform .2s;opacity:.7;flex-shrink:0;}
+#sidebar .nav-section.eq-closed .eq-chev{transform:rotate(-90deg);}
+#sidebar .nav-section .eq-count{margin-left:auto;margin-right:8px;font-size:10px;font-weight:600;letter-spacing:0;background:rgba(255,255,255,.1);border-radius:10px;padding:1px 7px;display:none;}
+#sidebar .nav-section.eq-closed .eq-count{display:inline-block;}
+
+/* Grupos recolhíveis */
+.eq-nav-group{overflow:hidden;transition:max-height .22s ease;flex-shrink:0;}
+#sidebar > *{flex-shrink:0;}
+.eq-nav-group.eq-closed{max-height:0 !important;}
+
+/* Itens */
+#sidebar .nav-item{position:relative;margin:2px 10px;padding:9px 12px;border-left:none;border-radius:8px;font-size:13.5px;color:rgba(255,255,255,.82);}
+#sidebar .nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+#sidebar .nav-item.active{background:rgba(255,255,255,.16);color:#fff;font-weight:600;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);}
+#sidebar .nav-item.active::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:#7ee0b0;}
+#sidebar .nav-item svg{opacity:.85;}
+#sidebar .nav-item.active svg{opacity:1;color:#9ff0c7;}
+#sidebar .nav-item.eq-hide{display:none;}
+.sidebar-footer{font-size:10.5px;}
+
+/* Menu recolhido (ícones) */
+#sidebar.collapsed .eq-nav-search,
+#sidebar.collapsed .nav-section{display:none !important;}
+#sidebar.collapsed .eq-nav-group,
+#sidebar.collapsed .eq-nav-group.eq-closed{max-height:none !important;overflow:visible;}
+#sidebar.collapsed .nav-item{margin:2px 6px;padding:11px 0;justify-content:center;}
+#sidebar.collapsed .nav-item.active::before{left:-6px;}
+#sidebar.collapsed #sidebar-toggle{right:11px;}
+#sidebar.collapsed .sidebar-logo{padding-top:52px;}
+
+/* Barra de status do Drive: faixa fina no topo (antes virava uma coluna larga ao lado do menu) */
+body{flex-direction:column;}
+#drive-bar{padding:5px 20px 5px 265px;font-size:12px;min-height:32px;width:100%;}
+body.sidebar-collapsed #drive-bar{padding-left:72px;}
+#drive-bar .btn{padding:4px 12px;font-size:12px;}
+
+/* Celular */
+#eq-mob-menu{display:none;align-items:center;justify-content:center;width:38px;height:38px;margin-right:10px;border:none;border-radius:8px;background:var(--green-pale);color:var(--green-dark);font-size:20px;cursor:pointer;flex-shrink:0;}
+#eq-nav-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;}
+@media(max-width:700px){
+  #main{margin-left:0 !important;}
+  #drive-bar,body.sidebar-collapsed #drive-bar{padding-left:16px;}
+  #topbar{padding:0 12px;}
+  #topbar .page-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;}
+  #topbar .topbar-actions{gap:6px;overflow-x:auto;flex-shrink:1;min-width:0;scrollbar-width:none;}
+  #topbar .topbar-actions > *{flex-shrink:0;}
+  #eq-mob-menu{display:inline-flex;}
+  #sidebar{width:260px !important;transition:transform .25s;}
+  #sidebar.open + #eq-nav-backdrop,#eq-nav-backdrop.show{display:block;}
+  #sidebar-toggle{display:none;}
+  #sidebar.collapsed .nav-section{display:flex !important;}
+  #sidebar.collapsed .eq-nav-search{display:block !important;}
+  #sidebar.collapsed .nav-item span{display:inline !important;position:static;background:none;box-shadow:none;padding:0;}
+  #sidebar.collapsed .sidebar-logo img{display:block;}
+}
+</style>
 <style id="googleidentityservice_button_styles">.qJTHM{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;color:#202124;direction:ltr;-webkit-touch-callout:none;font-family:Roboto-Regular,arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:400;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}.ynRLnc{left:-9999px;position:absolute;top:-9999px}.L6cTce{display:none}.bltWBb{overflow-wrap:break-word;word-break:break-word}.hSRGPd{color:#1a73e8;cursor:pointer;font-weight:500;text-decoration:none}.Bz112c-W3lGp{height:16px;width:16px}.Bz112c-E3DyYd{height:20px;width:20px}.Bz112c-r9oPif{height:24px;width:24px}.Bz112c-u2z5K{height:36px;width:36px}.Bz112c-uaxL4e{border-radius:10px}.LgbsSe-Bz112c{display:block}.S9gUrf-YoZ4jf{border:none;margin:0;padding:0}.S9gUrf-YoZ4jf *{border:none;margin:0;padding:0}.fFW7wc-ibnC6b>.aZ2wEe>div{border-color:#4285f4}.P1ekSe-ZMv3u{-webkit-transition:height .2s linear;transition:height .2s linear}.P1ekSe-ZMv3u>div:first-child{background-color:#1a73e8!important;-webkit-transition:width .3s linear;transition:width .3s linear}.P1ekSe-ZMv3u>div:nth-child(2){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.P1ekSe-ZMv3u>div:nth-child(3){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.haAclf{display:inline-block}.nsm7Bb-HzV7m-LgbsSe{border-radius:4px;box-sizing:border-box;-webkit-transition:background-color .218s,border-color .218s;transition:background-color .218s,border-color .218s;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #dadce0;color:#3c4043;cursor:pointer;font-family:Google Sans,arial,sans-serif;font-size:.875rem;height:40px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 12px;position:relative;text-align:center;vertical-align:middle;white-space:nowrap;width:auto}@media screen and (-ms-high-contrast:active){.nsm7Bb-HzV7m-LgbsSe{border:2px solid windowText;color:windowText}}@media screen and (preferes-contrast:more){.nsm7Bb-HzV7m-LgbsSe{color:#000}}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe{font-size:.875rem;height:32px;letter-spacing:.25px;padding:0 10px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe{font-size:.6875rem;height:20px;letter-spacing:.3px;padding:0 8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe{padding:0;width:40px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe{width:32px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe{width:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK{border-radius:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.pSzOP-SxQuSe{border-radius:16px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.purZT-SxQuSe{border-radius:10px}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc{border:1px solid #8e918f;background-color:#131314;color:#e3e3e3}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc{border:none;color:#fff}.nsm7Bb-HzV7m-LgbsSe.MFS4be-v3pZbf-Ia7Qfc{background-color:#1a73e8}.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{background-color:#202124;color:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{color:#fff}}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:18px;margin-right:8px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:14px;min-width:14px;width:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:10px;min-width:10px;width:10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin-left:8px;margin-right:-4px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:10px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:4px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:3px;border-bottom-left-radius:3px;display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center;-webkit-box-align:center;-webkit-align-items:center;align-items:center;background-color:#fff;height:36px;margin-left:-10px;margin-right:12px;min-width:36px;width:36px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c,.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:28px;margin-left:-8px;margin-right:10px;min-width:28px;width:28px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:16px;margin-left:-6px;margin-right:8px;min-width:16px;width:16px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:3px;margin-left:2px;margin-right:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:8px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;-webkit-flex-direction:row;-webkit-box-orient:horizontal;-webkit-box-direction:normal;flex-direction:row;-webkit-box-pack:justify;-webkit-justify-content:space-between;justify-content:space-between;-webkit-flex-wrap:nowrap;flex-wrap:nowrap;height:100%;position:relative;width:100%}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX{-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:1;-webkit-box-flex:1;flex-grow:1;font-family:Google Sans,arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-weight:300}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:0;-webkit-box-flex:0;flex-grow:0}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-MJoBVe{-webkit-transition:background-color .218s;transition:background-color .218s;bottom:0;left:0;position:absolute;right:0;top:0}.nsm7Bb-HzV7m-LgbsSe:focus,.nsm7Bb-HzV7m-LgbsSe:hover{box-shadow:none;border-color:rgb(210,227,252);outline:none}.nsm7Bb-HzV7m-LgbsSe:focus-within{outline:2px solid #00639b;border-color:transparent}.nsm7Bb-HzV7m-LgbsSe:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.08)}.nsm7Bb-HzV7m-LgbsSe:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.1)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.08)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.12)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.24)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.32)}.nsm7Bb-HzV7m-LgbsSe .n1UuX-DkfjY{border-radius:50%;display:-webkit-box;display:-webkit-flex;display:flex;height:20px;margin-left:-4px;margin-right:8px;min-width:20px;width:20px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-family:Roboto;font-size:12px;text-align:left}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .fmcmS,.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .ssJRIf{overflow:hidden;text-overflow:ellipsis}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;color:#5f6368;fill:#5f6368;font-size:11px;font-weight:400}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.i5vt6e-to915-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#c4c7c5;fill:#c4c7c5}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#e8eaed;fill:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff,.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#000;fill:#000}}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .Bz112c{height:18px;margin:-3px -3px -3px 2px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:3px;border-bottom-right-radius:3px;margin-left:12px;margin-right:-10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.L5Fo6c-sM5MNb{border:0;display:block;left:0;position:relative;top:0}.L5Fo6c-bF1uUb{border-radius:4px;bottom:0;cursor:pointer;left:0;position:absolute;right:0;top:0}.L5Fo6c-bF1uUb:focus{border:none;outline:none}sentinel{}</style></head>
 <body>
 
@@ -5246,6 +5321,7 @@ function initGIS(adminMode, promptMode) {
         client_id: CLIENT_ID,
         scope: SCOPES,
         ux_mode: 'popup',
+        login_hint: (localStorage.getItem('eq_drive_email') || undefined),
         callback: async (tokenResponse) => {
           _reconnectInProgress = false;
           if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
@@ -5358,7 +5434,8 @@ function driveSignIn() {
   var saved = localStorage.getItem('eq_client_id');
   if (saved) {
     CLIENT_ID = saved;
-    initGIS(false, 'select_account'); // popup explícito
+    // Se já sabemos a conta deste computador, entra direto sem pedir para escolher a conta
+    initGIS(false, localStorage.getItem('eq_drive_email') ? '' : 'select_account'); // popup explícito
   } else {
     toast('Configure o Client ID primeiro.', 'warn');
   }
@@ -18513,6 +18590,314 @@ function toggleClausula4() {
   if (el) el.style.display = (ck && ck.checked) ? 'grid' : 'none';
 }
 
+</script>
+<script id="eq-nav-autoconnect-v2">
+/* =====================================================================
+   Equilibryum RH — Menu lateral v2 + renovação automática do login
+   (bloco adicionado; não altera nem remove funções existentes)
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------------- MENU LATERAL ---------------- */
+  var LS_OPEN = 'eq_nav_closed_groups';
+
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function closedSet() {
+    try { return JSON.parse(lsGet(LS_OPEN, 'null')); } catch (e) { return null; }
+  }
+  function saveClosed() {
+    var arr = [];
+    document.querySelectorAll('#sidebar .nav-section.eq-closed').forEach(function (s) { arr.push(s.dataset.eqKey); });
+    lsSet(LS_OPEN, JSON.stringify(arr));
+  }
+
+  function setGroupOpen(sec, open, noSave) {
+    var g = sec._eqGroup; if (!g) return;
+    if (open) {
+      sec.classList.remove('eq-closed');
+      g.classList.remove('eq-closed');
+      g.style.maxHeight = g.scrollHeight + 'px';
+    } else {
+      g.style.maxHeight = g.scrollHeight + 'px';
+      void g.offsetHeight;
+      sec.classList.add('eq-closed');
+      g.classList.add('eq-closed');
+    }
+    if (!noSave) saveClosed();
+  }
+
+  function openGroupOf(item) {
+    var g = item && item.parentElement;
+    if (g && g.classList.contains('eq-nav-group') && g._eqSec && g._eqSec.classList.contains('eq-closed')) {
+      setGroupOpen(g._eqSec, true);
+    }
+  }
+
+  function buildNav() {
+    var sb = document.getElementById('sidebar');
+    if (!sb || sb.dataset.eqNav === '1') return;
+    sb.dataset.eqNav = '1';
+
+    // 1) Garante que todo texto do item fique dentro de <span> (corrige "Dashboard" no menu recolhido)
+    sb.querySelectorAll('.nav-item').forEach(function (it) {
+      if (it.querySelector('span')) return;
+      var txt = '';
+      Array.prototype.slice.call(it.childNodes).forEach(function (n) {
+        if (n.nodeType === 3 && n.textContent.trim()) { txt += n.textContent; it.removeChild(n); }
+      });
+      if (txt.trim()) { var sp = document.createElement('span'); sp.textContent = txt.trim(); it.appendChild(sp); }
+    });
+
+    // 2) Campo de busca
+    var logo = sb.querySelector('.sidebar-logo');
+    var box = document.createElement('div');
+    box.className = 'eq-nav-search';
+    box.innerHTML = '<input type="search" id="eq-nav-q" placeholder="Buscar no menu..." autocomplete="off" aria-label="Buscar no menu">';
+    if (logo && logo.nextSibling) sb.insertBefore(box, logo.nextSibling); else sb.insertBefore(box, sb.firstChild);
+    var empty = document.createElement('div');
+    empty.className = 'eq-nav-empty';
+    empty.textContent = 'Nenhum item encontrado';
+    box.parentNode.insertBefore(empty, box.nextSibling);
+
+    // 3) Agrupa os itens abaixo de cada seção
+    var chev = '<svg class="eq-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>';
+    var saved = closedSet();
+    sb.querySelectorAll('.nav-section').forEach(function (sec) {
+      var label = sec.textContent.trim();
+      sec.dataset.eqKey = label;
+      var group = document.createElement('div');
+      group.className = 'eq-nav-group';
+      sec.parentNode.insertBefore(group, sec.nextSibling);
+      var n = group.nextSibling, count = 0;
+      while (n && !(n.nodeType === 1 && (n.classList.contains('nav-section') || n.classList.contains('sidebar-footer')))) {
+        var next = n.nextSibling;
+        if (n.nodeType === 1 && n.classList.contains('nav-item')) count++;
+        group.appendChild(n);
+        n = next;
+      }
+      sec.innerHTML = '<span class="eq-sec-label"></span><span class="eq-count">' + count + '</span>' + chev;
+      sec.querySelector('.eq-sec-label').textContent = label;
+      sec.setAttribute('role', 'button');
+      sec.setAttribute('tabindex', '0');
+      sec.title = 'Mostrar/ocultar ' + label;
+      sec._eqGroup = group; group._eqSec = sec;
+
+      var hasActive = !!group.querySelector('.nav-item.active');
+      var closed = saved ? saved.indexOf(label) >= 0 : false;
+      if (hasActive) closed = false;
+      if (closed) { sec.classList.add('eq-closed'); group.classList.add('eq-closed'); }
+      else { group.style.maxHeight = 'none'; }
+
+      function toggle() {
+        if (sb.classList.contains('collapsed') && window.innerWidth > 700) return;
+        setGroupOpen(sec, sec.classList.contains('eq-closed'));
+      }
+      sec.addEventListener('click', toggle);
+      sec.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+      group.addEventListener('transitionend', function () {
+        if (!group.classList.contains('eq-closed')) group.style.maxHeight = 'none';
+      });
+    });
+
+    // 4) Busca: filtra itens enquanto digita; Enter abre o primeiro
+    var q = document.getElementById('eq-nav-q');
+    var preSearch = null;
+    q.addEventListener('input', function () {
+      var t = q.value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      var any = false;
+      if (t && !preSearch) preSearch = closedSet() || [];
+      sb.querySelectorAll('.nav-section').forEach(function (sec) {
+        var g = sec._eqGroup, hits = 0;
+        g.querySelectorAll('.nav-item').forEach(function (it) {
+          var s = it.textContent.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+          var secTxt = sec.dataset.eqKey.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+          var ok = !t || s.indexOf(t) >= 0 || secTxt.indexOf(t) >= 0;
+          it.classList.toggle('eq-hide', !ok);
+          if (ok) hits++;
+        });
+        if (t) {
+          sec.style.display = hits ? '' : 'none';
+          sec.classList.remove('eq-closed'); g.classList.remove('eq-closed'); g.style.maxHeight = 'none';
+        } else {
+          sec.style.display = '';
+        }
+        if (hits) any = true;
+      });
+      empty.style.display = (t && !any) ? 'block' : 'none';
+      if (!t && preSearch) {
+        sb.querySelectorAll('.nav-section').forEach(function (sec) {
+          var c = preSearch.indexOf(sec.dataset.eqKey) >= 0 && !sec._eqGroup.querySelector('.nav-item.active');
+          if (c) { sec.classList.add('eq-closed'); sec._eqGroup.classList.add('eq-closed'); }
+        });
+        preSearch = null;
+        saveClosed();
+      }
+    });
+    q.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var first = sb.querySelector('.eq-nav-group .nav-item:not(.eq-hide)');
+        if (first) { first.click(); q.value = ''; q.dispatchEvent(new Event('input')); q.blur(); }
+      } else if (e.key === 'Escape') { q.value = ''; q.dispatchEvent(new Event('input')); q.blur(); }
+    });
+
+    // 5) Ao clicar em um item: abre o grupo dele e, no celular, fecha o menu
+    sb.addEventListener('click', function (e) {
+      var it = e.target.closest && e.target.closest('.nav-item');
+      if (!it) return;
+      openGroupOf(it);
+      if (window.innerWidth <= 700) closeMobile();
+    });
+
+    // 6) Botão de menu no celular + fundo escuro
+    var bd = document.createElement('div');
+    bd.id = 'eq-nav-backdrop';
+    bd.addEventListener('click', closeMobile);
+    sb.parentNode.insertBefore(bd, sb.nextSibling);
+    var title = document.getElementById('topbar-title');
+    if (title && !document.getElementById('eq-mob-menu')) {
+      var mb = document.createElement('button');
+      mb.id = 'eq-mob-menu';
+      mb.type = 'button';
+      mb.title = 'Menu';
+      mb.innerHTML = '&#9776;';
+      mb.addEventListener('click', function () {
+        var open = sb.classList.toggle('open');
+        bd.classList.toggle('show', open);
+      });
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;align-items:center;min-width:0;';
+      title.parentNode.insertBefore(wrap, title);
+      wrap.appendChild(mb);
+      wrap.appendChild(title);
+    }
+
+    // 7) Atalho Ctrl+K para buscar no menu
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (window.innerWidth <= 700) { sb.classList.add('open'); bd.classList.add('show'); }
+        if (sb.classList.contains('collapsed') && window.innerWidth > 700 && typeof toggleSidebar === 'function') toggleSidebar();
+        q.focus();
+      }
+    });
+    if (q) q.placeholder = 'Buscar no menu...  (Ctrl+K)';
+  }
+
+  function closeMobile() {
+    var sb = document.getElementById('sidebar');
+    var bd = document.getElementById('eq-nav-backdrop');
+    if (sb) sb.classList.remove('open');
+    if (bd) bd.classList.remove('show');
+  }
+
+  /* ---------------- RENOVAÇÃO AUTOMÁTICA DO LOGIN GOOGLE ----------------
+     O login do Google no navegador vale ~1 hora. Este bloco renova o
+     acesso sozinho antes de expirar (aos 45 min), ao voltar para a aba
+     e no primeiro clique quando o acesso venceu. Só atua em computadores
+     que entraram com a conta Google (não altera quem usa "Token").      */
+  var RENEW_AFTER_MS = 45 * 60 * 1000;
+  var _busy = false, _lastTry = 0;
+
+  function knownEmail() { return lsGet('eq_drive_email', ''); }
+  function tokenAge() { return Date.now() - parseInt(lsGet('eq_drive_token_time', '0') || '0', 10); }
+  function canRenew() {
+    return typeof CLIENT_ID !== 'undefined' && !!CLIENT_ID && !!knownEmail() &&
+      window.google && google.accounts && google.accounts.oauth2;
+  }
+  function needsRenew() {
+    if (!canRenew()) return false;
+    var ready = (typeof driveReady !== 'undefined') && driveReady && driveToken;
+    return !ready || tokenAge() > RENEW_AFTER_MS;
+  }
+  function loginScreenOpen() {
+    var ov = document.getElementById('sync-overlay');
+    var w1 = document.getElementById('setup-wizard');
+    var w2 = document.getElementById('token-wizard');
+    return (ov && ov.classList.contains('open')) ||
+      (w1 && w1.style.display !== 'none' && w1.offsetParent !== null) ||
+      (w2 && w2.style.display !== 'none' && w2.offsetParent !== null);
+  }
+
+  function applyToken(tok) {
+    var wasReady = (typeof driveReady !== 'undefined') && driveReady;
+    driveToken = tok;
+    driveReady = true;
+    lsSet('eq_drive_token', tok);
+    lsSet('eq_drive_token_time', String(Date.now()));
+    try { if (window.gapi && gapi.client && gapi.client.setToken) gapi.client.setToken({ access_token: tok }); } catch (e) {}
+    try { if (typeof hideReconnectButton === 'function') hideReconnectButton(); } catch (e) {}
+    try { if (typeof updDriveStatus === 'function') updDriveStatus(true, knownEmail()); } catch (e) {}
+    if (!wasReady) {
+      (async function () {
+        try { if (typeof ensureRHFolder === 'function') await ensureRHFolder(); } catch (e) {}
+        try { if (typeof syncFromDrive === 'function') await syncFromDrive(); } catch (e) {}
+        try { if (typeof init === 'function') init(); } catch (e) {}
+        try { if (typeof toast === 'function') toast('☁️ Drive reconectado automaticamente'); } catch (e) {}
+      })();
+    }
+    console.log('[Drive] Acesso renovado automaticamente.');
+  }
+
+  window.eqRenewDriveToken = function (force) {
+    if (_busy || !canRenew()) return;
+    if (Date.now() - _lastTry < (force ? 20 : 60) * 1000) return; // evita abrir login repetidas vezes
+    _busy = true; _lastTry = Date.now();
+    var safety = setTimeout(function () { _busy = false; }, 30000);
+    try {
+      var client = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: (typeof SCOPES !== 'undefined' ? SCOPES : 'https://www.googleapis.com/auth/drive'),
+        login_hint: knownEmail(),
+        callback: function (r) {
+          _busy = false; clearTimeout(safety);
+          if (r && r.access_token && !r.error) applyToken(r.access_token);
+        },
+        error_callback: function () { _busy = false; clearTimeout(safety); }
+      });
+      client.requestAccessToken({ prompt: '', login_hint: knownEmail() });
+    } catch (e) { _busy = false; clearTimeout(safety); }
+  };
+
+  // Guarda o e-mail da conta Google usada neste computador (para renovar sem perguntar a conta)
+  function hookStatus() {
+    if (typeof updDriveStatus !== 'function' || updDriveStatus._eq) return;
+    var orig = updDriveStatus;
+    var wrapped = function (connected, email) {
+      if (connected && email && email.indexOf('@') > 0) lsSet('eq_drive_email', email);
+      return orig.apply(this, arguments);
+    };
+    wrapped._eq = true;
+    window.updDriveStatus = wrapped;
+    try { updDriveStatus = wrapped; } catch (e) {}
+  }
+
+  function startAutoRenew() {
+    hookStatus();
+    // Checa a cada minuto: renova aos 45 min, antes do Google derrubar o acesso
+    setInterval(function () {
+      if (document.visibilityState === 'visible' && needsRenew() && !loginScreenOpen()) window.eqRenewDriveToken(false);
+    }, 60 * 1000);
+    // Ao voltar para a aba do sistema
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && needsRenew() && !loginScreenOpen()) window.eqRenewDriveToken(false);
+    });
+    // Se o navegador bloquear a renovação automática, renova no próximo clique do usuário
+    document.addEventListener('pointerdown', function (e) {
+      if (!needsRenew() || loginScreenOpen()) return;
+      if (e.target && e.target.closest && e.target.closest('#sync-overlay,#setup-wizard,#token-wizard,#btn-sync')) return;
+      window.eqRenewDriveToken(true);
+    }, true);
+  }
+
+  function boot() {
+    try { buildNav(); } catch (e) { console.warn('[Menu v2]', e); }
+    try { startAutoRenew(); } catch (e) { console.warn('[Auto-renovação]', e); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
 </script>
 </body>
 </html>
