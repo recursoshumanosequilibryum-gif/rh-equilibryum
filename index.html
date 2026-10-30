@@ -4,6 +4,22 @@
 
 <!-- Equilibryum RH v3.3 - 20260615_1520 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script id="eq-config">
+/* Configuração oficial do Sistema RH Equilibryum */
+window.EQ_CLIENT_ID = '243097018412-taurg7vgr24fto9uevfndm2u61vrpbjj.apps.googleusercontent.com';
+window.EQ_SITE_URL  = 'https://recursoshumanosequilibryum-gif.github.io/rh-equilibryum/';
+(function(){
+  // Aberto pelo arquivo baixado (file://) ou outro endereço: o login do Google só funciona no site oficial
+  if (location.protocol === 'file:') { location.replace(window.EQ_SITE_URL); return; }
+  // Toda máquina usa sempre o Client ID oficial (corrige IDs antigos/errados salvos no navegador)
+  try {
+    if (localStorage.getItem('eq_client_id') !== window.EQ_CLIENT_ID) {
+      localStorage.setItem('eq_client_id', window.EQ_CLIENT_ID);
+    }
+  } catch(e) {}
+})();
+</script>
+
 <title>Equilibryum – Sistema de RH</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -832,7 +848,7 @@ body.sidebar-collapsed #drive-bar{padding-left:72px;}
 <h3>2.1 Primeira configuração (administrador)</h3>
 <ol>
 <li>Abra o endereço do sistema no Google Chrome.</li>
-<li>Na tela <strong>Primeira configuração</strong>, cole o <strong>Client ID do Google Cloud</strong> do cliente <strong>Equilibryum RH</strong> (começa com <code>243097018412-taur...</code> e termina em <code>.apps.googleusercontent.com</code>).</li>
+<li>O Client ID do Google já vem configurado no sistema: em qualquer computador, basta clicar em conectar. Não é preciso colar nada.</li>
 <li>Clique em <strong>☁️ Conectar ao Google Drive</strong>.</li>
 <li>Na janela do Google, entre com <strong>recursoshumanosequilibryum@gmail.com</strong>.</li>
 <li>Se aparecer "O Google não verificou este app", clique em <strong>Avançado</strong> e depois em <strong>Acessar Equilibryum (não seguro)</strong>. Isso é normal em sistemas internos.</li>
@@ -5638,7 +5654,7 @@ var _CODFOLHA_MAP_B64 =
   'MDE4NSIsICJOSUNPTEUgU09VWkEgU0lMVkEgQkFUSVNUQSI6ICIxMDE2MSIsICJQQVRSSUNJQSBTT1VTQSBETyBDQVJNTyI6ICIyMTYiLCAiUkFRVUVMIE1FTFFVSUFERVMgREEgU0lMVkEiOiAiMTAxODgiLCAiU0FORFJBIERPIE5BU0NJTUVOVE8iOiAiMTAxNzciLCAiU0lETkVJIEJBVElTVEEgUEVSRUlSQSI6ICIxMjYiLCAiV0lMTElBTiBERSBBTE1FSURBIFJPQ0hBIjogIjIzOCJ9';
 var _CODFOLHA_MAP = JSON.parse(decodeURIComponent(escape(atob(_CODFOLHA_MAP_B64))));
 
-let CLIENT_ID = '';
+let CLIENT_ID = window.EQ_CLIENT_ID || '';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
 let driveReady = false;
 let driveToken = null;
@@ -5800,7 +5816,7 @@ let driveUserEmail = '';
 
 // ADMIN: conectar com login Google e gerar token compartilhado
 function connectDrive() {
-  const cid = document.getElementById('client-id-inp').value.trim();
+  const cid = window.EQ_CLIENT_ID || document.getElementById('client-id-inp').value.trim();
   if (!cid) { alert('Cole o Client ID do Google Console.'); return; }
   CLIENT_ID = cid;
   localStorage.setItem('eq_client_id', cid);
@@ -5825,7 +5841,7 @@ function connectWithToken() {
   // Formatos antigos (só o token) continuam funcionando normalmente.
   const parts = raw.split('||');
   const token = parts[0].trim();
-  const cid = (parts[1] || '').trim();
+  const cid = window.EQ_CLIENT_ID || (parts[1] || '').trim();
   driveToken = token;
   driveReady = true;
   localStorage.setItem('eq_drive_token', token);
