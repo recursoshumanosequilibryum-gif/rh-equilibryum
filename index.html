@@ -676,6 +676,9 @@ body.sidebar-collapsed #drive-bar{padding-left:72px;}
   <div class="nav-item" onclick="nav('manual',this);document.getElementById('topbar-title').textContent='Manual do Sistema';window.scrollTo(0,0);" title="Abre o manual do sistema">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path></svg><span>Manual do Sistema</span>
   </div>
+  <div class="nav-item" onclick="eqDiagnosticoDrive()" title="Mostra onde o sistema encontrou os dados no Google Drive">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span>Verificar dados do Drive</span>
+  </div>
   <div class="sidebar-footer">v2.0 · Equilibryum RH · Drive ☁️</div>
 </aside>
 
@@ -1161,8 +1164,8 @@ body.sidebar-collapsed #drive-bar{padding-left:72px;}
 </tr>
 <tr>
 <td>Dados não aparecem</td>
-<td>Drive desconectado ou sem sincronizar</td>
-<td>Conecte e clique em <strong>🔄 Sincronizar / Iniciar</strong></td>
+<td>Drive desconectado, sem sincronizar ou conectado com outra conta Google</td>
+<td>Conecte e clique em <strong>🔄 Sincronizar / Iniciar</strong>. Depois use <strong>Ajuda → Verificar dados do Drive</strong> para ver a conta conectada e as pastas encontradas</td>
 </tr>
 </tbody>
 </table>
@@ -6065,7 +6068,17 @@ async function findOrCreateFolder(name, parentId) {
 
 async function ensureRHFolder() {
   try {
-    rhFolderId = await findOrCreateFolder('RH Equilibryum', null);
+    // Procura todas as pastas "RH Equilibryum" (raiz, subpastas e compartilhadas)
+    // e usa a que tem mais dados. Só cria uma pasta nova se não existir nenhuma.
+    var pastas = [];
+    try { pastas = await eqListarPastasRH(); } catch(e2) { console.warn('[Drive] Busca ampla de pastas falhou:', e2); }
+    _rhFolders = pastas;
+    if (pastas.length) {
+      rhFolderId = pastas[0].id;
+      console.log('[Drive] Pastas "RH Equilibryum" encontradas:', pastas.map(function(f){ return f.id + ' (' + f.dataFiles.length + ' arquivos, ' + f.dataBytes + ' bytes)'; }));
+    } else {
+      rhFolderId = await findOrCreateFolder('RH Equilibryum', null);
+    }
     toast("Pasta RH Equilibryum pronta no Drive ☁️");
   } catch(e) {
     console.error('Folder error:', e);
@@ -6104,33 +6117,154 @@ async function saveDriveJSON(filename, data) {
   } catch(e) { console.warn('saveDriveJSON error:', e); }
 }
 
+// ── Localização robusta dos dados no Drive ─────────────────────
+var _rhFolders = []; // todas as pastas "RH Equilibryum" encontradas (a 1ª é a principal)
+
+async function eqDriveList(params) {
+  // Inclui itens compartilhados e Drives compartilhados; se a conta não aceitar, tenta sem
+  var full = Object.assign({ includeItemsFromAllDrives: 'true', supportsAllDrives: 'true', corpora: 'allDrives' }, params);
+  try { return await driveRequest('files', 'GET', full); }
+  catch (e) {
+    if (String(e && e.message).indexOf('Token') >= 0) throw e;
+    return await driveRequest('files', 'GET', params);
+  }
+}
+
+async function eqListarPastasRH() {
+  var pastas = [], pageToken = '';
+  do {
+    var prm = {
+      q: "name='RH Equilibryum' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+      fields: 'nextPageToken,files(id,name,createdTime,modifiedTime,owners(emailAddress),parents)',
+      pageSize: '100'
+    };
+    if (pageToken) prm.pageToken = pageToken;
+    var res = await eqDriveList(prm);
+    pastas = pastas.concat((res && res.files) || []);
+    pageToken = (res && res.nextPageToken) || '';
+  } while (pageToken);
+  for (var i = 0; i < pastas.length; i++) {
+    var f = pastas[i];
+    try {
+      var r = await eqDriveList({
+        q: "'" + f.id + "' in parents and trashed=false and name contains 'eq_'",
+        fields: 'files(id,name,size,modifiedTime)', pageSize: '500'
+      });
+      f.dataFiles = (r && r.files) || [];
+    } catch (e) { f.dataFiles = []; }
+    f.dataBytes = f.dataFiles.reduce(function (t, x) { return t + (parseInt(x.size || '0', 10) || 0); }, 0);
+  }
+  // Principal = a que tem mais dados; empate → a criada primeiro (a original)
+  pastas.sort(function (a, b) {
+    return (b.dataBytes - a.dataBytes) || (b.dataFiles.length - a.dataFiles.length) ||
+      String(a.createdTime).localeCompare(String(b.createdTime));
+  });
+  return pastas;
+}
+
+async function eqBaixarJSON(fileId) {
+  var r = await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media&supportsAllDrives=true',
+    { headers: { 'Authorization': 'Bearer ' + driveToken } });
+  if (!r.ok) throw new Error('Drive download ' + r.status);
+  var txt = await r.text();
+  if (!txt || !txt.trim()) return null;
+  return JSON.parse(txt);
+}
+
+// Lê um arquivo de dados de TODAS as pastas "RH Equilibryum" (e de cópias
+// duplicadas) e junta tudo: listas são unidas por id (a versão mais recente
+// de cada registro prevalece); objetos usam a cópia mais recente.
+async function eqCarregarMesclado(filename) {
+  if (!driveReady || !rhFolderId) return null;
+  var fontes = [];
+  var pastas = (_rhFolders && _rhFolders.length) ? _rhFolders : [{ id: rhFolderId, dataFiles: null }];
+  for (var i = 0; i < pastas.length; i++) {
+    var arqs = pastas[i].dataFiles;
+    if (!arqs) {
+      try {
+        var res = await eqDriveList({ q: "name='" + filename + "' and '" + pastas[i].id + "' in parents and trashed=false", fields: 'files(id,name,modifiedTime)' });
+        arqs = (res && res.files) || [];
+      } catch (e) { arqs = []; }
+    }
+    arqs.filter(function (a) { return a.name === filename; }).forEach(function (a) {
+      fontes.push({ id: a.id, mod: a.modifiedTime || '', principal: pastas[i].id === rhFolderId });
+    });
+  }
+  if (!fontes.length) return null;
+  fontes.sort(function (a, b) { return String(b.mod).localeCompare(String(a.mod)); }); // mais recente primeiro
+  var lidos = [];
+  for (var j = 0; j < fontes.length; j++) {
+    try { var d = await eqBaixarJSON(fontes[j].id); if (d !== null && d !== undefined) lidos.push({ fonte: fontes[j], dados: d }); }
+    catch (e) { console.warn('[Drive] Não foi possível ler', filename, fontes[j].id, e); }
+  }
+  if (!lidos.length) return null;
+  var listas = lidos.filter(function (l) { return Array.isArray(l.dados); });
+  if (!listas.length) return lidos[0].dados; // objeto: cópia mais recente
+  var vistos = {}, resultado = [];
+  listas.forEach(function (l) {
+    l.dados.forEach(function (item) {
+      var chave = (item && item.id) ? 'id:' + item.id : 'json:' + JSON.stringify(item);
+      if (!vistos[chave]) { vistos[chave] = true; resultado.push(item); }
+    });
+  });
+  // Se a junção trouxe registros que não estavam na pasta principal, grava lá
+  // para que tudo fique reunido em um só lugar daqui em diante.
+  var principal = listas.filter(function (l) { return l.fonte.principal; })[0];
+  var qtdPrincipal = principal ? principal.dados.length : 0;
+  if (resultado.length > qtdPrincipal) {
+    console.log('[Drive] ' + filename + ': ' + (resultado.length - qtdPrincipal) + ' registro(s) recuperado(s) de outras cópias.');
+    try { await saveDriveJSON(filename, resultado); } catch (e) {}
+  }
+  return resultado;
+}
+
+// Diagnóstico: mostra onde o sistema encontrou os dados no Drive
+async function eqDiagnosticoDrive() {
+  if (!driveReady) { toast('Conecte ao Google Drive primeiro.', 'warn'); return; }
+  toast('🔎 Verificando o Drive...');
+  var pastas = [];
+  try { pastas = await eqListarPastasRH(); } catch (e) { alert('Erro ao consultar o Drive: ' + e.message); return; }
+  var conta = '';
+  try { var ab = await driveRequest('about', 'GET', { fields: 'user(emailAddress)' }); conta = ab.user.emailAddress; } catch (e) {}
+  var linhas = ['Conta conectada: ' + (conta || '(desconhecida)'), 'Pastas "RH Equilibryum" encontradas: ' + pastas.length, ''];
+  pastas.forEach(function (f, i) {
+    var dono = (f.owners && f.owners[0] && f.owners[0].emailAddress) || '?';
+    linhas.push((i === 0 ? '★ PRINCIPAL  ' : '   ') + 'Pasta ' + (i + 1) + ' — dono: ' + dono + ' — criada em ' + new Date(f.createdTime).toLocaleDateString('pt-BR'));
+    linhas.push('      ' + f.dataFiles.length + ' arquivos de dados, ' + Math.round(f.dataBytes / 1024) + ' KB');
+    var func = f.dataFiles.filter(function (x) { return x.name === 'eq_funcionarios.json'; })[0];
+    if (func) linhas.push('      eq_funcionarios.json: ' + Math.round((parseInt(func.size || 0, 10)) / 1024) + ' KB, alterado em ' + new Date(func.modifiedTime).toLocaleString('pt-BR'));
+  });
+  if (!pastas.length) linhas.push('Nenhuma pasta encontrada nesta conta. Os dados podem estar em outra conta Google.');
+  linhas.push('', 'Funcionários carregados agora no sistema: ' + DB.g('funcionarios').length);
+  alert(linhas.join('\n'));
+}
+
 async function loadDriveJSON(filename) {
   if (!driveReady || !rhFolderId) return null;
   try {
     const q = `name='${filename}' and '${rhFolderId}' in parents and trashed=false`;
-    const res = await driveRequest('files', 'GET', { q, fields: 'files(id)' });
+    const res = await eqDriveList({ q, fields: 'files(id,modifiedTime)', orderBy: 'modifiedTime desc' });
     if (!res.files || !res.files.length) return null;
     const fileId = res.files[0].id;
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { 'Authorization': 'Bearer ' + driveToken } });
-    return await r.json();
+    return await eqBaixarJSON(fileId);
   } catch(e) { return null; }
 }
 
 async function syncFromDrive() {
   // Garante que a pasta "RH Equilibryum" foi identificada antes de ler —
   // sem isso, a leitura falha silenciosamente e nada é atualizado.
-  if (!rhFolderId) { try { await ensureRHFolder(); } catch(e) {} }
+  if (!rhFolderId || !_rhFolders.length) { try { await ensureRHFolder(); } catch(e) {} }
   if (!rhFolderId) { toast('⚠️ Não foi possível acessar a pasta do Drive.', 'warn'); return; }
   const keys = ['funcionarios','departamentos','empresas','usuarios','ferias','exames','epi','uni-mov','uni-itens','vagas','pagamentos','treinamentos','campanhas','politicas','benef-atrib','benef-compras','devolucoes','mat-trein','flash-hist','pendencias','advertencias','demissoes','cronograma-trein'];
   let synced = 0;
   for (const k of keys) {
     try {
-      const data = await loadDriveJSON('eq_' + k + '.json');
+      const data = await eqCarregarMesclado('eq_' + k + '.json');
       if (data !== null) { DB.s(k, data); synced++; }
     } catch(e) {}
   }
   try {
-    const uniEst = await loadDriveJSON('eq_uni-est.json');
+    const uniEst = await eqCarregarMesclado('eq_uni-est.json');
     if (uniEst !== null) DB.so('uni-est', uniEst);
   } catch(e) {}
   await loadFotoStoreFromDrive();
@@ -14563,7 +14697,7 @@ async function syncFotoStoreToDrive() {
 
 async function loadFotoStoreFromDrive() {
   try {
-    var data = await loadDriveJSON('eq_fotos_func.json');
+    var data = await eqCarregarMesclado('eq_fotos_func.json');
     if (data && typeof data === 'object') { _fotoStore = data; fotoStoreSave(); }
   } catch(e) {}
 }
